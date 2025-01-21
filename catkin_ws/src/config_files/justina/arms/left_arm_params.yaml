@@ -1,0 +1,65 @@
+port: /dev/justinaLeftArm
+baudrate: 1000000
+servo_arm_bits_per_radian:
+  - 651.739491961
+  - 651.739491961
+  - 651.739491961
+  - 651.739491961
+  - 651.739491961
+  - 651.739491961
+  - 651.739491961
+servo_arm_ids:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+servo_arm_zeros:
+  - 1543
+  - 3604
+  - 1788
+  - 1998
+  - 2048
+  - 2066
+  - 1050
+servo_arm_directions:
+  - 1
+  - -1
+  - -1
+  - 1
+  - -1
+  - 1
+  - -1
+servo_arm_bits_per_Nm:
+  - -78.83
+  - 157.67
+  - 157.67
+  - 157.67
+  - 193.40
+  - 193.40
+  - 193.40
+servo_gripper_bits_per_radian:
+  - 651.739491961
+  - 651.739491961
+servo_gripper_ids:
+  - 7
+  - 8
+servo_gripper_zeros:
+  - 2187
+  - 2680
+servo_gripper_directions:
+  - 1
+  - -1
+joint_names:
+  - "la_1_joint"
+  - "la_2_joint"
+  - "la_3_joint"
+  - "la_4_joint"
+  - "la_5_joint"
+  - "la_6_joint"
+  - "la_7_joint"
+  - "la_grip_left"
+  - "la_grip_right"
+max_speed: 60

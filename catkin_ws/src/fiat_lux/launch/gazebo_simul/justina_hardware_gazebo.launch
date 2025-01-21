@@ -1,0 +1,28 @@
+<launch>
+  <arg name="world" default="appartment"/>
+  <env name="GAZEBO_MODEL_PATH" value="$(find gazebo_envs)/models:$(optenv GAZEBO_MODEL_PATH)"/>
+  <param name="/base_link_name" value="base_link"/>
+  
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="paused" value="false"/>
+    <arg name="use_sim_time" value="true"/>
+    <arg name="gui" value="true"/>
+    <arg name="debug" value="false"/>
+    <arg name="world_name" value="$(find gazebo_envs)/worlds/$(arg world).world"/>
+  </include>
+  
+  <param name="robot_description" command="xacro $(find justina_description)/urdf/justina.xacro"/>
+  <arg name="posx" default="7.64"/>
+  <arg name="posy" default="5.0"/>
+  <arg name="posz" default="0.05"/>
+  <arg name="yaw" default="1.57"/>
+
+  <node name="robot_spawn" pkg="gazebo_ros" type="spawn_model" output="screen"
+        args="-urdf -param robot_description -model justina -x $(arg posx) -y $(arg posy) -z $(arg posz) -Y $(arg yaw)"/>
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher">
+    <param name="use_tf_static" value="false"/>
+  </node>
+  <node name="topic_resender" pkg="gazebo_envs" type="topic_resender.py" output="screen"/>
+  <node name="omni_base_control" pkg="gazebo_envs" type="omni_base_gazebo_control.py" output="screen"/>
+  <node name="tf_camera_connect" pkg="tf" type="static_transform_publisher" args="0 0 0 -1.5708 0 -1.5708 camera_link realsense_link 30"/>
+</launch>

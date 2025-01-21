@@ -1,0 +1,9 @@
+sensor_msgs/PointCloud2 point_cloud
+---
+std_msgs/Header header
+geometry_msgs/Point center
+geometry_msgs/Vector3 normal
+geometry_msgs/Point[] bounding_polygon
+
+#Lines should be returned as pair of points, thus, lines should always be a 2*n sized array
+#with n, the number of found lines

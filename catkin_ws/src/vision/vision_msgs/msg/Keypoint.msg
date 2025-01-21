@@ -1,0 +1,3 @@
+string keypoint_name
+geometry_msgs/Pose keypoint_coordinates
+float64 confidence

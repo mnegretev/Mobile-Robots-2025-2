@@ -1,0 +1,27 @@
+#List of known locations
+#Every location is defined by a tuple x,y,theta
+
+living_room:
+  - 10.04
+  - -1.86
+  - 3.14
+
+side_table:
+  - 2.0
+  - 2.0
+  - 3.14
+
+desk:
+  - 3.2
+  - 5.6
+  - -1.57
+
+entrance:
+  - 2.0
+  - 0.0
+  - 0.4
+  
+cupboard:
+  - 3.25
+  - 9.00
+  - -1.57

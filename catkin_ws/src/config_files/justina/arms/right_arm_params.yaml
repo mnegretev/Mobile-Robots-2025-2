@@ -1,0 +1,56 @@
+port: /dev/justinaRightArm
+baudrate: 1000000
+servo_arm_bits_per_radian:
+  - 1966.51847684
+  - 651.739491961
+  - 651.739491961
+  - 1966.51847684
+  - 651.739491961
+  - 651.739491961
+  - 651.739491961
+servo_arm_ids:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+servo_arm_zeros:
+  - 3789
+  - 1529
+  - 0
+  - 3513
+  - 2048
+  - 1843
+  - 1921
+servo_arm_directions:
+  - -1
+  - 1
+  - -1
+  - -1
+  - -1
+  - 1
+  - -1
+servo_gripper_bits_per_radian:
+  - 651.739491961
+  - 651.739491961
+servo_gripper_ids:
+  - 8
+  - 7
+servo_gripper_zeros:
+  - 502
+  - 1527
+servo_gripper_directions:
+  - 1
+  - -1
+joint_names:
+  - "ra_1_joint"
+  - "ra_2_joint"
+  - "ra_3_joint"
+  - "ra_4_joint"
+  - "ra_5_joint"
+  - "ra_6_joint"
+  - "ra_7_joint"
+  - "ra_grip_left"
+  - "ra_grip_right"

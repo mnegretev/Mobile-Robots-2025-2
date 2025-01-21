@@ -1,0 +1,3 @@
+string name
+---
+planning_msgs/Location location

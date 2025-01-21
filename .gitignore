@@ -1,0 +1,7 @@
+*~
+*.pyc
+*.user
+#*#
+*.bkp
+PushAllChanges.py
+PullAllChanges.py

@@ -1,0 +1,18 @@
+float64[] p1
+float64[] v1
+float64[] a1
+float64[] p2
+float64[] v2
+float64[] a2
+float64 duration             #Time in seconds to execute the trajectory
+float64 time_step            #Sampling time
+---
+trajectory_msgs/JointTrajectory trajectory #Polynomial trajectory
+
+# This service is intented to interpolate a trajectory using a polynomial
+# given an initial and final positions, velocities and accelerations.
+# The service only performs the interpolations and thus can be used to
+# get either cartesian or articular trajectories.
+# The joint names in trajectory message are not defined here and are
+# supposed to be set by the caller. This service only performs the
+# polynomial interpolation. 

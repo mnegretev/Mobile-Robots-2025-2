@@ -1,0 +1,12 @@
+vision_msgs/VisionObject recog_object                    
+---
+trajectory_msgs/JointTrajectory articular_trajectory
+bool graspable                               #graspable by the gripper
+float64 x_gripper			
+float64 y_gripper
+float64 z_gripper
+float64 roll_gripper
+float64 pitch_gripper
+float64 yaw_gripper
+
+

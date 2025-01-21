@@ -1,0 +1,9 @@
+int32 iterations
+sensor_msgs/PointCloud2 point_cloud  #If recognition is made only with RGB image, this is empty
+sensor_msgs/Image image              #If recognition is made with PointCloud, this is empty
+string name                          #Requested object's name
+sensor_msgs/Image obj_mask	      #binary image of object
+---
+vision_msgs/VisionObject recog_object
+sensor_msgs/Image image              #Althoug every object has its own point_cloud and image, this field
+                                     #is intended to show the recognized object in the original image. 

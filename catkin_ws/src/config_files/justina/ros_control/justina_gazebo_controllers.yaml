@@ -1,0 +1,97 @@
+/:
+  # Publish all joint states -----------------------------------
+  joint_state_controller:
+    type: joint_state_controller/JointStateController
+    publish_rate: 50
+
+  # Torso Position Controllers ---------------------------------------
+  torso_controller:
+    type: effort_controllers/JointPositionController
+    joint: spine_connect
+    pid: {p: 100.0, i: 0.0, d: 0.0}
+
+  # Head Position Controllers ---------------------------------------
+  head_pan_controller:
+    type: effort_controllers/JointPositionController
+    joint: head_pan
+    pid: {d: 0.0, i: 0.0, p: 5.0}
+  head_tilt_controller:
+    type: effort_controllers/JointPositionController
+    joint: head_tilt
+    pid: {d: 0.0, i: 0.0, p: 5.0}
+
+  # Left Arm Position Controllers ---------------------------------------
+  la_1_controller:
+    type: effort_controllers/JointPositionController
+    joint: la_1_joint
+    pid: {d: 4.64, i: 4.0200000000000005, p: 19.95}
+  la_2_controller:
+    type: effort_controllers/JointPositionController
+    joint: la_2_joint
+    pid: {d: 4.28, i: 6.1, p: 20.32}
+  la_3_controller:
+    type: effort_controllers/JointPositionController
+    joint: la_3_joint
+    pid: {d: 0.53, i: 5.0200000000000005, p: 10.169999999999998}
+  la_4_controller:
+    type: effort_controllers/JointPositionController
+    joint: la_4_joint
+    pid: {d: 1.02, i: 2.6900000000000004, p: 20.3}
+  la_5_controller:
+    type: effort_controllers/JointPositionController
+    joint: la_5_joint
+    pid: {d: 0.58, i: 8.459999999999999, p: 10.489999999999998}
+  la_6_controller:   
+    type: effort_controllers/JointPositionController
+    joint: la_6_joint
+    pid: {d: 0.6499999999999999, i: 5.63, p: 10.51}
+  la_7_controller:
+    type: effort_controllers/JointPositionController
+    joint: la_7_joint
+    pid: {d: 0.5599999999999999, i: 2.5200000000000005, p: 9.979999999999999}
+  la_grip_left_controller:
+    type: effort_controllers/JointPositionController
+    joint: la_grip_left
+    pid: {d: 0.48, i: 5.49, p: 20.55}
+  la_grip_right_controller:
+    type: effort_controllers/JointPositionController
+    joint: la_grip_right
+    pid: {d: 0.48, i: 11.32, p: 20.55}
+    
+  # Right Arm Position Controllers ---------------------------------------
+  ra_1_controller:
+    type: effort_controllers/JointPositionController
+    joint: ra_1_joint
+    pid: {d: 4.64, i: 4.0200000000000005, p: 19.95}
+  ra_2_controller:
+    type: effort_controllers/JointPositionController
+    joint: ra_2_joint
+    pid: {d: 4.28, i: 6.1, p: 20.32}
+  ra_3_controller:
+    type: effort_controllers/JointPositionController
+    joint: ra_3_joint
+    pid: {d: 0.53, i: 5.0200000000000005, p: 10.169999999999998}
+  ra_4_controller:
+    type: effort_controllers/JointPositionController
+    joint: ra_4_joint
+    pid: {d: 1.02, i: 2.6900000000000004, p: 20.3}
+  ra_5_controller:
+    type: effort_controllers/JointPositionController
+    joint: ra_5_joint
+    pid: {d: 0.58, i: 8.459999999999999, p: 10.489999999999998}
+  ra_6_controller:   
+    type: effort_controllers/JointPositionController
+    joint: ra_6_joint
+    pid: {d: 0.6499999999999999, i: 5.63, p: 10.51}
+  ra_7_controller:
+    type: effort_controllers/JointPositionController
+    joint: ra_7_joint
+    pid: {d: 0.5599999999999999, i: 2.5200000000000005, p: 9.979999999999999}
+  ra_grip_left_controller:
+    type: effort_controllers/JointPositionController
+    joint: ra_grip_left
+    pid: {d: 0.48, i: 5.49, p: 20.55}
+  ra_grip_right_controller:
+    type: effort_controllers/JointPositionController
+    joint: ra_grip_right
+    pid: {d: 0.48, i: 11.32, p: 20.55}

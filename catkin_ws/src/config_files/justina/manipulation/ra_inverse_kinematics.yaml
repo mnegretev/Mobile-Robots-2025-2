@@ -1,0 +1,10 @@
+joint_names:
+  - "ra_1_joint"
+  - "ra_2_joint"
+  - "ra_3_joint"
+  - "ra_4_joint"
+  - "ra_5_joint"
+  - "ra_6_joint"
+  - "ra_7_joint"
+  - "ra_grip_center_joint"
+max_iterations: 20

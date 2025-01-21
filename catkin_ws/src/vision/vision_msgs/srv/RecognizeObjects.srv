@@ -1,0 +1,9 @@
+bool save_files
+int32 iterations
+sensor_msgs/PointCloud2 point_cloud  #If recognition is made only with RGB image, this is empty
+sensor_msgs/Image image              #If recognition is made with PointCloud, this is empty
+sensor_msgs/Image mask
+---
+vision_msgs/VisionObject[] recog_objects
+sensor_msgs/Image image              #Althoug every object has its own point_cloud and image, this field
+                                     #is intended to show all recognized objects in only one image. 

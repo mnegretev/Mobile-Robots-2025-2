@@ -1,0 +1,6 @@
+devel/
+build/
+src/CMakeLists.txt
+.catkin_workspace
+*_solved.py
+*_solved.cpp

@@ -1,0 +1,10 @@
+<RCC>
+<qresource>
+    <file>images/btnUp.png</file>
+    <file>images/btnDown.png</file>
+    <file>images/btnLeft.png</file>
+    <file>images/btnRight.png</file>
+    <file>images/btnTurnLeft.png</file>
+    <file>images/btnTurnRight.png</file>
+</qresource>
+</RCC>

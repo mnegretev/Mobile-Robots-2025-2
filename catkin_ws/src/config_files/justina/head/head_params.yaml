@@ -1,0 +1,15 @@
+port: /dev/justinaHead
+baudrate: 1000000
+servo_ids:
+  - 0
+  - 2
+servo_zeros:
+  - 2000
+  - 2082
+servo_directions:
+  - 1
+  - 1
+joint_names:
+  - "head_pan"
+  - "head_tilt"
+max_speed: 60

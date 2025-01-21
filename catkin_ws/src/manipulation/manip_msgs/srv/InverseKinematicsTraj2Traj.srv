@@ -1,0 +1,10 @@
+trajectory_msgs/JointTrajectory cartesian_trajectory
+float64[] initial_guess
+---
+trajectory_msgs/JointTrajectory articular_trajectory
+
+# This service is inteded to calculate an articular trajectory
+# given a cartesian trajectory, i.e., an articular point is calculated
+# for every point in the cartesian trajectory.
+# Initial guess is a point in the articular space inteded to be used
+# in numeric solutions. 

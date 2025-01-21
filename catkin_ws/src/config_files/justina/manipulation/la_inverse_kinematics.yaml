@@ -1,0 +1,10 @@
+joint_names:
+  - "la_1_joint"
+  - "la_2_joint"
+  - "la_3_joint"
+  - "la_4_joint"
+  - "la_5_joint"
+  - "la_6_joint"
+  - "la_7_joint"
+  - "la_grip_center_joint"
+max_iterations: 20

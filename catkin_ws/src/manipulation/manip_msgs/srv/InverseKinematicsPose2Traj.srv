@@ -1,0 +1,27 @@
+float64 x
+float64 y
+float64 z
+float64 roll
+float64 pitch
+float64 yaw
+float64 duration
+float64 time_step
+float64[] initial_guess
+---
+trajectory_msgs/JointTrajectory articular_trajectory
+
+#Cartesian pose represents a position in a 6DOF space,
+#neverthless, arm is 7DOF. The IK algorithm is supossed to calculate the best elbow position
+#for the given cartesian pose.
+
+#Result is a trajectory in articular space
+
+#If goal pose is out of the workspace, a false should be returned when service is called.
+#Reachability of a given position can be determined by trying to calculate its inverse kinematics
+
+#If roll, pitch or yaw are NaN, the IK method is supposed to ignore such restriction, e.g., if
+#yaw is NaN, then the arm will try to reach the given xyz, roll and pitch, with the
+#necessary yaw to reach such configuration.
+
+# Initial guess is a point in the articular space inteded to be used
+# in numeric solutions. 
