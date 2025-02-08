@@ -63,6 +63,7 @@ public:
     ros::Subscriber subRecogSpeech;
     ros::Subscriber subObjectStatus;
 
+    ros::ServiceClient cltPlanPath;
     ros::ServiceClient cltLaIKPose2Pose;
     ros::ServiceClient cltRaIKPose2Pose;
     ros::ServiceClient cltLaIKPose2Traj;
@@ -123,6 +124,7 @@ public:
     void publish_fake_speech_recog(std::string text_to_say);
     void callback_recognized_speech(const hri_msgs::RecognizedSpeech::ConstPtr& msg);
 
+    bool call_plan_path(float start_x, float start_y, float goal_x, float goal_y);
     bool call_find_lines();
     bool call_find_horizontal_planes();
     bool call_train_object(std::string name);

@@ -387,7 +387,8 @@ void MainWindow::navBtnCalcPath_pressed()
             return;
         }
     }
-    qtRosNode->publish_goal_location(goalX, goalY, goalA);
+    //qtRosNode->publish_goal_location(goalX, goalY, goalA);
+    qtRosNode->call_plan_path(startX, startY, goalX, goalY);
 }
 
 void MainWindow::navBtnExecPath_pressed()
