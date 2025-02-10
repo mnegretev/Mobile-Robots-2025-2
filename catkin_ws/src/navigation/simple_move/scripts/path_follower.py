@@ -13,6 +13,7 @@ import rospy
 import tf
 import math
 import numpy
+import rospkg
 from std_msgs.msg import Bool
 from nav_msgs.msg import Path
 from nav_msgs.srv import GetPlan, GetPlanRequest
@@ -40,7 +41,7 @@ def calculate_control(robot_x, robot_y, robot_a, goal_x, goal_y, alpha, beta, v_
     # Remember to keep error angle in the interval (-pi,pi]
     # Return the tuple [v,w]
     #
-        
+
     return [v,w]
 
 def follow_path(path, alpha, beta, v_max, w_max):
@@ -60,11 +61,13 @@ def follow_path(path, alpha, beta, v_max, w_max):
     #     If dist to goal point is less than 0.3 (you can change this constant)
     #         Change goal point to the next point in the path
     #
-            
+    
     return
         
 
-def publish_twist(v,w):
+def publish_and_save_data(robot_x, robot_y, robot_a, goal_x, goal_y, v,w):
+    global nav_data
+    nav_data.append([robot_x, robot_y, robot_a, goal_x, goal_y, v, w])
     loop = rospy.Rate(20)
     msg = Twist()
     msg.linear.x = v
@@ -74,7 +77,9 @@ def publish_twist(v,w):
     
     
 def callback_global_goal(msg):
+    global nav_data
     print("Calculating path from robot pose to " + str([msg.pose.position.x, msg.pose.position.y]))
+    nav_data = []
     [robot_x, robot_y], robot_a = get_robot_pose()
     req = GetPlanRequest(goal=PoseStamped(pose=msg.pose))
     req.start.pose.position = Point(x=robot_x, y=robot_y)
@@ -95,8 +100,14 @@ def callback_global_goal(msg):
     follow_path([numpy.asarray([p.pose.position.x, p.pose.position.y]) for p in path.poses], alpha, beta, v_max, w_max)
     pub_cmd_vel.publish(Twist())
     pub_goal_reached.publish(True)
+    s = ""
+    for d in nav_data:
+        s += str(d[0]) +","+ str(d[1]) +","+ str(d[2]) +","+ str(d[3]) +","+ str(d[4]) +","+ str(d[5]) +","+ str(d[6]) + "\n"
+    f = open(data_file, "w")
+    f.write(s)
+    f.close()
     print("Global goal point reached")
-
+    
 def get_robot_pose():
     try:
         ([x, y, z], [qx,qy,qz,qw]) = listener.lookupTransform('map', 'base_link', rospy.Time(0))
@@ -105,8 +116,11 @@ def get_robot_pose():
         return numpy.asarray([0,0]),0
 
 def main():
-    global pub_cmd_vel, pub_goal_reached, loop, listener
+    global pub_cmd_vel, pub_goal_reached, loop, listener, data_file, nav_data
     print("PATH FOLLOWING - " + NAME)
+    rp = rospkg.RosPack()
+    data_file = rp.get_path('simple_move') + "/data/data.txt"
+    nav_data = []
     rospy.init_node("path_follower")
     rospy.Subscriber('/move_base_simple/goal', PoseStamped, callback_global_goal)
     pub_cmd_vel = rospy.Publisher('/cmd_vel', Twist, queue_size=10)

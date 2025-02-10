@@ -1,0 +1,8 @@
+geometry_msgs/PoseStamped start     # The start pose for the plan
+geometry_msgs/PoseStamped goal      # The final pose of the goal position
+float32 tolerance                   # If the goal is obstructed, how many meters the planner can 
+                                    # relax the constraint in x and y before failing.
+nav_msgs/OccupancyGrid grid_map     # Optional Occupancy Grid map for planning the path
+graph_msgs/GeometryGraph graph_map  # Optional Graph map for planning the path
+---
+nav_msgs/Path plan
