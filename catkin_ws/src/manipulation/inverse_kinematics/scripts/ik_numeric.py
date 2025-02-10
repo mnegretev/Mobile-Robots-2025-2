@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# MOBILE ROBOTS - FI-UNAM, 2024-2
+# MOBILE ROBOTS - FI-UNAM, 2025-2
 # INVERSE KINEMATICS USING NEWTON-RAPHSON
 #
 # Instructions:
