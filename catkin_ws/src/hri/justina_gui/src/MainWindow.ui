@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Mobile Robots - Martinez Manzo</string>
+   <string>Mobile Robots - Adrián Martínez Manzo</string>
   </property>
   <property name="styleSheet">
    <string notr="true">QGroupBox {
