@@ -11,10 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Mobile Robots - Carlos Eduardo Lujan Perez </string>
-=======
-   <string>Mobile Robots 20252 - FI UNAM</string>
->>>>>>> 80605af9a9978272eaf013d47b1ee71fea53af18
+   <string>Mobile Robots 2025-2 - Carlos Eduardo Lujan Perez</string>
   </property>
   <property name="styleSheet">
    <string notr="true">QGroupBox {
