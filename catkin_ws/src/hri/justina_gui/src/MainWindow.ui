@@ -7,11 +7,11 @@
     <x>0</x>
     <y>0</y>
     <width>680</width>
-    <height>483</height>
+    <height>482</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Mobile Robots 2025-2</string>
+   <string>Mobile Robots JUAN SALVADOR PACHECO JARILLO</string>
   </property>
   <property name="styleSheet">
    <string notr="true">QGroupBox {
