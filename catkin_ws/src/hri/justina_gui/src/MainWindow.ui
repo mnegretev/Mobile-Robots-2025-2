@@ -11,8 +11,9 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Mobile Robots 2025-2 - FI UNAM</string>
+   <string>Mobile Robots 2025-2 - JOSE SANTIAGO PEREZ RIZADA</string>
   </property>
+
   <property name="styleSheet">
    <string notr="true">QGroupBox {
     border: 1px solid gray;
