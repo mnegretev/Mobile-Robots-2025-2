@@ -46,6 +46,7 @@ def main():
         pub_cmd_vel.publish(msg_cmd_vel) 
         
         loop.sleep()
+    
 
 
 if __name__ == '__main__':
