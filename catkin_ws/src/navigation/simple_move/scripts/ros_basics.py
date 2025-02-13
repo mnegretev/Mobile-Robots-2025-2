@@ -22,7 +22,7 @@ def callback_scan(msg):
     # Set the 'obstacle_detected' variable with True or False, accordingly.
     #
     return
-n = int((msg.angle_max − msg.angle_min)/msg.angle_increment/2)
+n = int((msg.angle_max−msg.angle_min)/msg.angle_increment/2)
 obstacle_detected = msg.ranges[ n ] < 1.0
 
 def main():
