@@ -433,8 +433,6 @@ Visualization Manager:
         All Enabled: false
         base_link:
           Value: true
-        camera_link:
-          Value: false
         head_link1:
           Value: false
         head_link2:
@@ -471,8 +469,6 @@ Visualization Manager:
           Value: false
         odom:
           Value: false
-        realsense_link:
-          Value: true
         right_arm_grip_center:
           Value: false
         right_arm_grip_left:
@@ -512,9 +508,6 @@ Visualization Manager:
       Show Axes: true
       Show Names: false
       Tree:
-        camera_link:
-          realsense_link:
-            {}
         map:
           odom:
             base_link:
@@ -590,7 +583,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 12.375408172607422
+      Distance: 11.329120635986328
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -606,9 +599,9 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.0647954940795898
+      Pitch: 1.059795618057251
       Target Frame: <Fixed Frame>
-      Yaw: 0.20540763437747955
+      Yaw: 6.103592395782471
     Saved: ~
 Window Geometry:
   Displays:
