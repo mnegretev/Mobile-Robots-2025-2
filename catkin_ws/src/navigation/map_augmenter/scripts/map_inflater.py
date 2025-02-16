@@ -21,12 +21,12 @@ def get_inflated_map(static_map, inflation_cells):
     print("Inflating map by " + str(inflation_cells) + " cells")
     inflated = numpy.copy(static_map)
     [height, width] = static_map.shape
-for i in range(len(static_map)):
-    for j in range(len(static_map[0])):
-        if(static_map[i,j] == 100):
-            for k1 in range(-inflation_cells ,inflation_cells):
-                for k2 in range(-inflation_cells ,inflation_cells):
-                    inflated[i+k1,j+k2] = 100
+    for i in range(len(static_map)):
+        for j in range(len(static_map[0])):
+            if(static_map[i,j] == 100):
+                for k1 in range(-inflation_cells ,inflation_cells):
+                    for k2 in range(-inflation_cells ,inflation_cells):
+                        inflated[i+k1,j+k2] = 100
     return inflated
 
 def callback_inflated_map(req):
