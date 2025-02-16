@@ -433,6 +433,8 @@ Visualization Manager:
         All Enabled: false
         base_link:
           Value: true
+        camera_link:
+          Value: true
         head_link1:
           Value: false
         head_link2:
@@ -469,6 +471,8 @@ Visualization Manager:
           Value: false
         odom:
           Value: false
+        realsense_link:
+          Value: true
         right_arm_grip_center:
           Value: false
         right_arm_grip_left:
@@ -508,6 +512,9 @@ Visualization Manager:
       Show Axes: true
       Show Names: false
       Tree:
+        camera_link:
+          realsense_link:
+            {}
         map:
           odom:
             base_link:
