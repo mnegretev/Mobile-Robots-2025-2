@@ -26,7 +26,7 @@ for i in range(len(static_map)):
         if(static_map[i,j]==100):
             for k1 in range(−inflation_cells ,inflation_cells):
                 for k2 in range(−inflation_cells ,inflation_cells):
-                    inflated[i+k1,j+k2]=100
+                    inflated[i+k1,j+k2] = 100
     
     return inflated
 
