@@ -51,13 +51,14 @@ def brushfire(grid_map):
             if distances[i+k1, j+k2] == -1:
                 Q.put([i+k1, j+k2])
               #  distances[i+k1, j+k2] = d + 2 
-              #  distances[i+k1, j+k2] = d + math.sqrt(2.0)
-                distances[i+k1, j+k2] = d + max(abs(k1), abs(k2))
+                distances[i+k1, j+k2] = d + math.sqrt(2.0)
+              #  distances[i+k1, j+k2] = d + max(abs(k1), abs(k2))
               # orden 1 manhatan, 2 euclideana, 3 cheby
             else:
-                #distances[i+k1, j+k2] = min(distances[i+k1, j+k2], d+ 2)
-                #distances[i+k1, j+k2] = min(distances[i+k1, j+k2], d+ math.sqrt(2.0))
+                #distances[i+k1, j+k2] = min(distances[i+k1, j+k2], d + 2)
+                #distances[i+k1, j+k2] = min(distances[i+k1, j+k2], d + math.sqrt(2.0))
                 distances[i+k1, j+k2] = min(distances[i+k1, j+k2], d + max(abs(k1), abs(k2)))
+              # orden 1 euclideana,2 manhatan, 3 cheby nota, si utilizas una descomentas la otra
     return distances
 
 def find_maxima(distances):
