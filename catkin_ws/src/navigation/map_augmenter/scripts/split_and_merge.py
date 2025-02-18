@@ -75,7 +75,7 @@ def merge(lines, rho_tol, theta_tol):
         else:
             new_lines.append([rho1, theta1, xm1, ym1, length1])
             new_lines.append([rho2, theta2, xm2, ym2, length2])
-    return new_line
+    return new_lines
             
 def split_and_merge(points, threshold, min_points, rho_tol, theta_tol):
     lines = split(points, threshold, min_points)
