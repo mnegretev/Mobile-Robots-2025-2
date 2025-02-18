@@ -97,7 +97,8 @@ def rrt(start_x, start_y, goal_x, goal_y, grid_map, epsilon, max_attempts):
                 goal_node.parent = new_node
 
         max_attempts -= 1
-
+	#epsilon es un parametro que te permite definir la distancia al sig nodo
+	#el numero de intentos no solo esta definido por la capacidad computacional
         
     path = []
     while goal_node.parent is not None:
