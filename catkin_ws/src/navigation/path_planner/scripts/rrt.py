@@ -19,7 +19,7 @@ from nav_msgs.msg import Path
 from nav_msgs.srv import *
 from collections import deque
 
-NAME = "FULL NAME"
+NAME = "ADRIAN MARTINEZ MANZO"
 
 class Node:
     def __init__(self, x, y, parent=None):
@@ -86,8 +86,16 @@ def rrt(start_x, start_y, goal_x, goal_y, grid_map, epsilon, max_attempts):
     # Goal node is also already created.
     # Return both, the tree and the path
     #
-    
-        
+    while goal_node.parent is None and max_attempts > 0:
+        [x, y] = get_random_q(grid_map)
+        nearest_node = get_nearest_node(tree, x, y)
+        new_node = get_new_node(nearest_node, x, y, epsilon)
+        if not check_collision(nearest_node, new_node, grid_map):
+            nearest_node.children.append(new_node)
+            if not check_collision(new_node, goal_node, grid_map):
+                new_node.children.append(goal_node)
+                goal_node.parent = new_node
+        max_attempts -= 1
     path = []
     while goal_node.parent is not None:
         path.insert(0, [goal_node.x, goal_node.y])
@@ -131,23 +139,26 @@ def get_inflated_map():
 
 def callback_rrt(req):
     global msg_path, msg_tree
-    grid_map = get_inflated_map()
-    [sx, sy] = [req.start.pose.position.x, req.start.pose.position.y]
-    [gx, gy] = [req.goal .pose.position.x, req.goal .pose.position.y]
-    epsilon = rospy.get_param("~epsilon", 1.0)
-    max_attempts = rospy.get_param("~max_n", 100)
-    print("Coordenadas "+str([gx,gy])+" with e="+str(epsilon)+" and "+str(max_attempts)+" attempts.")
-    start_time = rospy.Time.now()
-    tree,path = rrt(sx, sy, gx, gy, grid_map, epsilon, max_attempts)
-    end_time = rospy.Time.now()
-    if len(path) > 0:
-        print("Path planned after " + str(1000*(end_time - start_time).to_sec()) + " ms")
-    else:
-        print("Cannot plan path from  " + str([sx, sy])+" to "+str([gx, gy]) + " :'(")
-    msg_tree = get_tree_marker(tree)
-    msg_path.poses = []
-    for [x,y] in path:
-        msg_path.poses.append(PoseStamped(pose=Pose(position=Point(x=x, y=y))))
+    for test_max_n in [0.1, 1, 10]:
+        for test_epsilon in [0.5, 1, 2]:
+            for repetitions in range(5):
+                grid_map = get_inflated_map()
+                [sx, sy] = [req.start.pose.position.x, req.start.pose.position.y]
+                [gx, gy] = [req.goal .pose.position.x, req.goal .pose.position.y]
+                epsilon = rospy.get_param("~epsilon", 1.0) * test_epsilon
+                max_attempts = rospy.get_param("~max_n", 100) * test_max_n
+                print("Coordenadas "+str([gx,gy])+" with e="+str(epsilon)+" and "+str(max_attempts)+" attempts.")
+                start_time = rospy.Time.now()
+                tree,path = rrt(sx, sy, gx, gy, grid_map, epsilon, max_attempts)
+                end_time = rospy.Time.now()
+                if len(path) > 0:
+                    print("Path planned after " + str(1000*(end_time - start_time).to_sec()) + " ms")
+                else:
+                    print("Cannot plan path from  " + str([sx, sy])+" to "+str([gx, gy]) + " :'(")
+                msg_tree = get_tree_marker(tree)
+                msg_path.poses = []
+                for [x,y] in path:
+                    msg_path.poses.append(PoseStamped(pose=Pose(position=Point(x=x, y=y))))
     return GetPlanResponse(msg_path)
 
 def main():
