@@ -19,7 +19,7 @@ from nav_msgs.msg import Path
 from nav_msgs.srv import *
 from collections import deque
 
-NAME = "FULL NAME"
+NAME = "Luis Gerardo Arellano Cortés"
 
 class Node:
     def __init__(self, x, y, parent=None):
@@ -86,7 +86,16 @@ def rrt(start_x, start_y, goal_x, goal_y, grid_map, epsilon, max_attempts):
     # Goal node is also already created.
     # Return both, the tree and the path
     #
-    
+    while goal_node.parent is None and max_attempts > 0:
+        [x,y] = get_random_q(grid_map)
+        nearest_node = get_nearest_node(tree, x, y)
+        new_node = get_new_node(nearest_node , x, y, epsilon)
+        if not check_collision(nearest_node , new_node, grid_map):
+            nearest_node.children.append(new_node)
+            if not check_collision(new_node, goal_node, grid_map):
+                new_node.children.append(goal_node)
+                goal_node.parent = new_node
+            max_attempts -=1
         
     path = []
     while goal_node.parent is not None:
