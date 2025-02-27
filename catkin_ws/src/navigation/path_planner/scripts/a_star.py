@@ -56,7 +56,7 @@ def a_star(start_r, start_c, goal_r, goal_c, grid_map, cost_map, use_diagonals):
             if g < g_values[r,c]:
                 g_values[r,c] = g
                 f_values[r,c] = f
-                parent_nodes[r,c]:
+                parent_nodes[r,c] = [row, col]
             if not in_open_list[r,c]:
                 in_open_list[r,c] = True
                 headpq.heappush(open_list, (f, [r,c]))
