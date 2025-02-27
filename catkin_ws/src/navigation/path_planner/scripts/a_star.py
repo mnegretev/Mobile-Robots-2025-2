@@ -48,7 +48,7 @@ def a_star(start_r, start_c, goal_r, goal_c, grid_map, cost_map, use_diagonals):
         in_closed_list [row, col] = True
         for [r,c, cost] in adjacents:
             r,c = r + row, c + col
-            if grid_map [r,c] > 40 or grid_map[r,c] < 0 or in_clodsed_list[r,c]:
+            if grid_map [r,c] > 40 or grid_map[r,c] < 0 or in_clodse_list[r,c]:
                 continue
             g = g_values [row, col] + cost + cost_map [r][c]
             h = math_sqrt((goal_r-r)**2 + (goal_c - c)**2)
