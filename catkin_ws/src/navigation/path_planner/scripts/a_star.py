@@ -47,7 +47,7 @@ def a_star(start_r, start_c, goal_r, goal_c, grid_map, cost_map, use_diagonals):
         [row, col] = heapq.heappop(open_list) [1]
         in_closed_list [row, col] = True
         for [r,c, cost] in adjacents:
-            r,c = r + ro, c + col
+            r,c = r + row, c + col
             if grid_map [r,c] > 40 or grid_map[r,c] < 0 or in_clodsed_list[r,c]:
                 continue
             g = g_values [row, col] + cost + cost_map [r][c]
