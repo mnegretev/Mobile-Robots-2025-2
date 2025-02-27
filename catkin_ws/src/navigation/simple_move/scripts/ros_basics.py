@@ -24,7 +24,7 @@ def callback_scan(msg):
     #
     n = ((msg.angle_max - msg.angle_min)/msg.angle_increment/2)
     obstacle_detected = msg.ranges [n] < 1.0
-        return
+    return
 
 def main():
     print("ROS BASICS - " + NAME)
