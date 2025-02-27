@@ -20,7 +20,7 @@ from collections import deque
 
 NAME = "Luján Pérez Carlos Eduardo"
     
-def a_star(start_r, start_c, goal_r, goal_c, grid_map, cost_map, use_diagonals):
+def a_star(startr, startc, goalr, goalc, grid_map, cost_map, use_diagonals):
     in_open_list   = numpy.full(grid_map.shape, False)
     in_closed_list = numpy.full(grid_map.shape, False)
     g_values       = numpy.full(grid_map.shape, float("inf"))
@@ -62,9 +62,9 @@ def a_star(start_r, start_c, goal_r, goal_c, grid_map, cost_map, use_diagonals):
                 heapq.heappush(open_list, (f, [r, c]))
                 
     path = []
-    while parent_nodes[goal_r, goal_c][0] != -1:
-        path.insert(0, [goal_r, goal_c])
-        [goal_r, goal_c] = parent_nodes[goal_r, goal_c]
+    while parent_nodes[goalr, goalc][0] != -1:
+        path.insert(0, [goalr, goalc])
+        [goalr, goalc] = parent_nodes[goalr, goalc]
     return path
 
 def get_maps():
