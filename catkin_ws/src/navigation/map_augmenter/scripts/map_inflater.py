@@ -29,12 +29,12 @@ def get_inflated_map(static_map, inflation_cells):
     # Consider as occupied cells all cells with an occupation value greater than 50
     #
     for i in range(len(static_map)):
-    for j in range(len(static_map[i])):
-        if(static_map[i][j] == 100):
-            for k in range(-inflation_cells, inflation_cells):
-                for l in range(-inflation_cells, inflation_cells):
-                    inflated[i+k][j+l] = 100
-
+        for j in range(len(static_map[i])):
+            if(static_map[i][j] == 100):
+                for k in range(-inflation_cells, inflation_cells):
+                     for l in range(-inflation_cells, inflation_cells):
+                              inflated[i+k][j+l] = 100           
+                                             
     return inflated
 
 def callback_inflated_map(req):
