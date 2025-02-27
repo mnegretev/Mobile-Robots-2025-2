@@ -18,9 +18,9 @@ from nav_msgs.msg import Path
 from nav_msgs.srv import *
 from collections import deque
 
-NAME = "Xavier Suástegui"
+NAME = "XAVIER SUÁSTEGUI RODRÍGUEZ"
     
-def a_star(start_r, start_c, goal_r, goal_c, grid_map, cost_map, use_diagonals):
+def a_star(startr, startc, goalr, goalc, grid_map, cost_map, use_diagonals):
     in_open_list   = numpy.full(grid_map.shape, False)
     in_closed_list = numpy.full(grid_map.shape, False)
     g_values       = numpy.full(grid_map.shape, float("inf"))
@@ -38,33 +38,33 @@ def a_star(start_r, start_c, goal_r, goal_c, grid_map, cost_map, use_diagonals):
     # Map is considered to be a 2D array and start and goal positions
     # are given as row-col pairs
     #
-    headpq.heappush(open_list, (0, [start_r, start_c]))
-    in_open_list[start_r, start_c] = True
-    g_values [start_r, start_c] = 0
-    [row, col] = [start_r, start_c]
-    
-    while len(open_list) > 0 and [row, col] != [goal_r, goal_c]:
-        [row, col] = headpq.headpop(open_list)[1]
-        in_closed_list[row,col] = True
-        for [r,c, cost] in adjacents:
-            r,c = r + row, c + col
-            if grid_map[r,c] > 40 or grid_map[r,c] < 0 or in_closed_list[r,c]:
+    heapq.heappush(open_list, (0, [startr, startc]))
+    in_open_list[startr, startc] = True
+    g_values[startr, startc] = 0
+    [row, col] = [startr, startc]
+
+    while len(open_list) > 0 and [row, col] != [goalr, goalc]:
+        [row, col] = heapq.heappop(open_list)[1]
+        in_closed_list[row, col] = True
+        for [r, c, cost] in adjacents:
+            r, c = r + row, c + col
+            if grid_map[r, c] > 40 or grid_map[r, c] < 0 or in_closed_list[r, c]:
                 continue
             g = g_values[row, col] + cost + cost_map[r][c]
-            h = math.sqrt((goal_r-r)**2 + (goal_c - c)**2)
+            h = math.sqrt((goalr - r) ** 2 + (goalc - c) ** 2)
             f = g + h
-            if g < g_values[r,c]:
-                g_values[r,c] = g
-                f_values[r,c] = f
-                parent_nodes[r,c] = [row, col]
-            if not in_open_list[r,c]:
-                in_open_list[r,c] = True
-                headpq.heappush(open_list, (f, [r,c]))
-    
+            if g < g_values[r, c]:
+                g_values[r, c] = g
+                f_values[r, c] = f
+                parent_nodes[r, c] = [row, col]
+            if not in_open_list[r, c]:
+                in_open_list[r, c] = True
+                heapq.heappush(open_list, (f, [r, c]))
+                
     path = []
-    while parent_nodes[goal_r, goal_c][0] != -1:
-        path.insert(0, [goal_r, goal_c])
-        [goal_r, goal_c] = parent_nodes[goal_r, goal_c]
+    while parent_nodes[goalr, goalc][0] != -1:
+        path.insert(0, [goalr, goalc])
+        [goalr, goalc] = parent_nodes[goalr, goalc]
     return path
 
 def get_maps():
@@ -132,4 +132,3 @@ if __name__ == '__main__':
         main()
     except rospy.ROSInterruptException:
         pass
-    
