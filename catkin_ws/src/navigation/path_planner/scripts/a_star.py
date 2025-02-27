@@ -18,7 +18,7 @@ from nav_msgs.msg import Path
 from nav_msgs.srv import *
 from collections import deque
 
-NAME = "FULL NAME"
+NAME = "ADRIAN MARTINEZ MANZO"
     
 def a_star(start_r, start_c, goal_r, goal_c, grid_map, cost_map, use_diagonals):
     in_open_list   = numpy.full(grid_map.shape, False)
@@ -38,7 +38,29 @@ def a_star(start_r, start_c, goal_r, goal_c, grid_map, cost_map, use_diagonals):
     # Map is considered to be a 2D array and start and goal positions
     # are given as row-col pairs
     #
-    
+    heapq.heappush(open_list, (0, [start_r, start_c]))
+    in_open_list[start_r, start_c] = True
+    g_values [start_r, start_c] = 0
+    [row, col] = [start_r, start_c]
+
+    while len(open_list) > 0 and [row, col] != [goal_r, goal_c]:
+        [row, col] = heapq.heappop(open_list)[1]
+        in_closed_list[row, col] = True
+        for [r, c, cost] in adjacents:
+            r, c = r + row, c + col
+            if grid_map[r, c] > 40 or grid_map[r, c] < 0 or in_closed_list[r, c]:
+                continue
+            g = g_values[row, col] + cost + cost_map[r][c]
+            h = math.sqrt((goal_r-r)**2 + (goal_c - c)**2)
+            f = g + h
+            if g < g_values[r, c]:
+                g_values[r, c] = g
+                f_values[r, c] = f
+                parent_nodes[r, c] = [row, col]
+            if not in_open_list[r, c]:
+                in_open_list[r, c] = True
+                heapq.heappush(open_list, (f, [r,c]))
+
     path = []
     while parent_nodes[goal_r, goal_c][0] != -1:
         path.insert(0, [goal_r, goal_c])
@@ -75,18 +97,28 @@ def callback_a_star(req):
     [sx, sy] = [req.start.pose.position.x, req.start.pose.position.y]
     [gx, gy] = [req.goal .pose.position.x, req.goal .pose.position.y]
     [zx, zy] = [s_map.info.origin.position.x, s_map.info.origin.position.y]
-    use_diagonals = rospy.get_param("~diagonals", True)
-    print("Planning path by A* from " + str([sx, sy])+" to "+str([gx, gy]))
-    start_time = rospy.Time.now()
-    path = a_star(int((sy-zy)/res), int((sx-zx)/res), int((gy-zy)/res), int((gx-zx)/res), inflated_map, cost_map, use_diagonals)
-    end_time = rospy.Time.now()
-    if len(path) > 0:
-        print("Path planned after " + str(1000*(end_time - start_time).to_sec()) + " ms")
-    else:
-        print("Cannot plan path from  " + str([sx, sy])+" to "+str([gx, gy]) + " :'(")
-    msg_path.poses = []
-    for [r,c] in path:
-        msg_path.poses.append(PoseStamped(pose=Pose(position=Point(x=(c*res + zx), y=(r*res + zy)))))
+    # Try with and without diagonals
+    for use_diag in [True, False]:
+        use_diagonals = use_diag
+        avg_time = 0
+        count = 0
+        for i in range(30):
+            #print("Planning path by A* from " + str([sx, sy])+" to "+str([gx, gy]))
+            start_time = rospy.Time.now()
+            path = a_star(int((sy-zy)/res), int((sx-zx)/res), int((gy-zy)/res), int((gx-zx)/res), inflated_map, cost_map, use_diagonals)
+            end_time = rospy.Time.now()
+            if len(path) > 0:
+                #print("Path planned after " + str(1000*(end_time - start_time).to_sec()) + " ms")
+                avg_time += 1000*(end_time - start_time).to_sec()
+            else:
+                print("Cannot plan path from  " + str([sx, sy])+" to "+str([gx, gy]) + " :'(")
+                break
+            msg_path.poses = []
+            for [r,c] in path:
+                msg_path.poses.append(PoseStamped(pose=Pose(position=Point(x=(c*res + zx), y=(r*res + zy)))))
+            count += 1
+        avg_time = avg_time / count
+        print(f"Averge time: {avg_time}[ms] | Diagonals: {use_diag}")
     return GetPlanResponse(msg_path)
 
 def main():
