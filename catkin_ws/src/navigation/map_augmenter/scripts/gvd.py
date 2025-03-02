@@ -50,11 +50,11 @@ def brushfire(grid_map):
         for k1, k2 in offsets_8:
             if distances[i+k1, j+k2] == -1:
                 Q.put([i+k1, j+k2])
-               # distances[i+k1, j+k2] = d + 2
-                distances[i+k1, j+k2] = d + math.sqrt(2.0)
+                distances[i+k1, j+k2] = d + 2
+                #distances[i+k1, j+k2] = d + math.sqrt(2.0)
             else:
-                distances[i+k1, j+k2] = min(distances[i+k1, j+k2], d+ 2)
-                #distances[i+k1, j+k2] = min(distances[i+k1, j+k2], d+ math.sqrt(2.0))
+                #distances[i+k1, j+k2] = min(distances[i+k1, j+k2], d+ 2)
+                distances[i+k1, j+k2] = min(distances[i+k1, j+k2], d+ math.sqrt(2.0))
     return distances
 
 def find_maxima(distances):
@@ -85,7 +85,7 @@ def main():
     global map_info, voronoi_map, distances
     print("GENERALIZED VORONOI DIAGRAMS - " + NAME)
     rospy.init_node("gvd")
-    pub_map  = rospy.Publisher("/voronoi", OccupancyGrid, queue_size=10)
+    pub_map = rospy.Publisher("/voronoi", OccupancyGrid, queue_size=10)
     sub_point= rospy.Subscriber("/clicked_point", PointStamped, callback_point_stamped)
     rospy.wait_for_service('/inflated_map')
     grid_map = rospy.ServiceProxy("/inflated_map", GetMap)().map
