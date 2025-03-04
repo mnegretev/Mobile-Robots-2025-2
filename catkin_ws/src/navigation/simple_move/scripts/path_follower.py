@@ -64,15 +64,15 @@ def follow_path(path, alpha, beta, v_max, w_max):
     #         Change goal point to the next point in the path
     #
     idx = 0
-    pg = path[idx]
-    pr,robot_a = get_robot_pose()
-    while numpy.linalg.norm(path[-1]-pr)>0.1 and not rospy.is_shutdown():
-    	v,w = calculate_control(pr[0],pr[1],robot_a,pg[0],pg[1],alpha,beta,v_max,w_max)
-    	publish_and_save_data(pr[0], pr[1], robot_a, pg[0], pg[1],v,w)
-    	pr,robot_a=get_robot_pose()
-    	if numpy.linalg.norm(pg-pr)<0.3:
-    		idx=min(idx+1,len(path)-1)
-    		pg = path[idx]
+    Pg = path[idx]
+    Pr,robot_a = get_robot_pose()
+    while numpy.linalg.norm(path[-1]-Pr)>0.1 and not rospy.is_shutdown():
+    	v,w = calculate_control(Pr[0], Pr[1], robot_a, Pg[0], Pg[1], alpha, beta, v_max, w_max)
+    	publish_twist(v,w)
+    	Pr, robot_a = get_robot_pose()
+    	if numpy.linalg.norm(Pg - Pr) < 0.3:
+    		idx = min(idx+1, len(path)-1)
+    		Pg = path[idx]
     return
         
 
