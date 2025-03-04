@@ -17,7 +17,7 @@ from sensor_msgs.msg   import LaserScan
 from geometry_msgs.msg import Twist, Point
 from visualization_msgs.msg import Marker
 
-NAME = "WRITE HERE YOUR FULL NAME"
+NAME = "JOSE AUGUSTO ARENAS HERNANDEZ"
 
 def adjust_line(points):
     [xm,ym] = numpy.mean(points, 0)
@@ -42,9 +42,16 @@ def split(points, threshold, min_points):
     # Implement the 'split' part of the split and merge algorithm for finding lines.
     # Implement the recursive method of the algorithm. 
     #
-    
+    if len (points) < min_points:
+        return lines
+    rho, theta, xm, ym, length = adjust_line(points)
+    idx, dist = find_farthest_point(points, rho, theta)
+    if dist < threshold:
+        return [[rho, theta, xm, ym, length]]
+    lines1 = split(points [0:idx], threshold, min_points)
+    lines2 = split(points [idx+1:len(points)], threshold, min_points)
+    lines  = lines1 + lines2
     return lines
-
 
 def merge(lines, rho_tol, theta_tol):
     new_lines = []
@@ -54,7 +61,18 @@ def merge(lines, rho_tol, theta_tol):
     # Two segments are merged into one if rho and theta differences
     # are both smaller than a tolerance.
     #
-    
+    if len(lines) < 2:
+        return lines
+    for i in range(1, len(lines)):
+        rhol, thetal, xml, yml, length1 = lines[i]
+        rho2, theta2, xm2, ym2, length2 = lines[i-1]
+        e_rho   = abs((rhol - rho2)/min(rhol, rho2))
+        e_theta = abs(thetal - theta2)
+        if e_rho < rho_tol and e_theta < theta_tol:
+            new_lines.append([(rhol+rho2)/2, (thetal+theta2)/2, (xml+xm2)/2, (yml+ym2)/2, length1+length2])
+        else:
+            new_lines.append([rhol, thetal, xml, yml, length1])
+            new_lines.append([rho2, theta2, xm2, ym2, length2])               
     return new_lines
             
 def split_and_merge(points, threshold, min_points, rho_tol, theta_tol):
