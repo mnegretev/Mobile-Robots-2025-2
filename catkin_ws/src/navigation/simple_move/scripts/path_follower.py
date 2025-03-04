@@ -20,7 +20,7 @@ from nav_msgs.srv import GetPlan, GetPlanRequest
 from navig_msgs.srv import ProcessPath, ProcessPathRequest
 from geometry_msgs.msg import Twist, PoseStamped, Pose, Point
 
-NAME = "LUJAN PEREZ CARLOS EDUARDO"
+NAME = "lujan perez carlos eduardo"
 
 pub_goal_reached = None
 pub_cmd_vel = None
@@ -32,6 +32,7 @@ def calculate_control(robot_x, robot_y, robot_a, goal_x, goal_y, alpha, beta, v_
     #
     # TODO:
     # Implement the control law given by:
+    #
     e_a = math.atan2(goal_y-robot_y,goal_x-robot_x)-robot_a
     e_a = (e_a+math.pi)%(2*math.pi)-math.pi
     v = v_max*math.exp(-e_a*e_a/alpha)
@@ -42,6 +43,7 @@ def calculate_control(robot_x, robot_y, robot_a, goal_x, goal_y, alpha, beta, v_
     # Remember to keep error angle in the interval (-pi,pi]
     # Return the tuple [v,w]
     #
+
     return [v,w]
 
 def follow_path(path, alpha, beta, v_max, w_max):
@@ -146,4 +148,5 @@ if __name__ == '__main__':
         main()
     except rospy.ROSInterruptException:
         pass
+    
     
