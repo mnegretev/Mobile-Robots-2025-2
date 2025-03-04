@@ -33,6 +33,8 @@ def calculate_control(robot_x, robot_y, robot_a, goal_x, goal_y, alpha, beta, v_
     # TODO:
     # Implement the control law given by:
     error_a = math.atan2(goal_y - robot_y, goal_x - robot_x) - robot_a
+    # Ajuste del error angular al rango [-pi, pi]
+    error_a = (error_a + math.pi) % (2*math.pi) - math.pi
     v = v_max*math.exp(-error_a*error_a/alpha)
     w = w_max*(2/(1 + math.exp(-error_a/beta)) - 1)
     #
@@ -41,7 +43,6 @@ def calculate_control(robot_x, robot_y, robot_a, goal_x, goal_y, alpha, beta, v_
     # Remember to keep error angle in the interval (-pi,pi]
     # Return the tuple [v,w]
     #
-
     return [v,w]
 
 def follow_path(path, alpha, beta, v_max, w_max):
@@ -66,7 +67,7 @@ def follow_path(path, alpha, beta, v_max, w_max):
     Pr, robot_a = get_robot_pose()
     while numpy.linalg.norm(path[-1] - Pr) > 0.1 and not rospy.is_shutdown():
         v,w = calculate_control(Pr[0], Pr[1], robot_a, Pg[0], Pg[1], alpha, beta, v_max, w_max)
-        publish_twist(v,w)
+        publish_and_save_data(Pr[0], Pr[1], robot_a, Pg[0], Pg[1], v, w)
         Pr, robot_a = get_robot_pose()
         if numpy.linalg.norm(Pg - Pr) < 0.3:
             idx = min(idx+1, len(path)-1)
