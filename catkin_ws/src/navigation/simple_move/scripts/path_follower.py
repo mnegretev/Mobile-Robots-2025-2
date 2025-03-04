@@ -20,7 +20,7 @@ from nav_msgs.srv import GetPlan, GetPlanRequest
 from navig_msgs.srv import ProcessPath, ProcessPathRequest
 from geometry_msgs.msg import Twist, PoseStamped, Pose, Point
 
-NAME = "FULL NAME"
+NAME = "Lujan Perez Carlos Eduardo"
 
 pub_goal_reached = None
 pub_cmd_vel = None
@@ -33,8 +33,8 @@ def calculate_control(robot_x, robot_y, robot_a, goal_x, goal_y, alpha, beta, v_
     # TODO:
     # Implement the control law given by:
     #
-    # v = v_max*math.exp(-error_a*error_a/alpha)
-    # w = w_max*(2/(1 + math.exp(-error_a/beta)) - 1)
+    v = v_max*math.exp(-error_a*error_a/alpha)
+    w = w_max*(2/(1 + math.exp(-error_a/beta)) - 1)
     #
     # where error_a is the angle error
     # and v_max, w_max, alpha and beta, are tunning constants.
@@ -51,17 +51,27 @@ def follow_path(path, alpha, beta, v_max, w_max):
     # Path is given as a sequence of points [[x0,y0], [x1,y1], ..., [xn,yn]]
     # You can use the following steps to perform the path tracking:
     #
-    # Set goal point as the first point of the path
-    # Get robot position with Pr, robot_a = get_robot_pose()
+    Set goal point as the first point of the path
+    Get robot position with Pr, robot_a = get_robot_pose()
     #
-    # WHILE distance to last point > tol and not rospy.is_shutdown() 
-    #     Calculate control signals v and w
-    #     Publish the control signals with the function publish_twist()
-    #     Get robot position
-    #     If dist to goal point is less than 0.3 (you can change this constant)
-    #         Change goal point to the next point in the path
+    WHILE distance to last point > tol and not rospy.is_shutdown() 
+        Calculate control signals v and w
+        Publish the control signals with the function publish_twist()
+        Get robot position
+        If dist to goal point is less than 0.3 (you can change this constant)
+            Change goal point to the next point in the path
     #
-    
+    id_x = 0
+    Pg = path[id_x]
+    Pr, robot_a = get_robot_pose()
+    while numpy.linalg.norm(path[-1] - Pr) > 0.1 and not rospy.is_shutdown():
+        v, w = calculate_control(Pr[0], Pr[1], robot_a, Pg[0], Pg[1], alpha, beta, v_max, w_max)
+        publish_twist(v, w)
+        Pr, robot_a = get_robot_pose()
+        if numpy.linalg.norm(Pg - Pr) < 0.3:
+            id_x = min(id_x + 1, len(path) - 1)
+            Pg = path[id_x]
+
     return
         
 
