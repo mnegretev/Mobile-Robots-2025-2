@@ -97,28 +97,18 @@ def callback_a_star(req):
     [sx, sy] = [req.start.pose.position.x, req.start.pose.position.y]
     [gx, gy] = [req.goal .pose.position.x, req.goal .pose.position.y]
     [zx, zy] = [s_map.info.origin.position.x, s_map.info.origin.position.y]
-    # Try with and without diagonals
-    for use_diag in [True, False]:
-        use_diagonals = use_diag
-        avg_time = 0
-        count = 0
-        for i in range(30):
-            #print("Planning path by A* from " + str([sx, sy])+" to "+str([gx, gy]))
-            start_time = rospy.Time.now()
-            path = a_star(int((sy-zy)/res), int((sx-zx)/res), int((gy-zy)/res), int((gx-zx)/res), inflated_map, cost_map, use_diagonals)
-            end_time = rospy.Time.now()
-            if len(path) > 0:
-                #print("Path planned after " + str(1000*(end_time - start_time).to_sec()) + " ms")
-                avg_time += 1000*(end_time - start_time).to_sec()
-            else:
-                print("Cannot plan path from  " + str([sx, sy])+" to "+str([gx, gy]) + " :'(")
-                break
-            msg_path.poses = []
-            for [r,c] in path:
-                msg_path.poses.append(PoseStamped(pose=Pose(position=Point(x=(c*res + zx), y=(r*res + zy)))))
-            count += 1
-        avg_time = avg_time / count
-        print(f"Averge time: {avg_time}[ms] | Diagonals: {use_diag}")
+    use_diagonals = rospy.get_param("~diagonals", True)
+    print("Planning path by A* from " + str([sx, sy]) + " to " + str([gx, gy]))
+    start_time = rospy.Time.now()
+    path = a_star(int((sy-zy)/res), int((sx-zx)/res), int((gy-zy)/res), int((gx-zx)/res), inflated_map, cost_map, use_diagonals)
+    end_time = rospy.Time.now()
+    if len(path) > 0:
+        print("Path planned after " + str(1000*(end_time - start_time).to_sec()) + " ms")
+    else:
+        print("Cannot plan path from  " + str([sx, sy])+" to "+str([gx, gy]) + " :'(")
+    msg_path.poses = []
+    for [r,c] in path:
+        msg_path.poses.append(PoseStamped(pose=Pose(position=Point(x=(c*res + zx), y=(r*res + zy)))))
     return GetPlanResponse(msg_path)
 
 def main():
