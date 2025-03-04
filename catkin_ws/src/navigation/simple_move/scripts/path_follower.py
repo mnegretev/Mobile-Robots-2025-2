@@ -20,7 +20,7 @@ from nav_msgs.srv import GetPlan, GetPlanRequest
 from navig_msgs.srv import ProcessPath, ProcessPathRequest
 from geometry_msgs.msg import Twist, PoseStamped, Pose, Point
 
-NAME = "FULL NAME"
+NAME = "Juan Antonio Mancilla Flores"
 
 pub_goal_reached = None
 pub_cmd_vel = None
@@ -42,6 +42,14 @@ def calculate_control(robot_x, robot_y, robot_a, goal_x, goal_y, alpha, beta, v_
     # Return the tuple [v,w]
     #
 
+    error_a = math.atan2(goal_y - robot_y, goal_x - robot_x) - robot_a
+    error_a = (error_a + math.pi) % (2 * math.pi) - math.pi
+
+
+    v = v_max * math.exp(-error_a * error_a / alpha)
+    w = w_max*(2 / (1 + math.exp(-error_a / beta)) - 1)
+    
+
     return [v,w]
 
 def follow_path(path, alpha, beta, v_max, w_max):
@@ -61,20 +69,49 @@ def follow_path(path, alpha, beta, v_max, w_max):
     #     If dist to goal point is less than 0.3 (you can change this constant)
     #         Change goal point to the next point in the path
     #
+
+    idx = 0
+    Pg = path[idx]
+    Pr, robot_a = get_robot_pose()
+
+    while numpy.linalg.norm(path[-1] - Pr) > 0.1 and not rospy.is_shutdown():
+        v, w = calculate_control(Pr[0], Pr[1], robot_a, Pg[0], Pg[1], alpha, beta, v_max, w_max)
+        publish_and_save_data(Pr[0], Pr[1], robot_a, Pg[0], Pg[1], v, w)
+        Pr, robot_a = get_robot_pose()
+        
+        if numpy.linalg.norm(Pg - Pr) < 0.3:
+            idx = min(idx + 1, len(path) - 1)
+            Pg = path[idx]
+
     
     return
         
 
-def publish_and_save_data(robot_x, robot_y, robot_a, goal_x, goal_y, v,w):
+def publish_and_save_data(robot_x, robot_y, robot_a, goal_x, goal_y, v, w):
     global nav_data
     nav_data.append([robot_x, robot_y, robot_a, goal_x, goal_y, v, w])
-    loop = rospy.Rate(20)
+    
     msg = Twist()
     msg.linear.x = v
     msg.angular.z = w
     pub_cmd_vel.publish(msg)
-    loop.sleep()
+
+    rospy.Rate(20).sleep()
+
+def save_experiment_data(alpha, beta, v_max, w_max):
+    """Guarda los datos del experimento en un archivo, incluyendo la ruta real y velocidades."""
+    global nav_data, data_file
     
+    # Abrir archivo en modo append para no sobrescribir datos previos
+    with open(data_file, "a") as f:
+        f.write(f"# Experimento con α={alpha}, β={beta}, v_max={v_max}, w_max={w_max}\n")
+        f.write("robot_x,robot_y,robot_a,goal_x,goal_y,v,w\n")
+        
+        for d in nav_data:
+            f.write(f"{d[0]},{d[1]},{d[2]},{d[3]},{d[4]},{d[5]},{d[6]}\n")
+        
+        f.write("\n")  # Separador entre experimentos
+
     
 def callback_global_goal(msg):
     global nav_data
@@ -98,6 +135,7 @@ def callback_global_goal(msg):
     beta  = rospy.get_param("~beta", 0.1)
     print("Following path with [v_max, w_max, alpha, beta]=" + str([v_max, w_max, alpha, beta]))
     follow_path([numpy.asarray([p.pose.position.x, p.pose.position.y]) for p in path.poses], alpha, beta, v_max, w_max)
+    save_experiment_data(alpha, beta, v_max, w_max)
     pub_cmd_vel.publish(Twist())
     pub_goal_reached.publish(True)
     s = ""
