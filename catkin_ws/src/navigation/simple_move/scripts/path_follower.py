@@ -12,6 +12,7 @@
 import rospy
 import tf
 import math
+import numpy as np
 import numpy
 import rospkg
 from std_msgs.msg import Bool
@@ -20,7 +21,7 @@ from nav_msgs.srv import GetPlan, GetPlanRequest
 from navig_msgs.srv import ProcessPath, ProcessPathRequest
 from geometry_msgs.msg import Twist, PoseStamped, Pose, Point
 
-NAME = "FULL NAME"
+NAME = "Carlos Castañeda Mora"
 
 pub_goal_reached = None
 pub_cmd_vel = None
@@ -41,7 +42,10 @@ def calculate_control(robot_x, robot_y, robot_a, goal_x, goal_y, alpha, beta, v_
     # Remember to keep error angle in the interval (-pi,pi]
     # Return the tuple [v,w]
     #
-
+    ea = np.arctan2(goal_y - robot_y, goal_x - robot_x) - robot_a
+    ea = np.arctan2(np.sin(ea), np.cos(ea))
+    v = v_max * np.exp(-(ea**2) / alpha)
+    w = w_max * (2 / (1 + np.exp(-ea / beta)) - 1)
     return [v,w]
 
 def follow_path(path, alpha, beta, v_max, w_max):
@@ -61,7 +65,16 @@ def follow_path(path, alpha, beta, v_max, w_max):
     #     If dist to goal point is less than 0.3 (you can change this constant)
     #         Change goal point to the next point in the path
     #
-    
+    idx = 0
+    Pg = path[idx]
+    Pr, robot_a = get_robot_pose()
+    while numpy.linalg.norm(path[-1] - Pr) > 0.1 and not rospy.is_shutdown():
+        v, w = calculate_control(Pr[0], Pr[1], robot_a, Pg[0], Pg[1], alpha, beta, v_max, w_max)
+        publish_and_save_data(Pr[0], Pr[1], robot_a, Pg[0],  Pg[1], v=v, w=w)
+        Pr, robot_a = get_robot_pose()
+        if numpy.linalg.norm(Pg - Pr) < 0.3:
+            idx = min(idx + 1, len(path) - 1)
+            Pg = path[idx]
     return
         
 
