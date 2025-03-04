@@ -20,7 +20,7 @@ from nav_msgs.srv import GetPlan, GetPlanRequest
 from navig_msgs.srv import ProcessPath, ProcessPathRequest
 from geometry_msgs.msg import Twist, PoseStamped, Pose, Point
 
-NAME = "FULL NAME"
+NAME = "Luis Gerardo Arellano Cortés"
 
 pub_goal_reached = None
 pub_cmd_vel = None
@@ -30,17 +30,18 @@ listener    = None
 def calculate_control(robot_x, robot_y, robot_a, goal_x, goal_y, alpha, beta, v_max, w_max):
     v,w = 0,0
     #
-    # TODO:
+    # TODO:    
     # Implement the control law given by:
-    #
-    # v = v_max*math.exp(-error_a*error_a/alpha)
-    # w = w_max*(2/(1 + math.exp(-error_a/beta)) - 1)
-    #
+    error_a = math.atan2(goal_y - robot_y, goal_x - robot_x) - robot_a
+    error_a = (error_a + math.pi) % (math.pi * 2) - math.pi
+    v = v_max*math.exp(-error_a*error_a/alpha)
+    w = w_max*(2/(1 + math.exp(-error_a/beta)) - 1)
     # where error_a is the angle error
     # and v_max, w_max, alpha and beta, are tunning constants.
     # Remember to keep error angle in the interval (-pi,pi]
     # Return the tuple [v,w]
     #
+
 
     return [v,w]
 
@@ -61,7 +62,16 @@ def follow_path(path, alpha, beta, v_max, w_max):
     #     If dist to goal point is less than 0.3 (you can change this constant)
     #         Change goal point to the next point in the path
     #
-    
+    idx = 0
+    Pg = path[idx]
+    Pr, robot_a = get_robot_pose()
+    while numpy.linalg.norm(path[-1] - Pr) > 0.1 and not rospy.is_shutdown():
+            v, w = calculate_control(Pr[0], Pr[1], robot_a, Pg[0], Pg[1], alpha, beta, v_max, w_max)
+            publish_and_save_data(Pr[0], Pr[1], robot_a, Pg[0], Pg[1], v, w)
+            Pr, robot_a = get_robot_pose()
+            if numpy.linalg.norm(Pg - Pr) < 0.3:
+                idx = min(idx + 1, len(path) - 1)
+                Pg = path[idx]
     return
         
 
