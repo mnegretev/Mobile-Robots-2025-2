@@ -104,8 +104,8 @@ def callback_global_goal(msg):
         pass
     v_max = rospy.get_param("~v_max",0.8)
     w_max = rospy.get_param("~w_max",1.0)
-    alpha = rospy.get_param("~alpha",1.0)
-    beta  = rospy.get_param("~beta", 0.1)
+    alpha = rospy.get_param("~alpha",0.7)
+    beta  = rospy.get_param("~beta", 0.7)
     print("Following path with [v_max, w_max, alpha, beta]=" + str([v_max, w_max, alpha, beta]))
     follow_path([numpy.asarray([p.pose.position.x, p.pose.position.y]) for p in path.poses], alpha, beta, v_max, w_max)
     pub_cmd_vel.publish(Twist())
