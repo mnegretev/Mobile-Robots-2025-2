@@ -59,7 +59,7 @@ def a_star(start_r, start_c, goal_r, goal_c, grid_map, cost_map, use_diagonals):
                 parent_nodes[r,c] = [row, col]
             if not in_open_list[r,c]:
                 in_open_list[r,c] = True
-            heapq.heappush(open_list, (f, [r,c]))
+                heapq.heappush(open_list, (f, [r,c]))
             
     path = []
     while parent_nodes[goal_r, goal_c][0] != -1:
