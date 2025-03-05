@@ -51,9 +51,9 @@ def brushfire(grid_map):
             if distances[i+k1, j+k2] == -1:
                 Q.put([i+k1, j+k2])
                # distances[i+k1, j+k2] = d + 2
-                distances[i+k1, j+k2] = d + math.sqrt(2.0)
+                distances[i+k1, j+k2] = d + 2.0
             else:
-                distances[i+k1, j+k2] = min(distances[i+k1, j+k2], d+ 2)
+                distances[i+k1, j+k2] = min(distances[i+k1, j+k2], d+ math.sqrt(2.0))
                 #distances[i+k1, j+k2] = min(distances[i+k1, j+k2], d+ math.sqrt(2.0))
     return distances
 
