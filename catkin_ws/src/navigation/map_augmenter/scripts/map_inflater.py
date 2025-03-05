@@ -15,7 +15,7 @@ from nav_msgs.srv import GetMap
 from nav_msgs.srv import GetMapResponse
 from nav_msgs.srv import GetMapRequest
 
-NAME = "WRITE HERE YOUR FULL NAME"
+NAME = "German Zair Romero Hernandez"
 
 def get_inflated_map(static_map, inflation_cells):
     print("Inflating map by " + str(inflation_cells) + " cells")
@@ -28,7 +28,12 @@ def get_inflated_map(static_map, inflation_cells):
     # Map is given in 'static_map' as a bidimensional numpy array.
     # Consider as occupied cells all cells with an occupation value greater than 50
     #
-    
+    for i in range(len(static_map)):
+        for j in range(len(static_map[0])):
+            if(static_map[i,j]==100):
+                for k1 in range(-inflation_cells,inflation_cells):
+                    for k2 in range(-inflation_cells,inflation_cells):
+                        inflated[i+k1,j+k2] = 100
     return inflated
 
 def callback_inflated_map(req):
