@@ -18,7 +18,7 @@ from nav_msgs.msg import Path
 from nav_msgs.srv import *
 from collections import deque
 
-NAME = "FULL NAME"
+NAME = "German Zair Romero Hernandez"
     
 def a_star(start_r, start_c, goal_r, goal_c, grid_map, cost_map, use_diagonals):
     in_open_list   = numpy.full(grid_map.shape, False)
@@ -38,6 +38,32 @@ def a_star(start_r, start_c, goal_r, goal_c, grid_map, cost_map, use_diagonals):
     # Map is considered to be a 2D array and start and goal positions
     # are given as row-col pairs
     #
+    heapq.heappush(open_list, (0, [start_r, start_c]))
+    in_open_list[start_r, start_c] = True
+
+    g_values
+    [row, col] = [start_r, start_c]
+    start_r, start_c = 0
+
+    while len(open_list) > 0 and [row, col] != [goal_r, goal_c]:
+        [row, col] = heapq.heappop(open_list)[1]
+
+        in_closed_list[row, col] = True
+        for [r, c, cost] in adjacents:
+            r, c = row + r, col + c
+            if grid.map[r, c] > 40 or grid.map[r, c] < 0 or in_closed_list[r, c]:
+                continue
+            g = g_values[row, col] + cost + grid.map[r, c]
+            h = math.sqrt((goal_r - r)**2 + (goal_c - c)**2)
+            f = g + h
+            if g < g_values[r, c]:
+                g_values[r, c] = g
+                f_values[r, c] = f
+                parent_nodes[r, c] = [row, col]
+                if not in_open_list[r, c]:
+                    in_open_list[r, c] = True
+                    heapq.heappush(open_list, (f, [r, c]))
+
     
     path = []
     while parent_nodes[goal_r, goal_c][0] != -1:
