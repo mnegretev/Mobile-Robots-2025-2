@@ -27,7 +27,6 @@ def smooth_path(Q, alpha, beta, max_steps):
     # The smoothed path must have the same shape.
     # Return the smoothed path.
     #
-    def smooth_path(Q, alpha, beta, max_steps):
     steps = 0
     P = numpy.copy(Q).astype(float)  # Asegurar que P sea de tipo float
     tol = 1e-5
