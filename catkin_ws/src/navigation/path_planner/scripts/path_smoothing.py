@@ -27,13 +27,28 @@ def smooth_path(Q, alpha, beta, max_steps):
     # The smoothed path must have the same shape.
     # Return the smoothed path.
     #
+    def smooth_path(Q, alpha, beta, max_steps):
     steps = 0
-    P = numpy.copy(Q)
-    tol     = 0.00001                   
-    nabla   = numpy.full(Q.shape, float("inf"))
-    epsilon = 0.1                       
+    P = numpy.copy(Q).astype(float)  # Asegurar que P sea de tipo float
+    tol = 1e-5
+    nabla = numpy.zeros_like(Q, dtype=float)  # Inicializar correctamente
+    epsilon = 0.1  
 
-    
+    while numpy.linalg.norm(nabla) > tol and steps < max_steps:
+        nabla.fill(0)  # Reiniciar el gradiente
+
+        for i in range(1, len(Q) - 1):
+            nabla[i] = alpha * (2 * P[i] - P[i - 1] - P[i + 1]) + beta * (P[i] - Q[i])
+
+        # Verificar estabilidad numérica antes de actualizar P
+        if numpy.isnan(nabla).any() or numpy.isinf(nabla).any():
+            print("Error: Nabla contiene valores NaN o Inf, reduciendo epsilon")
+            epsilon *= 0.5
+            continue  # Reintentar con epsilon reducido
+
+        P -= epsilon * nabla  # Actualizar P con un paso de descenso controlado
+        steps += 1
+
     return P
 
 def callback_smooth_path(req):
