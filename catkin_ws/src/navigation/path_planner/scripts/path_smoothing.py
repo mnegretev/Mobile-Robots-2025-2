@@ -15,7 +15,7 @@ from geometry_msgs.msg import Pose, PoseStamped, Point
 from navig_msgs.srv import ProcessPath
 from navig_msgs.srv import ProcessPathResponse
 
-NAME = "FULL NAME"
+NAME = "CARLOS EDUARDO LUJAN PEREZ"
 
 def smooth_path(Q, alpha, beta, max_steps):
     #
