@@ -34,19 +34,11 @@ def smooth_path(Q, alpha, beta, max_steps):
     epsilon = 0.1  
 
     while numpy.linalg.norm(nabla) > tol and steps < max_steps:
-        nabla.fill(0)  # Reiniciar el gradiente
-
-        for i in range(1, len(Q) - 1):
+        for i in range(1, len(Q) - 1):  # Evitamos modificar los extremos
             nabla[i] = alpha * (2 * P[i] - P[i - 1] - P[i + 1]) + beta * (P[i] - Q[i])
-
-        # Verificar estabilidad numérica antes de actualizar P
-        if numpy.isnan(nabla).any() or numpy.isinf(nabla).any():
-            print("Error: Nabla contiene valores NaN o Inf, reduciendo epsilon")
-            epsilon *= 0.5
-            continue  # Reintentar con epsilon reducido
-
-        P -= epsilon * nabla  # Actualizar P con un paso de descenso controlado
-        steps += 1
+        
+        P -= nabla  # Aplicamos el descenso de gradiente
+        steps += 1  # Incrementamos el contador de iteraciones
 
     return P
 
