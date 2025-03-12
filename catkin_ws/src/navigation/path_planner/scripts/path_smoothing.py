@@ -18,23 +18,29 @@ from navig_msgs.srv import ProcessPathResponse
 NAME = "FULL NAME"
 
 def smooth_path(Q, alpha, beta, max_steps):
-    #
-    # TODO:
-    # Write the code to smooth the path Q, using the gradient descend algorithm,
-    # and return a new smoothed path P.
-    # Path is given as a set of points [x,y] as follows:
-    # [[x0,y0], [x1,y1], ..., [xn,ym]].
-    # The smoothed path must have the same shape.
-    # Return the smoothed path.
-    #
     steps = 0
-    P = numpy.copy(Q)
-    tol     = 0.00001                   
-    nabla   = numpy.full(Q.shape, float("inf"))
-    epsilon = 0.1                       
+    P = numpy.copy(Q)  # Create a copy of the original path to modify it
 
-    
-    return P
+    tol     = 0.00001  # Tolerance for stopping criterion (when gradient is small enough)
+    nabla   = numpy.full(Q.shape, float("inf"))  # Initialize the gradient (nabla) as infinity
+    epsilon = 0.1  # Learning rate for gradient descent
+
+    # Gradient Descent Loop
+    while numpy.linalg.norm(nabla) > tol and steps < max_steps:  # Continue while gradient is large or steps < max_steps
+        nabla = numpy.zeros_like(Q)  # Initialize gradient for this step
+
+        # Loop over each point in the path (excluding the first and last point)
+        for i in range(1, len(Q)-1):
+            # Calculate the gradient (nabla) based on the neighbors and the current point
+            nabla[i] = alpha * (2 * P[i] - P[i-1] - P[i+1]) + beta * (P[i] - Q[i])  # Gradient calculation
+
+        # Update the path by moving it in the opposite direction of the gradient
+        P = P - epsilon * nabla  # Update step based on the gradient and learning rate
+
+        steps += 1  # Increment step count
+
+    return P  # Return the smoothed path
+
 
 def callback_smooth_path(req):
     global msg_smooth_path
