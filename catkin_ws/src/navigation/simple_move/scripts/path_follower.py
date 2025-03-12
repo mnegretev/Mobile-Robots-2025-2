@@ -94,11 +94,13 @@ def callback_global_goal(msg):
     req = GetPlanRequest(goal=PoseStamped(pose=msg.pose))
     req.start.pose.position = Point(x=robot_x, y=robot_y)
     path = rospy.ServiceProxy('/path_planning/plan_path', GetPlan)(req).plan
+    original_path = path
     if len(path.poses) < 2:
         print("Cannot calculate path")
         return
     try:
         smooth_path = rospy.ServiceProxy('/path_planning/smooth_path',ProcessPath)(ProcessPathRequest(path=path)).processed_path
+        smoothed_path = smooth_path
         path = smooth_path
     except:
         pass
@@ -116,6 +118,16 @@ def callback_global_goal(msg):
     f = open(data_file, "w")
     f.write(s)
     f.close()
+
+    # Save original path
+    rp = rospkg.RosPack()
+    data_file_origin = rp.get_path('simple_move') + "/data/data_paths.txt"
+    # Join the original path and the smoothed path on the same line, diferent columns
+    original_path = numpy.asarray([[p.pose.position.x, p.pose.position.y] for p in original_path.poses])
+    smoothed_path = numpy.asarray([[p.pose.position.x, p.pose.position.y] for p in smoothed_path.poses])
+    smoothed_path = numpy.concatenate((original_path, smoothed_path), axis=1)
+    numpy.savetxt(data_file_origin, smoothed_path, delimiter=",")
+
     print("Global goal point reached")
     
 def get_robot_pose():

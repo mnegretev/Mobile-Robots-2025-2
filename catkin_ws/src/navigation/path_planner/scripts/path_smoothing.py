@@ -9,13 +9,15 @@
 
 import numpy
 import heapq
+
+import rospkg
 import rospy
 from nav_msgs.msg import Path
 from geometry_msgs.msg import Pose, PoseStamped, Point
 from navig_msgs.srv import ProcessPath
 from navig_msgs.srv import ProcessPathResponse
 
-NAME = "FULL NAME"
+NAME = "ADRIAN MARTINEZ MANZO"
 
 def smooth_path(Q, alpha, beta, max_steps):
     #
@@ -33,7 +35,18 @@ def smooth_path(Q, alpha, beta, max_steps):
     nabla   = numpy.full(Q.shape, float("inf"))
     epsilon = 0.1                       
 
-    
+    # Set nabla first and last points to 0
+    nabla[0] = 0
+    nabla[-1] = 0
+
+    # While norm of nabla p_i element is greater than tol
+    while numpy.linalg.norm(nabla) > tol and steps < max_steps:
+        # Foreach i in [1, n-1)
+        for i in range(1, len(Q) - 1):
+            # Calculate nabla
+            nabla[i] = alpha * (2 * P[i] - P[i-1] - P[i-1]) + beta * (P[i] - Q[i])
+        P = P - epsilon * nabla
+        steps += 1    
     return P
 
 def callback_smooth_path(req):

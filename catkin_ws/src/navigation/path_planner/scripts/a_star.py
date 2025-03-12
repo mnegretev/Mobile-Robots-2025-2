@@ -11,6 +11,8 @@
 
 import numpy
 import heapq
+
+import rospkg
 import rospy
 import math
 from geometry_msgs.msg import PoseStamped, Pose, Point
@@ -102,6 +104,8 @@ def callback_a_star(req):
     start_time = rospy.Time.now()
     path = a_star(int((sy-zy)/res), int((sx-zx)/res), int((gy-zy)/res), int((gx-zx)/res), inflated_map, cost_map, use_diagonals)
     end_time = rospy.Time.now()
+
+
     if len(path) > 0:
         print("Path planned after " + str(1000*(end_time - start_time).to_sec()) + " ms")
     else:
