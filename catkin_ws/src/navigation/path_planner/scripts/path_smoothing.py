@@ -18,30 +18,27 @@ from navig_msgs.srv import ProcessPathResponse
 NAME = "CARLOS EDUARDO LUJAN PEREZ"
 
 def smooth_path(Q, alpha, beta, max_steps):
-    #
-    # TODO:
-    # Write the code to smooth the path Q, using the gradient descend algorithm,
-    # and return a new smoothed path P.
-    # Path is given as a set of points [x,y] as follows:
-    # [[x0,y0], [x1,y1], ..., [xn,ym]].
-    # The smoothed path must have the same shape.
-    # Return the smoothed path.
-    #
-    steps = 0
-    P = numpy.copy(Q).astype(float)  # Asegurar que P sea de tipo float
+    P = numpy.copy(Q).astype(float)  
     tol = 1e-5
-    nabla = numpy.full(Q.shape, float("inf"))  # Inicializar correctamente
+    steps = 0
     epsilon = 0.1  
-    nabla[0] = 0
-    nabla[-1] = 0
-
-    while numpy.linalg.norm(nabla) > tol and steps < max_steps:
+    
+    # Inicialización correcta de nabla (cero en los extremos)
+    nabla = numpy.zeros_like(Q, dtype=float)
+    
+    while steps < max_steps:
+        prev_P = P.copy()
         for i in range(1, len(Q) - 1):  # Evitamos modificar los extremos
             nabla[i] = alpha * (2 * P[i] - P[i - 1] - P[i + 1]) + beta * (P[i] - Q[i])
         
-        P -= nabla * epsilon # Aplicamos el descenso de gradiente
-        steps += 1  # Incrementamos el contador de iteraciones
+        P -= nabla * epsilon  # Aplicamos el descenso de gradiente
 
+        # Si el cambio es menor que el umbral, detener
+        if numpy.linalg.norm(P - prev_P) < tol:
+            break
+
+        steps += 1  # Incrementamos el contador de iteraciones
+    
     return P
 
 def callback_smooth_path(req):
