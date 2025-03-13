@@ -15,31 +15,23 @@ from geometry_msgs.msg import Pose, PoseStamped, Point
 from navig_msgs.srv import ProcessPath
 from navig_msgs.srv import ProcessPathResponse
 
-NAME = "FULL NAME"
+NAME = "MURILLO SANTOS JAVIER EDUARDO"
 
 def smooth_path(Q, alpha, beta, max_steps):
     steps = 0
-    P = numpy.copy(Q)  # Create a copy of the original path to modify it
-
-    tol     = 0.00001  # Tolerance for stopping criterion (when gradient is small enough)
-    nabla   = numpy.full(Q.shape, float("inf"))  # Initialize the gradient (nabla) as infinity
-    epsilon = 0.1  # Learning rate for gradient descent
-
-    # Gradient Descent Loop
-    while numpy.linalg.norm(nabla) > tol and steps < max_steps:  # Continue while gradient is large or steps < max_steps
-        nabla = numpy.zeros_like(Q)  # Initialize gradient for this step
-
-        # Loop over each point in the path (excluding the first and last point)
+    P = numpy.copy(Q)
+    tol     = 0.00001
+    nabla   = numpy.full(Q.shape, float("inf"))
+    epsilon = 0.1
+    
+    while numpy.linalg.norm(nabla) > tol and steps < max_steps:
+        nabla = numpy.zeros_like(Q)
         for i in range(1, len(Q)-1):
-            # Calculate the gradient (nabla) based on the neighbors and the current point
-            nabla[i] = alpha * (2 * P[i] - P[i-1] - P[i+1]) + beta * (P[i] - Q[i])  # Gradient calculation
-
-        # Update the path by moving it in the opposite direction of the gradient
-        P = P - epsilon * nabla  # Update step based on the gradient and learning rate
-
-        steps += 1  # Increment step count
-
-    return P  # Return the smoothed path
+            nabla[i] = alpha * (2 * P[i] - P[i-1] - P[i+1]) + beta * (P[i] - Q[i])
+        P = P - epsilon * nabla
+        steps += 1
+        
+    return P
 
 
 def callback_smooth_path(req):
