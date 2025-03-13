@@ -15,7 +15,7 @@ from geometry_msgs.msg import Pose, PoseStamped, Point
 from navig_msgs.srv import ProcessPath
 from navig_msgs.srv import ProcessPathResponse
 
-NAME = "FULL NAME"
+NAME = "Carlos Castañeda Mora"
 
 def smooth_path(Q, alpha, beta, max_steps):
     #
@@ -32,7 +32,17 @@ def smooth_path(Q, alpha, beta, max_steps):
     tol     = 0.00001                   
     nabla   = numpy.full(Q.shape, float("inf"))
     epsilon = 0.1                       
+    n = len(Q)
+    while steps < max_steps:
+        nabla = numpy.zeros_like(P)         
+        for i in range(1, n - 1):
+            nabla[i] = alpha * (2 * P[i] - P[i - 1] - P[i + 1]) + beta * (P[i] - Q[i])
 
+        P -= epsilon*nabla
+        if numpy.linalg.norm(nabla) < tol:
+            break
+
+        steps += 1
     
     return P
 

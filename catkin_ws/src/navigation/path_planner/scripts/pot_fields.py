@@ -24,7 +24,7 @@ laser_readings = None
 v_max = 0.6
 w_max = 1.0
 
-NAME = "FULL NAME"
+NAME = "Carlos Castañeda Mora"
 
 def calculate_control(goal_x, goal_y, alpha, beta):
     v,w = 0,0
@@ -34,7 +34,9 @@ def calculate_control(goal_x, goal_y, alpha, beta):
     # Consider that goal point is given w.r.t. robot, i.e., robot is always at zero.
     # Return v and w as a tuble [v,w]
     #    
-    
+    v = alpha * math.sqrt(goal_x**2 + goal_y**2)  
+    w = beta * math.atan2(goal_y, goal_x)         
+    return [v, w]
     return [v,w]
 
 def attraction_force(goal_x, goal_y, eta):
@@ -47,7 +49,12 @@ def attraction_force(goal_x, goal_y, eta):
     # where force_x and force_y are the X and Y components
     # of the resulting attraction force w.r.t. robot
     #
-    
+    distance = math.sqrt(goal_x**2 + goal_y**2)
+    if distance == 0:
+        return numpy.asarray([0.0, 0.0])
+    force_x = -eta * (goal_x / distance)
+    force_y = -eta * (goal_y / distance)
+    return numpy.asarray([force_x, force_y])
     return numpy.asarray([force_x, force_y])
 
 def rejection_force(laser_readings, zeta, d0):
@@ -66,7 +73,17 @@ def rejection_force(laser_readings, zeta, d0):
     # where force_x and force_y are the X and Y components
     # of the resulting rejection force
     #
-
+    N = len(laser_readings)
+    if N == 0:
+        return numpy.asarray([0.0, 0.0])
+    force_x, force_y = 0.0, 0.0
+    for [d, theta] in laser_readings:
+        if d < d0:
+            rho = zeta * (1.0/d - 1.0/d0)
+            force_x += rho * math.cos(theta)
+            force_y += rho * math.sin(theta)
+    force_x /= N
+    force_y /= N
     
     return numpy.asarray([force_x, force_y])
 
@@ -85,7 +102,18 @@ def move_by_pot_fields(global_goal_x, global_goal_y, epsilon, tol, eta, zeta, d0
     #    Calculate the control laws v,w to move the robots towards P
     #    Call the function publish_speed_and_forces(v, w, Fa, Fr, F) (moves the robot and displays forces)
     #    Get the goal point w.r.t. robot by calling the get_goal_point_wrt_robot function.
-    
+    while not rospy.is_shutdown():
+        [goal_x, goal_y] = get_goal_point_wrt_robot(global_goal_x, global_goal_y)
+        distance_to_goal = math.sqrt(goal_x**2 + goal_y**2)
+        if distance_to_goal <= tol:
+            break
+        Fa = attraction_force(goal_x, goal_y, eta)
+        Fr = rejection_force(laser_readings, zeta, d0)
+        F = Fa + Fr
+        P = -epsilon * F
+        [v, w] = calculate_control(P[0], P[1], alpha, beta)
+        publish_speed_and_forces(v, w, Fa, Fr, F)
+    pub_cmd_vel.publish(Twist())
     return
         
 
