@@ -35,10 +35,20 @@ def calculate_control(goal_x, goal_y, alpha, beta):
     # Return v and w as a tuble [v,w]
     #    
     
-    return [v,w]
+    F_total = attraction_force(goal_x, goal_y, alpha) + rejection_force(laser_readings, beta, 1.0)
+    
+    # Magnitud y dirección de la fuerza resultante
+    force_magnitude = numpy.linalg.norm(F_total)
+    force_angle = math.atan2(F_total[1], F_total[0])
+    
+    # Control de velocidad lineal (v) y angular (w)
+    v = min(v_max, force_magnitude)
+    w = max(-w_max, min(w_max, 2 * force_angle))  # Se ajusta el giro a la dirección de la fuerza
+    
+    return [v, w]
 
 def attraction_force(goal_x, goal_y, eta):
-    force_x, force_y = 0,0 #PREGUNTAR AL PROFE SOBRE ESTO
+    force_x, force_y = 0,0 
     #
     # TODO:
     # Calculate the attraction force, given the goal positions
@@ -113,9 +123,9 @@ def move_by_pot_fields(global_goal_x, global_goal_y, epsilon, tol, eta, zeta, d0
         Fr = rejection_force(laser_readings, zeta, d0)
         F = Fa + Fr
 
-        goal_x_r = goal_x_r - epsilon * F[0] # Gradient descent update for goal_x_r
-        goal_y_r = goal_y_r - epsilon * F[1] # Gradient descent update for goal_y_r
-
+        goal_x_r = goal_x_r - epsilon * F[0]
+        goal_y_r = goal_y_r - epsilon * F[1]
+        
         [v, w] = calculate_control(goal_x_r, goal_y_r, alpha, beta)
         publish_speed_and_forces(v, w, Fa, Fr, F)
 
