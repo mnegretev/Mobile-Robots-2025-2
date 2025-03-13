@@ -32,6 +32,8 @@ def smooth_path(Q, alpha, beta, max_steps):
     tol = 1e-5
     nabla = numpy.zeros_like(Q, dtype=float)  # Inicializar correctamente
     epsilon = 0.1  
+    nabla[0] = 0
+    nabla[-1] = 0
 
     while numpy.linalg.norm(nabla) > tol and steps < max_steps:
         for i in range(1, len(Q) - 1):  # Evitamos modificar los extremos
