@@ -25,19 +25,28 @@ def smooth_path(Q, alpha, beta, max_steps):
     P = np.copy(Q).astype(float)  
     nabla = np.zeros_like(Q)  # Gradiente inicializado en 0
 
+    print(f"Ruta inicial:\n{P}")  # Verificar la ruta antes del suavizado
+
     while np.linalg.norm(nabla) > tol and steps < max_steps:
+        prev_P = np.copy(P)  # Guardamos la versión anterior para comparar cambios
+
         for i in range(1, len(Q) - 1):  # No modificamos los extremos
             nabla[i] = alpha * (2 * P[i] - P[i - 1] - P[i + 1]) + beta * (P[i] - Q[i])
         
-        # Evitamos problemas de overflow
-        if np.isnan(nabla).any() or np.isinf(nabla).any():
-            print("Advertencia: Gradiente no válido, reduciendo epsilon.")
-            epsilon *= 0.5  
-        else:
-            P -= nabla * epsilon  # Aplicamos descenso de gradiente
-        
+        # Verificar si realmente se están realizando cambios
+        if np.linalg.norm(nabla) < tol:
+            print(f"Convergencia alcanzada en {steps} iteraciones.")
+            break
+
+        P -= nabla * epsilon  # Aplicamos descenso de gradiente
         steps += 1  
 
+        # Verificar si hubo cambio
+        if np.allclose(prev_P, P, atol=1e-6):
+            print(f"Pequeños cambios en la ruta, terminando en {steps} iteraciones.")
+            break
+
+    print(f"Ruta suavizada:\n{P}")  # Verificar la ruta después del suavizado
     return P
 
 def callback_smooth_path(req):
@@ -55,6 +64,10 @@ def callback_smooth_path(req):
     # Convertir la ruta del mensaje a un array numpy
     Q = np.array([[p.pose.position.x, p.pose.position.y] for p in req.path.poses])
     
+    if Q.shape[0] < 3:
+        print("Error: La ruta debe tener al menos 3 puntos para ser suavizada.")
+        return ProcessPathResponse(processed_path=msg_smooth_path)
+
     # Aplicar suavizado
     P = smooth_path(Q, alpha, beta, steps)
 
