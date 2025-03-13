@@ -24,7 +24,7 @@ laser_readings = None
 v_max = 0.6
 w_max = 1.0
 
-NAME = "FULL NAME"
+NAME = "Garcia Monjaraz Jessica Stephanie"
 
 def calculate_control(goal_x, goal_y, alpha, beta):
     v,w = 0,0
@@ -41,19 +41,25 @@ def attraction_force(goal_x, goal_y, eta):
     force_x, force_y = 0,0 #PREGUNTAR AL PROFE SOBRE ESTO
     #
     # TODO:
-    # Calculate the attraction force, given the goal positions
+    # Calculate the attraction force, given the goal positions (goal_x, goal_y)
     # w.r.t. robot's frame, i.e., robot is always at zero.
+    # magnitud del vector de posición del objetivo que es goal_x, goal_y, es decir
+    # la distancia entre el robot y el objetivo
+    norm_q_g = numpy.linalg.norm([goal_x, goal_y]) #dist
+    if norm_q_g == 0: # Evita división entre cero
+        return numpy.asarray([0, 0]) 
+    # Calcular la fuerza atractiva
+    force_x = -eta * (goal_x / norm_q_g)
+    force_y = -eta * (goal_y / norm_q_g)
     # Return a tuple of the form [force_x, force_y]
     # where force_x and force_y are the X and Y components
     # of the resulting attraction force w.r.t. robot
-    #
-    
     return numpy.asarray([force_x, force_y])
 
 def rejection_force(laser_readings, zeta, d0):
     N = len(laser_readings)
     if N == 0:
-        return [0, 0]
+        return numpy.asarray([0, 0])
     force_x, force_y = 0, 0
     #
     # TODO:
@@ -62,12 +68,23 @@ def rejection_force(laser_readings, zeta, d0):
     # laser_readings is an array where each element is a tuple [distance, angle]
     # both measured w.r.t. robot's frame.
     # See lecture notes for equations to calculate rejection forces.
+    for reading in laser_readings:
+        distance, angle = reading #para que obtenga la distancia y el angulo
+        if distance < d0:
+            obstacle_x = distance * math.cos(angle)
+            obstacle_y = distance * math.sin(angle)
+            q_oi = numpy.array([obstacle_x, obstacle_y])
+            # Calcular la fuerza repulsiva para esta lectura
+            F_rej_i = zeta * math.sqrt((1/distance) - (1/d0)) * (q_oi / distance)
+            # Acumular las componentes de la fuerza repulsiva
+            force_x += F_rej_i[0]
+            force_y += F_rej_i[1]
+    # Calcula el promedio de las fuerzas repulsivas
+    force_x /= N
+    force_y /= N
     # Return a tuple of the form [force_x, force_y]
     # where force_x and force_y are the X and Y components
-    # of the resulting rejection force
-    #
-
-    
+    # of the resulting rejection force    
     return numpy.asarray([force_x, force_y])
 
 def move_by_pot_fields(global_goal_x, global_goal_y, epsilon, tol, eta, zeta, d0, alpha, beta):
@@ -75,17 +92,25 @@ def move_by_pot_fields(global_goal_x, global_goal_y, epsilon, tol, eta, zeta, d0
     # TODO
     # Implement potential fields given a goal point and tunning constants.
     # You can use the following steps:
-    #
+    #NO OLVIDES AGREGAR rospy.is shutdown()
     # Get the goal point w.r.t. robot by calling the get_goal_point_wrt_robot function.
+    goal_p= get_goal_point_wrt_robot(global_goal_x, global_goal_y)
     # WHILE distance to goal is greater than a tolerance AND not rospy.is_shutdown():
+    while numpy.linalg.norm(goal_p) > tol and not rospy.is_shutdown():
     #    Calculate the attraction force Fa (call the corresponding function)
+        Fa = attraction_force(goal_p[0], goal_p[1], eta)
     #    Calculate the rejection force Fr (call the corresponding function)
+        Fr = rejection_force(laser_readings, zeta, d0)
     #    Calculate the resulting force F = Fa + Fr
+        F = Fa + Fr
     #    Calculate the next position P the robot should move to, using gradient descend: P = -epsilon*F
+        P= -epsilon*F
     #    Calculate the control laws v,w to move the robots towards P
+        v,w = calculate_control(P[0], P[1], alpha, beta)
     #    Call the function publish_speed_and_forces(v, w, Fa, Fr, F) (moves the robot and displays forces)
+        publish_speed_and_forces(v, w, Fa, Fr, F)
     #    Get the goal point w.r.t. robot by calling the get_goal_point_wrt_robot function.
-    
+        goal_p= get_goal_point_wrt_robot(global_goal_x, global_goal_y)
     return
         
 
@@ -161,4 +186,3 @@ if __name__ == '__main__':
         main()
     except rospy.ROSInterruptException:
         pass
-    
