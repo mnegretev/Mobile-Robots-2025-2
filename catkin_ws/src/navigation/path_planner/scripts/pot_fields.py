@@ -26,6 +26,8 @@ w_max = 1.0
 
 NAME = "German Zair Romero Hernandez"
 
+
+
 def calculate_control(goal_x, goal_y, alpha, beta):
     v,w = 0,0
     #
@@ -34,16 +36,11 @@ def calculate_control(goal_x, goal_y, alpha, beta):
     # Consider that goal point is given w.r.t. robot, i.e., robot is always at zero.
     # Return v and w as a tuble [v,w]
     #    
-    
-    F_total = attraction_force(goal_x, goal_y, alpha) + rejection_force(laser_readings, beta, 1.0)
-    
-    # Magnitud y dirección de la fuerza resultante
-    force_magnitude = numpy.linalg.norm(F_total)
-    force_angle = math.atan2(F_total[1], F_total[0])
-    
-    # Control de velocidad lineal (v) y angular (w)
-    v = min(v_max, force_magnitude)
-    w = max(-w_max, min(w_max, 2 * force_angle))  # Se ajusta el giro a la dirección de la fuerza
+    error_a = math.atan2(goal_y, goal_x)
+    error_a = (error_a + math.pi) % (math.pi * 2) - math.pi
+
+    v = v_max * math.exp(-error_a * error_a / alpha)
+    w = w_max * (2 / (1 + math.exp(-error_a / beta)) - 1)
     
     return [v, w]
 
