@@ -37,7 +37,7 @@ def smooth_path(Q, alpha, beta, max_steps):
         for i in range(1, len(Q) - 1):  # Evitamos modificar los extremos
             nabla[i] = alpha * (2 * P[i] - P[i - 1] - P[i + 1]) + beta * (P[i] - Q[i])
         
-        P -= nabla  # Aplicamos el descenso de gradiente
+        P -= nabla * epsilon # Aplicamos el descenso de gradiente
         steps += 1  # Incrementamos el contador de iteraciones
 
     return P
