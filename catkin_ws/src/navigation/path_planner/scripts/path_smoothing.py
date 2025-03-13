@@ -15,24 +15,21 @@ from geometry_msgs.msg import Pose, PoseStamped, Point
 from navig_msgs.srv import ProcessPath
 from navig_msgs.srv import ProcessPathResponse
 
-NAME = "FULL NAME"
+NAME = "Jurado Ramirez Eduardo"
 
 def smooth_path(Q, alpha, beta, max_steps):
-    #
-    # TODO:
-    # Write the code to smooth the path Q, using the gradient descend algorithm,
-    # and return a new smoothed path P.
-    # Path is given as a set of points [x,y] as follows:
-    # [[x0,y0], [x1,y1], ..., [xn,ym]].
-    # The smoothed path must have the same shape.
-    # Return the smoothed path.
-    #
     steps = 0
     P = numpy.copy(Q)
     tol     = 0.00001                   
     nabla   = numpy.full(Q.shape, float("inf"))
     epsilon = 0.1                       
-
+    while numpy.linalg.norm(nabla) > tol and steps < max_steps:
+        nabla.fill(0)
+        for i in range(1, len(Q)-1):
+            grad=alpha * (2*P[i] - P[i-1] - P[i+1] + beta * (P[i] - Q[i]))
+            nabla[i] = grad
+        P -= nabla * epsilon
+        steps +=1
     
     return P
 
