@@ -30,7 +30,7 @@ def smooth_path(Q, alpha, beta, max_steps):
     steps = 0
     P = numpy.copy(Q).astype(float)  # Asegurar que P sea de tipo float
     tol = 1e-5
-    nabla = numpy.zeros_like(Q, dtype=float)  # Inicializar correctamente
+    nabla = numpy.full(Q.shape, float("inf"))  # Inicializar correctamente
     epsilon = 0.1  
     nabla[0] = 0
     nabla[-1] = 0
