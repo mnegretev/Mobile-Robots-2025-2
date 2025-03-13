@@ -116,16 +116,29 @@ def callback_global_goal(msg):
     alpha = rospy.get_param("~alpha",1.0)
     beta  = rospy.get_param("~beta", 0.1)
     print("Following path with [v_max, w_max, alpha, beta]=" + str([v_max, w_max, alpha, beta]))
+    
+    
     follow_path([numpy.asarray([p.pose.position.x, p.pose.position.y]) for p in path.poses], alpha, beta, v_max, w_max)
     pub_cmd_vel.publish(Twist())
     pub_goal_reached.publish(True)
     s = ""
+    
+    
+    
+    
     for d in nav_data:
         s += str(d[0]) +","+ str(d[1]) +","+ str(d[2]) +","+ str(d[3]) +","+ str(d[4]) +","+ str(d[5]) +","+ str(d[6]) + "\n"
     f = open(data_file, "w")
     f.write(s)
     f.close()
+    
+    
+    
+    
     print("Global goal point reached")
+    
+    
+    
     
 def get_robot_pose():
     try:
