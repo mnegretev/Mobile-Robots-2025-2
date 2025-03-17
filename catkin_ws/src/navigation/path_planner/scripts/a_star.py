@@ -18,7 +18,7 @@ from nav_msgs.msg import Path
 from nav_msgs.srv import *
 from collections import deque
 
-NAME = "FULL NAME"
+NAME = "MURILLO SANTOS JAVIER EDUARDO"
     
 def a_star(start_r, start_c, goal_r, goal_c, grid_map, cost_map, use_diagonals):
     in_open_list   = numpy.full(grid_map.shape, False)
@@ -31,6 +31,7 @@ def a_star(start_r, start_c, goal_r, goal_c, grid_map, cost_map, use_diagonals):
         adjacents = [[1,0,1],[0,1,1],[-1,0,1],[0,-1,1], [1,1,1.414], [-1,1,1.414], [-1,-1,1.414],[1,-1,1.414]]
     else:
         adjacents = [[1,0,1],[0,1,1],[-1,0,1],[0,-1,1]]
+
 
     #
     # TODO:

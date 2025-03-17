@@ -15,7 +15,7 @@ from nav_msgs.srv import GetMap
 from nav_msgs.srv import GetMapResponse
 from nav_msgs.srv import GetMapRequest
 
-NAME = "FULL_NAME"
+NAME = "MURILLO SANTOS JAVIER EDUARDO"
 
 def get_cost_map(static_map, cost_radius):
     cost_map = numpy.copy(static_map)
