@@ -1,0 +1,27 @@
+<launch>
+  <arg name="debug" default="False"/>
+  <arg name="static_map_file"  default="$(find config_files)/maps/appartment.yaml"/>
+  <arg name="x0" default="10.61"/>
+  <arg name="y0" default="11.24"/>
+  <arg name="a0" default="3.14"/>
+  
+  <include file="$(find fiat_lux)/launch/gazebo_simul/justina_hardware_gazebo.launch">
+    <arg name="posx"  value="$(arg x0)"/>
+    <arg name="posy"  value="$(arg y0)"/>
+    <arg name="posz"  value="0.05"/>
+    <arg name="yaw"   value="$(arg a0)"/>
+    <arg name="world" value="appartment"/>
+  </include>
+  
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find config_files)/rviz/localization.rviz"/>
+  
+  <node name="justina_gui" pkg="justina_gui" type="justina_gui_node" output="screen">
+    <param name="la_predefined" value="$(find config_files)/justina/manipulation/la_predefined.yaml"/>
+    <param name="ra_predefined" value="$(find config_files)/justina/manipulation/ra_predefined.yaml"/>
+    <param name="hd_predefined" value="$(find config_files)/justina/manipulation/hd_predefined.yaml"/>
+  </node>
+
+  <include file="$(find fiat_lux)/launch/gazebo_simul/justina_gazebo_controllers.launch"/>
+
+  <node name="map_server" pkg="map_server" type="map_server" output="screen" args="$(arg static_map_file)"/>
+</launch>
