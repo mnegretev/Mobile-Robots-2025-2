@@ -1,0 +1,36 @@
+<launch>
+  <arg name="debug" default="False"/>
+  <arg name="static_map_file"  default="$(find config_files)/maps/appartment.yaml"/>
+  <arg name="initial_pose_x" default="3.30"/>
+  <arg name="initial_pose_y" default="5.90"/>
+  <arg name="initial_pose_a" default="-1.57"/>
+  
+  <include file="$(find fiat_lux)/launch/gazebo_simul/justina_hardware_gazebo.launch">
+    <arg name="posx"  value="7.67"/>
+    <arg name="posy"  value="5.17"/>
+    <arg name="posz"  value="0.05"/>
+    <arg name="yaw"   value="1.5708"/>
+    <arg name="world" value="appartment"/>
+  </include>
+  
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find config_files)/rviz/color_segmentation.rviz"/>
+  
+  <node name="justina_gui" pkg="justina_gui" type="justina_gui_node" output="screen">
+    <param name="la_predefined" value="$(find config_files)/justina/manipulation/la_predefined.yaml"/>
+    <param name="ra_predefined" value="$(find config_files)/justina/manipulation/ra_predefined.yaml"/>
+    <param name="hd_predefined" value="$(find config_files)/justina/manipulation/hd_predefined.yaml"/>
+  </node>
+
+  <include file="$(find fiat_lux)/launch/gazebo_simul/justina_gazebo_controllers.launch"/>
+
+  <node name="map_server" pkg="map_server" type="map_server" output="screen" args="$(arg static_map_file)"/>
+
+  <node name="amcl" pkg="amcl" type="amcl" output="screen" args="scan:=/hardware/scan">
+    <param name="initial_pose_x" value="$(arg initial_pose_x)"/>
+    <param name="initial_pose_y" value="$(arg initial_pose_y)"/>
+    <param name="initial_pose_a" value="$(arg initial_pose_a)"/>
+    <param name="update_min_a" value="0.3"/>
+    <param name="laser_min_range" value="0.2"/>
+    <param name="odom_model_type" value="omni"/>
+  </node>
+</launch>
