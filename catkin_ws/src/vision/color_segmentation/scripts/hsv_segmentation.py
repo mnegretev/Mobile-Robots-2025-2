@@ -41,7 +41,7 @@ def segment_by_color(img_bgr, points, obj_name):
     #   the pixel in the center of the image.
     #
     
-    return [img_x, img_y, x,y,z]
+    return [img_x, img_y, x,y,1]
 
 def callback_find_object(req):
     global pub_point, img_bgr
@@ -55,7 +55,7 @@ def callback_find_object(req):
     img_bgr = cv2.merge((b,g,r))
     [r, c, x, y, z] = segment_by_color(img_bgr, arr, req.name)
     resp = RecognizeObjectResponse()
-    resp.recog_object.header.frame_id = 'realsense_link'
+    resp.recog_object.header.frame_id = 'kinect_link'
     resp.recog_object.header.stamp    = rospy.Time.now()
     resp.recog_object.pose.position.x = x
     resp.recog_object.pose.position.y = y
