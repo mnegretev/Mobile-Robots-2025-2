@@ -20,7 +20,7 @@ from sensor_msgs.msg import PointCloud2
 from geometry_msgs.msg import PointStamped, Point
 from vision_msgs.srv import RecognizeObject, RecognizeObjectResponse
 
-NAME = "FULL_NAME"
+NAME = "Alfredo Guadalupe Alcántara Guerrero"
 
 def segment_by_color(img_bgr, points, obj_name):
     img_x, img_y, x,y,z = 0,0,0,0,0
@@ -40,7 +40,28 @@ def segment_by_color(img_bgr, points, obj_name):
     #   Example: 'points[240,320][1]' gets the 'y' value of the point corresponding to
     #   the pixel in the center of the image.
     #
+    if obj_name == 'pringles':
+        lower = numpy.array([25, 50, 50])
+        upper = numpy.array([35, 255, 255])
+    else:
+        lower = numpy.array([10, 200, 50])
+        upper = numpy.array([20, 255, 255])
+    hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
+    mask = cv2.inRange(hsv, lower, upper)
     
+    # Find all non-zero points in the mask
+    non_zero_points = cv2.findNonZero(mask)
+    
+    if non_zero_points is not None:
+        # Calculate the centroid of the non-zero points
+        centroid = cv2.mean(non_zero_points)
+        img_x, img_y = int(centroid[0]), int(centroid[1])
+        
+        # Calculate the centroid in the cartesian space using the point cloud
+        x = points[img_y, img_x][0]
+        y = points[img_y, img_x][1]
+        z = points[img_y, img_x][2]
+
     return [img_x, img_y, x,y,1]
 
 def callback_find_object(req):
