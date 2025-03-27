@@ -23,6 +23,7 @@ from vision_msgs.srv import RecognizeObject, RecognizeObjectResponse
 NAME = "FULL_NAME"
 
 def segment_by_color(img_bgr, points, obj_name):
+    global img_hsv, img_bin, img_filtered
     img_x, img_y, x,y,z = 0,0,0,0,0
     #
     # TODO:
@@ -65,15 +66,21 @@ def callback_find_object(req):
     return resp
 
 def main():
-    global pub_point, img_bgr
+    global pub_point, img_bgr, img_hsv, img_bin, img_filtered
     print("COLOR SEGMENTATION - " + NAME)
     rospy.init_node("color_segmentation")
     rospy.Service("/vision/obj_reco/detect_and_recognize_object", RecognizeObject, callback_find_object)
     pub_point = rospy.Publisher('/detected_object', PointStamped, queue_size=10)
     img_bgr = numpy.zeros((480, 640, 3), numpy.uint8)
+    img_hsv = numpy.zeros((480, 640, 3), numpy.uint8)
+    img_bin = numpy.zeros((480, 640, 3), numpy.uint8)
+    img_filtered = numpy.zeros((480, 640, 3), numpy.uint8)
     loop = rospy.Rate(10)
     while not rospy.is_shutdown():
-        cv2.imshow("Color Segmentation", img_bgr)
+        cv2.imshow("BGR", img_bgr)
+        cv2.imshow("HSV", img_hsv)
+        cv2.imshow("Binary", img_bin)
+        cv2.imshow("Filtered", img_filtered)
         cv2.waitKey(1)
         loop.sleep()
     
