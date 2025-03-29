@@ -1,0 +1,12 @@
+LOCALIZATION BY PARTICLE FILTERS - MURILLO SANTOS JAVIER EDUARDO
+Initializing particle filter with parameters: 
+N = 200   downsampling = 100
+Sensor variance: 0.1  Movement variance: 0.1   Resampling variance: 0.1
+min_x: -1   min_y: -1   min_a: -1
+max_x: 2   max_y: 2   max_a: 1
+Waiting for laser topic...
+Real Scan Info: Number of readings: 185
+Min angle: -1.5708
+Angle increment: 0.0170739
+Cannot get robot odometry
+Displacement detected. Updating pose estimation...

@@ -6,7 +6,7 @@
  * Write the code necessary to implement localization by particle filters.
  * Modify only the sections marked with the TODO comment. 
  */
-
+#include <numeric>
 #include "ros/ros.h"
 #include "sensor_msgs/LaserScan.h"
 #include "nav_msgs/GetMap.h"
@@ -19,7 +19,7 @@
 #define DISTANCE_THRESHOLD  0.2
 #define ANGLE_THRESHOLD     0.2
 
-#define NOMBRE "APELLIDO_PATERNO_APELLIDO_MATERNO_NOMBRE"
+#define NOMBRE "MURILLO SANTOS JAVIER EDUARDO"
 
 std::vector<geometry_msgs::Pose2D> get_initial_distribution(int N, float min_x, float max_x, float min_y, float max_y,
                                                              float min_a, float max_a)
@@ -32,9 +32,12 @@ std::vector<geometry_msgs::Pose2D> get_initial_distribution(int N, float min_x, 
      * with positions uniformly distributed within bounding box given by min_x, ..., max_a.
      * To generate uniformly distributed random numbers, you can use the funcion rnd.uniformReal(min, max)
      */
-    
-    /*
-     */
+    for (int i = 0; i < N; ++i)
+    {
+        particles[i].x = rnd.uniformReal(min_x, max_x);
+        particles[i].y = rnd.uniformReal(min_y, max_y);
+        particles[i].theta = rnd.uniformReal(min_a, max_a);
+    }
     return particles;
 }
 
@@ -50,6 +53,19 @@ void move_particles(std::vector<geometry_msgs::Pose2D>& particles, float delta_x
      * Add gaussian noise to each new position. Use sigma2 as variance.
      * You can use the function rnd.gaussian(mean, variance)
      */
+    for (size_t i = 0; i < particles.size(); ++i)
+    {
+        float theta = particles[i].theta;
+        
+        // Transformar el desplazamiento desde el marco local a global
+        float dx_global = cos(theta) * delta_x - sin(theta) * delta_y;
+        float dy_global = sin(theta) * delta_x + cos(theta) * delta_y;
+        
+        // Mover la partícula y agregar ruido gaussiano
+        particles[i].x += rnd.gaussian(dx_global, sigma2);
+        particles[i].y += rnd.gaussian(dy_global, sigma2);
+        particles[i].theta += rnd.gaussian(delta_t, sigma2);
+    }
 
 }
 
@@ -90,9 +106,47 @@ std::vector<float> calculate_similarities(std::vector<sensor_msgs::LaserScan>& s
      * IMPORTANT NOTE 2. Both, simulated an real scans, can have infinite distances. Thus, when comparing readings,
      * ensure both simulated and real ranges are finite values. 
      */
+    for (size_t i = 0; i < simulated_scans.size(); ++i)
+    {
+        float sim = 0.0;
+        int count = 0;
+        
+        for (size_t j = 0; j < simulated_scans[i].ranges.size(); ++j)
+        {
+            int real_idx = j * downsampling;
+            
+            // Evitar desbordamiento
+            if (real_idx >= real_scan.ranges.size()) break;
+            
+            float r_sim = simulated_scans[i].ranges[j];
+            float r_real = real_scan.ranges[real_idx];
+            
+            if (std::isfinite(r_sim) && std::isfinite(r_real))
+            {
+                float diff = r_sim - r_real;
+                sim += std::exp(- (diff * diff) / (2.0f * sigma2));
+                count++;
+            }
+        }
+        
+        // Promedio para evitar sesgo por número de lecturas válidas
+        similarities[i] = (count > 0) ? sim / count : 0.0f;
+    }
     
-    /*
-     */
+    // Normalización
+    float total = std::accumulate(similarities.begin(), similarities.end(), 0.0f);
+    if (total > 0.0f)
+    {
+        for (auto& s : similarities)
+            s /= total;
+    }
+    else
+    {
+        // Evita división por cero si todos los pesos fueron 0
+        float uniform = 1.0f / similarities.size();
+        for (auto& s : similarities)
+        s = uniform;
+    }
     return similarities;
 }
 
@@ -106,10 +160,18 @@ int random_choice(std::vector<float>& probabilities)
      * Probability of picking an integer 'i' is given by the corresponding probabilities[i] value.
      * Return the chosen integer. 
      */
+    float r = rnd.uniformReal(0.0, 1.0);
+    float cumulative = 0.0;
     
-    /*
-     */
-    return -1;
+    for (size_t i = 0; i < probabilities.size(); ++i)
+    {
+        cumulative += probabilities[i];
+        if (r <= cumulative)
+            return i;
+    }
+    
+    // Seguridad: si por redondeo no se retorna antes, devuelve el último
+    return probabilities.size() - 1;
 }
 
 std::vector<geometry_msgs::Pose2D> resample_particles(std::vector<geometry_msgs::Pose2D>& particles,
@@ -124,9 +186,18 @@ std::vector<geometry_msgs::Pose2D> resample_particles(std::vector<geometry_msgs:
      * Use the random_choice function to pick a particle with the correct probability.
      * Add gaussian noise to each sampled particle (add noise to x,y and theta). Use sigma2 as noise variance.
      */
-    
-    /*
-     */
+    for (size_t i = 0; i < particles.size(); ++i)
+    {
+        int idx = random_choice(probabilities);  // Elige índice según la probabilidad
+        geometry_msgs::Pose2D p = particles[idx];
+        
+        // Agregar ruido gaussiano a cada componente
+        p.x     = rnd.gaussian(p.x, sigma2);
+        p.y     = rnd.gaussian(p.y, sigma2);
+        p.theta = rnd.gaussian(p.theta, sigma2);
+        
+        resampled_particles[i] = p;
+    }
     return resampled_particles;
 }
 
@@ -292,10 +363,18 @@ int main(int argc, char** argv)
              * Get the set of similarities by calling the calculate_similarities function
              * Resample particles by calling the resample_particles function
              */
-            
+            // 1. Mover las partículas con el desplazamiento detectado y ruido
+            move_particles(particles, delta_pose.x, delta_pose.y, delta_pose.theta, sigma2_movement);
 
-            /*
-             */
+            // 2. Simular escaneos para todas las partículas
+            simulated_scans = simulate_particle_scans(particles, static_map, sensor_specs);
+
+            // 3. Calcular similitud entre escaneo real y cada escaneo simulado
+            similarities = calculate_similarities(simulated_scans, real_scan, downsampling, sigma2_sensor);
+
+            // 4. Remuestrear partículas según su similitud y agregar ruido
+            particles = resample_particles(particles, similarities, sigma2_resampling);
+
             map_to_odom = calculate_and_publish_estimated_pose(particles, &pub_particles);
         }
         broadcaster.sendTransform(tf::StampedTransform(map_to_odom, ros::Time::now(), "map", "odom"));
