@@ -20,9 +20,10 @@ from sensor_msgs.msg import PointCloud2
 from geometry_msgs.msg import PointStamped, Point
 from vision_msgs.srv import RecognizeObject, RecognizeObjectResponse
 
-NAME = "FULL_NAME"
+NAME = "Efren Hazael Rivera Perez"
 
 def segment_by_color(img_bgr, points, obj_name):
+    global img_hsv, img_bin, img_filtered
     img_x, img_y, x,y,z = 0,0,0,0,0
     #
     # TODO:
@@ -40,7 +41,30 @@ def segment_by_color(img_bgr, points, obj_name):
     #   Example: 'points[240,320][1]' gets the 'y' value of the point corresponding to
     #   the pixel in the center of the image.
     #
-    
+    img_hsv = cv2.cvtColor(img_bgr,cv2.COLOR_BGR2HSV)
+    if obj_name == "pringles":
+    	img_bin = cv2.inRange(img_hsv,(25,150,50),(35,255,255))
+    	print("pringle")
+    elif obj_name == "drink":
+    	img_bin = cv2.inRange(img_hsv,(15,200,50),(25,255,255))
+    	print("sod")
+    else:
+    	img_bin = cv2.inRange(img_hsv,(0,150,50),(10,255,255))
+    	print("aple")
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(7,7))
+    img_filtered = cv2.erode(img_bin,kernel)
+    img_filtered = cv2.dilate(img_filtered,kernel)
+    nonz = cv2.findNonZero(img_filtered)
+    centroid = cv2.mean(nonz)
+    img_x = centroid[0]
+    img_y = centroid[1]
+    for [[r,c]] in nonz:
+    	x += points[r,c][0]
+    	y += points[r,c][1]
+    	z += points[r,c][2]
+    x = x/len(nonz)
+    y = y/len(nonz)
+    z = z/len(nonz)
     return [img_x, img_y, x,y,z]
 
 def callback_find_object(req):
@@ -55,7 +79,7 @@ def callback_find_object(req):
     img_bgr = cv2.merge((b,g,r))
     [r, c, x, y, z] = segment_by_color(img_bgr, arr, req.name)
     resp = RecognizeObjectResponse()
-    resp.recog_object.header.frame_id = 'realsense_link'
+    resp.recog_object.header.frame_id = 'kinect_link'
     resp.recog_object.header.stamp    = rospy.Time.now()
     resp.recog_object.pose.position.x = x
     resp.recog_object.pose.position.y = y
@@ -65,15 +89,21 @@ def callback_find_object(req):
     return resp
 
 def main():
-    global pub_point, img_bgr
+    global pub_point, img_bgr, img_hsv, img_bin, img_filtered
     print("COLOR SEGMENTATION - " + NAME)
     rospy.init_node("color_segmentation")
     rospy.Service("/vision/obj_reco/detect_and_recognize_object", RecognizeObject, callback_find_object)
     pub_point = rospy.Publisher('/detected_object', PointStamped, queue_size=10)
     img_bgr = numpy.zeros((480, 640, 3), numpy.uint8)
+    img_hsv = numpy.zeros((480, 640, 3), numpy.uint8)
+    img_bin = numpy.zeros((480, 640, 3), numpy.uint8)
+    img_filtered = numpy.zeros((480, 640, 3), numpy.uint8)
     loop = rospy.Rate(10)
     while not rospy.is_shutdown():
-        cv2.imshow("Color Segmentation", img_bgr)
+        cv2.imshow("BGR", img_bgr)
+        cv2.imshow("HSV", img_hsv)
+        cv2.imshow("Binary", img_bin)
+        cv2.imshow("Filtered", img_filtered)
         cv2.waitKey(1)
         loop.sleep()
     

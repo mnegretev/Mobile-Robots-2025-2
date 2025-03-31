@@ -11,7 +11,11 @@
    </rect>
   </property>
   <property name="windowTitle">
+<<<<<<< HEAD
    <string>Mobile Robots 2025-2 - Efren Hazael Rivera Perez</string>
+=======
+   <string>Mobile Robots 2025-2 - FI UNAM</string>
+>>>>>>> cf82130f6f9063f4e457cb1e8c3bd4731ebb7ac2
   </property>
   <property name="styleSheet">
    <string notr="true">QGroupBox {
