@@ -20,7 +20,7 @@ from sensor_msgs.msg import PointCloud2
 from geometry_msgs.msg import PointStamped, Point
 from vision_msgs.srv import RecognizeObject, RecognizeObjectResponse
 
-NAME = "FULL_NAME"
+NAME = "Miguel Angel Ruiz Sànchez"
 
 def segment_by_color(img_bgr, points, obj_name):
     img_x, img_y, x,y,z = 0,0,0,0,0
@@ -40,7 +40,29 @@ def segment_by_color(img_bgr, points, obj_name):
     #   Example: 'points[240,320][1]' gets the 'y' value of the point corresponding to
     #   the pixel in the center of the image.
     #
+    if obj_name == 'pringles':
+        low_color = numpy.array([25, 50, 50])
+        up_color = numpy.array([35, 255, 255])
+    else:
+        low_color = numpy.array([10, 200, 50])
+        up_color = numpy.array([20, 255, 255])
+
+    img_hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
+    mask = cv2.inRange(img_hsv, low_color, up_color)
+    non_zero_pixels = cv2.findNonZero(mask)
+    if non_zero_pixels is None:
+        return [img_x, img_y, x, y, z]
     
+    mean_value = cv2.mean(non_zero_pixels)
+    img_x = int(mean_value[0])
+    img_y = int(mean_value[1])
+    
+    if 0 <= img_y < points.shape[0] and 0 <= img_x < points.shape[1]:
+        x = points[img_y, img_x][0] 
+        y = points[img_y, img_x][1] 
+        z = points[img_y, img_x][2]  
+
+
     return [img_x, img_y, x,y,z]
 
 def callback_find_object(req):
