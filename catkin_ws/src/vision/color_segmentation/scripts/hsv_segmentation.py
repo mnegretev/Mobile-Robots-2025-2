@@ -20,7 +20,7 @@ from sensor_msgs.msg import PointCloud2
 from geometry_msgs.msg import PointStamped, Point
 from vision_msgs.srv import RecognizeObject, RecognizeObjectResponse
 
-NAME = "FULL_NAME"
+NAME = "LUJAN PEREZ CARLOS EDUARDO"
 
 def segment_by_color(img_bgr, points, obj_name):
     global img_hsv, img_bin, img_filtered
@@ -41,8 +41,38 @@ def segment_by_color(img_bgr, points, obj_name):
     #   Example: 'points[240,320][1]' gets the 'y' value of the point corresponding to
     #   the pixel in the center of the image.
     #
+    lowerLim = (25, 50, 50) if obj_name == "pringles" else (15, 150, 150)
+    upperLim = (35, 255, 255) if obj_name == "pringles" else (20, 255, 200)
     
-    return [img_x, img_y, x,y,1]
+    hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
+    mask = cv2.inRange(hsv, lowerLim, upperLim)
+    test1 = mask
+    k_size = 3
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * k_size + 1, 2 * k_size + 1))
+    eroded = cv2.erode(mask, kernel)
+    dilated = cv2.dilate(eroded, kernel)
+    contours, hierarchy = cv2.findContours(dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    color_mask = cv2.cvtColor(dilated, cv2.COLOR_GRAY2BGR)
+    print(contours)
+    for i in range(len(contours)):
+        cv2.drawContours(color_mask, contours, i, (100 * i, 255 - 50 * i, 0), -1)
+    test2 = color_mask
+    idxs = cv2.findNonZero(mask)
+    mean = numpy.zeros(3)
+    counter = 0
+    for [[c,r]] in idxs:
+        p = points[r,c]
+        p = numpy.array([p[0], p[1], p[2]])
+        if(numpy.isnan(numpy.min(p))):
+            continue
+        mean += p
+        counter += 1
+    mean /= counter
+    img_center = cv2.mean(idxs)
+    print("XYZ: ", mean)
+    print("IMG: ", img_center)
+    return [img_center[0], img_center[1], mean[0], mean[1], mean[2]]
+    #return [img_x, img_y, x,y,1]
 
 def callback_find_object(req):
     global pub_point, img_bgr
