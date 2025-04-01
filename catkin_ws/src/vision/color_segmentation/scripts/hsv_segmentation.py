@@ -41,7 +41,6 @@ def segment_by_color(img_bgr, points, obj_name):
     #   the pixel in the center of the image.
     #
     
-    # Assign color limits
     if obj_name == 'pringles':
         lower_color = numpy.array([25, 50, 50])
         upper_color = numpy.array([35, 255, 255])
@@ -49,28 +48,29 @@ def segment_by_color(img_bgr, points, obj_name):
         lower_color = numpy.array([10, 200, 50])
         upper_color = numpy.array([20, 255, 255])
 
-    # Change color space from BGR to HSV
     img_hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
 
-    # Determine pixels within the color range
     mask = cv2.inRange(img_hsv, lower_color, upper_color)
 
-    # Calculate the centroid of the segmented region in image coordinates
-    nonzero = cv2.findNonZero(mask)
-    if nonzero is not None:
-        mean_val = cv2.mean(nonzero)
-        img_x = int(mean_val[0])
-        img_y = int(mean_val[1])
+    kernel = numpy.ones((5, 5), numpy.uint8)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
 
-        # Calculate the centroid in Cartesian space using the point cloud
-        # Assuming the point cloud has the structure: points[row, col] = (x, y, z, rgb)
-        # and the image dimensions are 480x640.
-        if 0 <= img_y < points.shape[0] and 0 <= img_x < points.shape[1]:
-            x = points[img_y, img_x][0]
-            y = points[img_y, img_x][1]
-            z = points[img_y, img_x][2]
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    return [img_x, img_y, x,y,z]
+    if contours:
+        largest_contour = max(contours, key=cv2.contourArea)
+        M = cv2.moments(largest_contour)
+        if M["m00"] != 0:
+            img_x = int(M["m10"] / M["m00"])
+            img_y = int(M["m01"] / M["m00"])
+
+            if 0 <= img_y < points.shape[0] and 0 <= img_x < points.shape[1]:
+                x = points[img_y, img_x][0]
+                y = points[img_y, img_x][1]
+                z = points[img_y, img_x][2]
+
+    return [img_x, img_y, x, y, z]
 
 def callback_find_object(req):
     global pub_point, img_bgr
