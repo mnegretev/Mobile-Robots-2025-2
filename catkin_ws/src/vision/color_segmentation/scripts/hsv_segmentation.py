@@ -20,7 +20,7 @@ from sensor_msgs.msg import PointCloud2
 from geometry_msgs.msg import PointStamped, Point
 from vision_msgs.srv import RecognizeObject, RecognizeObjectResponse
 
-NAME = "FULL_NAME"
+NAME = "German Romero"
 
 def segment_by_color(img_bgr, points, obj_name):
     img_x, img_y, x,y,z = 0,0,0,0,0
@@ -41,7 +41,36 @@ def segment_by_color(img_bgr, points, obj_name):
     #   the pixel in the center of the image.
     #
     
-    return [img_x, img_y, x,y,1]
+    # Assign color limits
+    if obj_name == 'pringles':
+        lower_color = numpy.array([25, 50, 50])
+        upper_color = numpy.array([35, 255, 255])
+    else:
+        lower_color = numpy.array([10, 200, 50])
+        upper_color = numpy.array([20, 255, 255])
+
+    # Change color space from BGR to HSV
+    img_hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
+
+    # Determine pixels within the color range
+    mask = cv2.inRange(img_hsv, lower_color, upper_color)
+
+    # Calculate the centroid of the segmented region in image coordinates
+    nonzero = cv2.findNonZero(mask)
+    if nonzero is not None:
+        mean_val = cv2.mean(nonzero)
+        img_x = int(mean_val[0])
+        img_y = int(mean_val[1])
+
+        # Calculate the centroid in Cartesian space using the point cloud
+        # Assuming the point cloud has the structure: points[row, col] = (x, y, z, rgb)
+        # and the image dimensions are 480x640.
+        if 0 <= img_y < points.shape[0] and 0 <= img_x < points.shape[1]:
+            x = points[img_y, img_x][0]
+            y = points[img_y, img_x][1]
+            z = points[img_y, img_x][2]
+
+    return [img_x, img_y, x,y,z]
 
 def callback_find_object(req):
     global pub_point, img_bgr
