@@ -20,7 +20,7 @@ from sensor_msgs.msg import PointCloud2
 from geometry_msgs.msg import PointStamped, Point
 from vision_msgs.srv import RecognizeObject, RecognizeObjectResponse
 
-NAME = "FULL_NAME"
+NAME = "GARCIA MONJARAZ JESSICA STEPHANIE"
 
 def segment_by_color(img_bgr, points, obj_name):
     global img_hsv, img_bin, img_filtered
@@ -42,7 +42,46 @@ def segment_by_color(img_bgr, points, obj_name):
     #   the pixel in the center of the image.
     #
     
-    return [img_x, img_y, x,y,1]
+    img_hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
+    if obj_name == 'pringles':
+        lower = numpy.array([30, 155, 138])
+        upper = numpy.array([30, 255, 255])
+    elif obj_name == 'drink':
+        lower = numpy.array([10, 200, 50])
+        upper = numpy.array([20, 255, 255])
+    else:
+        return [0,0,0,0,0]
+    
+    img_bin = cv2.inRange(img_hsv, lower, upper)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7,7))
+    img_filtered = cv2.erode(img_bin, kernel)
+    img_filtered = cv2.dilate(img_filtered, kernel)
+    locations = cv2.findNonZero(img_filtered)
+    centroid = cv2.mean(locations)
+    
+    img_x = int(centroid[0])
+    img_y = int(centroid[1])
+
+    x, y, z = 0, 0, 0
+    valid_points = 0
+    for [[c, r]] in locations:
+        px, py, pz = points[r, c][0], points[r, c][1], points[r, c][2]
+        if not (math.isnan(px) or math.isnan(py) or math.isnan(pz)):
+            x += px
+            y += py
+            z += pz
+            valid_points += 1
+    if valid_points > 0:
+        x /= valid_points
+        y /= valid_points
+        z /= valid_points
+    else:
+        x, y, z = 0, 0, 0
+    
+    print("Centroid: ", img_x, img_y)
+    print("Position: ", x, y, z)
+
+    return [img_x, img_y, x,y,z]
 
 def callback_find_object(req):
     global pub_point, img_bgr
@@ -89,4 +128,3 @@ if __name__ == '__main__':
         main()
     except rospy.ROSInterruptException:
         pass
-
