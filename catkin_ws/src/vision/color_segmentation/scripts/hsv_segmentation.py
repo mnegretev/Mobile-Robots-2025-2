@@ -40,41 +40,7 @@ def segment_by_color(img_bgr, points, obj_name):
     #   Example: 'points[240,320][1]' gets the 'y' value of the point corresponding to
     #   the pixel in the center of the image.
     #
-     # Definir los límites de color en RGB
-    if obj_name == 'pringles':
-        lower_rgb = np.array([25, 50, 50], dtype=np.uint8)
-        upper_rgb = np.array([35, 255, 255], dtype=np.uint8)
-    else:
-        lower_rgb = np.array([10, 200, 50], dtype=np.uint8)
-        upper_rgb = np.array([20, 255, 255], dtype=np.uint8)
     
-    # Convertir los límites de RGB a HSV
-    lower_hsv = cv2.cvtColor(np.uint8([[lower_rgb]]), cv2.COLOR_RGB2HSV)[0][0]
-    upper_hsv = cv2.cvtColor(np.uint8([[upper_rgb]]), cv2.COLOR_RGB2HSV)[0][0]
-    
-    # Convertir la imagen de BGR a HSV
-    img_hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
-    
-    # Filtrar la imagen con el rango de color en HSV
-    img_bin = cv2.inRange(img_hsv, lower_hsv, upper_hsv)
-    
-    # Operaciones morfológicas para eliminar ruido
-    kernel = np.ones((5, 5), np.uint8)  # Kernel 5x5
-    img_filtered = cv2.morphologyEx(img_bin, cv2.MORPH_OPEN, kernel)
-    img_filtered = cv2.morphologyEx(img_filtered, cv2.MORPH_CLOSE, kernel)
-    
-    # Encontrar los píxeles en la máscara binaria
-    points_nonzero = cv2.findNonZero(img_filtered)
-    
-    if points_nonzero is not None:
-        # Calcular el centroide
-        mean = cv2.mean(points_nonzero)
-        img_x, img_y = int(mean[0]), int(mean[1])
-        
-        # Verificar que las coordenadas estén dentro de los límites de la imagen
-        if 0 <= img_x < points.shape[1] and 0 <= img_y < points.shape[0]:
-            # Obtener la posición 3D del centroide
-            x, y, z = points[img_y, img_x]
     return [img_x, img_y, x,y,z]
 
 def callback_find_object(req):
