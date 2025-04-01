@@ -20,7 +20,7 @@ from sensor_msgs.msg import PointCloud2
 from geometry_msgs.msg import PointStamped, Point
 from vision_msgs.srv import RecognizeObject, RecognizeObjectResponse
 
-NAME = "FULL_NAME"
+NAME = "Carlos Castañeda Mora"
 
 def segment_by_color(img_bgr, points, obj_name):
     global img_hsv, img_bin, img_filtered
@@ -41,8 +41,44 @@ def segment_by_color(img_bgr, points, obj_name):
     #   Example: 'points[240,320][1]' gets the 'y' value of the point corresponding to
     #   the pixel in the center of the image.
     #
+    if obj_name == 'pringles':
+        lower_color = numpy.array([25, 50, 50])
+        upper_color = numpy.array([35, 255, 255])
+    elif  obj_name == 'drink':  
+        lower_color = numpy.array([10, 200, 50])
+        upper_color = numpy.array([20, 255, 255])
     
-    return [img_x, img_y, x,y,1]
+    
+    img_hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
+    
+
+    img_bin = cv2.inRange(img_hsv, lower_color, upper_color)
+    
+
+
+    kernel =cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (6,6))
+    img_filtered = cv2.morphologyEx(img_bin, cv2.MORPH_OPEN, kernel)
+    img_filtered = cv2.morphologyEx(img_filtered, cv2.MORPH_CLOSE, kernel)
+
+
+
+    contours, _ = cv2.findContours(img_filtered, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if len(contours) > 0:
+        largest_contour = max(contours, key=cv2.contourArea)
+        M = cv2.moments(largest_contour)
+        if M["m00"] != 0:
+            img_x = int(M["m10"] / M["m00"])
+            img_y = int(M["m01"] / M["m00"])
+            
+            
+            if 0 <= img_y < points.shape[0] and 0 <= img_x < points.shape[1]:
+                point = points[img_y, img_x]
+                if not numpy.isnan(point['x']) and not numpy.isnan(point['y']) and not numpy.isnan(point['z']):
+                    x = point['x']
+                    y = point['y']
+                    z = point['z']
+    return [img_x, img_y, x,y,z]
+
 
 def callback_find_object(req):
     global pub_point, img_bgr

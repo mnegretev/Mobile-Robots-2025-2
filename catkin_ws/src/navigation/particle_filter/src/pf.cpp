@@ -15,11 +15,12 @@
 #include "tf/transform_listener.h"
 #include "geometry_msgs/PoseArray.h"
 #include "geometry_msgs/Pose2D.h"
+#include <limits>
 #include "tf/transform_broadcaster.h"
 #define DISTANCE_THRESHOLD  0.2
 #define ANGLE_THRESHOLD     0.2
 
-#define NOMBRE "APELLIDO_PATERNO_APELLIDO_MATERNO_NOMBRE"
+#define NOMBRE "Castañeda Mora Carlos"
 
 std::vector<geometry_msgs::Pose2D> get_initial_distribution(int N, float min_x, float max_x, float min_y, float max_y,
                                                              float min_a, float max_a)
@@ -35,6 +36,11 @@ std::vector<geometry_msgs::Pose2D> get_initial_distribution(int N, float min_x, 
     
     /*
      */
+     for(int i=0;i<N;i++){
+        particles[i].x = rnd.uniformReal(min_x, max_x);
+        particles[i].y =  rnd.uniformReal(min_y, max_y);
+        particles[i].theta =  rnd.uniformReal(min_a, max_a);
+     }
     return particles;
 }
 
@@ -50,7 +56,11 @@ void move_particles(std::vector<geometry_msgs::Pose2D>& particles, float delta_x
      * Add gaussian noise to each new position. Use sigma2 as variance.
      * You can use the function rnd.gaussian(mean, variance)
      */
-
+     for(int i=0; i<particles.size() ;i++){
+        particles[i].x += delta_x*cos(particles[i].theta)- delta_y*sin(particles[i].theta) + rnd.gaussian(0, sigma2);
+        particles[i].y +=  delta_x*sin(particles[i].theta) + delta_y*cos(particles[i].theta) + rnd.gaussian(0, sigma2);
+        particles[i].theta += delta_t + rnd.gaussian(0, sigma2);
+     }
 }
 
 std::vector<sensor_msgs::LaserScan> simulate_particle_scans(std::vector<geometry_msgs::Pose2D>& particles,
@@ -93,6 +103,16 @@ std::vector<float> calculate_similarities(std::vector<sensor_msgs::LaserScan>& s
     
     /*
      */
+    float delta;
+    for(int i=0; i<simulated_scans.size(); i++){
+        delta= 0;
+        for(int j=0; j<simulated_scans[i].size(); j++){
+            if((simulated_scans[i].ranges[j] < numeric_limits<float>::max()) && (simulated_scans[i].ranges[j] > numeric_limits<float>::min())){
+                delta += 1;
+            }
+        }
+        delta /= j;
+    }
     return similarities;
 }
 
@@ -127,6 +147,12 @@ std::vector<geometry_msgs::Pose2D> resample_particles(std::vector<geometry_msgs:
     
     /*
      */
+    for(int i=0; i<particles.size(); i++){
+        int idx = random_choice(probabilities);
+        resampled_particles[i].x = particles[idx].x +rnd.gaussian(0,sigma2);
+        resampled_particles[i].y = particles[idx].y +rnd.gaussian(0,sigma2);
+        resampled_particles[i].theta = particles[idx].theta +rnd.gaussian(0,sigma2);
+    }
     return resampled_particles;
 }
 
