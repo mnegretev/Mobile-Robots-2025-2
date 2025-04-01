@@ -41,7 +41,7 @@ def segment_by_color(img_bgr, points, obj_name):
     #   Example: 'points[240,320][1]' gets the 'y' value of the point corresponding to
     #   the pixel in the center of the image.
     #
-        img_hsv = cv2.cvtColor(img_bgr,cv2.COLOR_BGR2HSV)
+    img_hsv = cv2.cvtColor(img_bgr,cv2.COLOR_BGR2HSV)
     if obj_name == "pringles":
     	img_bin = cv2.inRange(img_hsv,(25,150,50),(35,255,255))
     	print("pringle")
