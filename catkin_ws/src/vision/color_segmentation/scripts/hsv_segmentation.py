@@ -46,32 +46,30 @@ def segment_by_color(img_bgr, points, obj_name):
    # Validar que la imagen y la nube de puntos no estén vacías
     # Assign lower and upper color limits
         # 1. Asignar los límites inferiores y superiores de color según el objeto solicitado.
+     # Assign color limits
     if obj_name == 'pringles':
-        lower_color = np.array([25, 50, 50])
-        upper_color = np.array([35, 255, 255])
-    else:  # Para 'drink'
-        lower_color = np.array([10, 200, 50])
-        upper_color = np.array([20, 255, 255])
+        lower_color = numpy.array([25, 50, 50])
+        upper_color = numpy.array([35, 255, 255])
+    else:
+        lower_color = numpy.array([10, 200, 50])
+        upper_color = numpy.array([20, 255, 255])
 
-    # 2. Cambiar el espacio de color de BGR a HSV.
     img_hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
     
-    # 3. Determinar los píxeles cuyo color está dentro del rango seleccionado.
-    img_bin = cv2.inRange(img_hsv, lower_color, upper_color)
-    
-    # 4. Calcular el centroide de todos los píxeles en el rango de color seleccionado.
-    non_zero_points = cv2.findNonZero(img_bin)  # Encuentra las coordenadas de los píxeles no nulos
-    if non_zero_points is not None:
-        moments = cv2.moments(non_zero_points)
-        if moments['m00'] != 0:
-            img_x = int(moments['m10'] / moments['m00'])  # Coordenada x del centroide en imagen
-            img_y = int(moments['m01'] / moments['m00'])  # Coordenada y del centroide en imagen
+    mask = cv2.inRange(img_hsv, lower_color, upper_color)
+
+    nonzero = cv2.findNonZero(mask)
+    if nonzero is not None:
+        mean_val = cv2.mean(nonzero)
+        img_x = int(mean_val[0])
+        img_y = int(mean_val[1])
+
         
-        # 5. Calcular el centroide de la región segmentada en el espacio cartesiano.
-        # Obtenemos la coordenada 3D correspondiente a los píxeles (img_x, img_y) de la imagen.
-        x = points[img_y, img_x][0]  # Coordenada X en espacio cartesiano
-        y = points[img_y, img_x][1]  # Coordenada Y en espacio cartesiano
-        z = points[img_y, img_x][2]  # Coordenada Z en espacio cartesiano
+        if 0 <= img_y < points.shape[0] and 0 <= img_x < points.shape[1]:
+            x = points[img_y, img_x][0]
+            y = points[img_y, img_x][1]
+            z = points[img_y, img_x][2]
+
 
     return [img_x, img_y, x, y, z]
 
