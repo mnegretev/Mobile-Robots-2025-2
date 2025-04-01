@@ -20,7 +20,7 @@ from sensor_msgs.msg import PointCloud2
 from geometry_msgs.msg import PointStamped, Point
 from vision_msgs.srv import RecognizeObject, RecognizeObjectResponse
 
-NAME = "Jorge Eithan Treviño Selles"
+NAME = "Lujan perez carlos eduardo "
 
 def segment_by_color(img_bgr, points, obj_name):
     global img_hsv, img_bin, img_filtered
