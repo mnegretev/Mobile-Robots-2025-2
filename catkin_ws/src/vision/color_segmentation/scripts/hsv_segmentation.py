@@ -20,29 +20,47 @@ from sensor_msgs.msg import PointCloud2
 from geometry_msgs.msg import PointStamped, Point
 from vision_msgs.srv import RecognizeObject, RecognizeObjectResponse
 
-NAME = "FULL_NAME"
+NAME = "MURILLO SANTOS JAVIER EDUARDO"
 
 def segment_by_color(img_bgr, points, obj_name):
     global img_hsv, img_bin, img_filtered
-    img_x, img_y, x,y,z = 0,0,0,0,0
-    #
-    # TODO:
-    # - Assign lower and upper color limits according to the requested object:
-    #   If obj_name == 'pringles': [25, 50, 50] - [35, 255, 255]
-    #   otherwise                : [10,200, 50] - [20, 255, 255]
-    # - Change color space from RGB to HSV.
-    #   Check online documentation for cv2.cvtColor function
-    # - Determine the pixels whose color is in the selected color range.
-    #   Check online documentation for cv2.inRange
-    # - Calculate the centroid of all pixels in the given color range (ball position).
-    #   Check online documentation for cv2.findNonZero and cv2.mean
-    # - Calculate the centroid of the segmented region in the cartesian space
-    #   using the point cloud 'points'. Use numpy array notation to process the point cloud data.
-    #   Example: 'points[240,320][1]' gets the 'y' value of the point corresponding to
-    #   the pixel in the center of the image.
-    #
-    
-    return [img_x, img_y, x,y,1]
+    img_x, img_y, x, y, z = 0, 0, 0, 0, 0
+
+    # Asignar límites HSV según el objeto
+    if obj_name == "pringles":
+        lower = numpy.array([25, 50, 50])
+        upper = numpy.array([35, 255, 255])
+    else:
+        lower = numpy.array([10, 200, 50])
+        upper = numpy.array([20, 255, 255])
+
+    # Convertir imagen de BGR a HSV
+    img_hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
+
+    # Crear máscara binaria según los límites de color
+    img_bin = cv2.inRange(img_hsv, lower, upper)
+
+    # Aplicar filtro de mediana para eliminar puntos aislados
+    img_bin = cv2.medianBlur(img_bin, 5)
+
+    # Calcular el centroide de la máscara (coordenadas de imagen)
+    M = cv2.moments(img_bin)
+    if M["m00"] > 0:
+        img_x = int(M["m10"] / M["m00"])
+        img_y = int(M["m01"] / M["m00"])
+        
+        # Obtener coordenadas cartesianas desde la nube de puntos (índice correcto: [y, x])
+        try:
+            if not numpy.isnan(points[img_y, img_x][0]):
+                x = points[img_y, img_x][0]
+                y = points[img_y, img_x][1]
+                z = points[img_y, img_x][2]
+        except:
+            pass
+
+
+    return [img_x, img_y, x, y, z]
+
 
 def callback_find_object(req):
     global pub_point, img_bgr
