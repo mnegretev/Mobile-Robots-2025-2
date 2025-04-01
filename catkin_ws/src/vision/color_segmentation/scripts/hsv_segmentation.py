@@ -73,7 +73,7 @@ def segment_by_color(img_bgr, points, obj_name):
         y = y / len(non_zero_pixels)
         z = z / len(non_zero_pixels)
 
-    
+    print(x,y,z)
     return [img_x, img_y, x,y,1]
 
 def callback_find_object(req):
