@@ -20,7 +20,7 @@ from sensor_msgs.msg import PointCloud2
 from geometry_msgs.msg import PointStamped, Point
 from vision_msgs.srv import RecognizeObject, RecognizeObjectResponse
 
-NAME = "FULL_NAME"
+NAME = "CRUZ ZAMORA JOEL DAVID"
 
 def segment_by_color(img_bgr, points, obj_name):
     global img_hsv, img_bin, img_filtered
@@ -41,6 +41,30 @@ def segment_by_color(img_bgr, points, obj_name):
     #   Example: 'points[240,320][1]' gets the 'y' value of the point corresponding to
     #   the pixel in the center of the image.
     #
+    if obj_name == 'pringles':
+        lower = numpy.array([25, 50, 50])
+        upper = numpy.array([35, 255, 255])
+    else:
+        lower = numpy.array([10, 200, 50])
+        upper = numpy.array([20, 255, 255])
+    
+    # Cambiar espacio de color de RGB a HSV
+    img_hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
+    # Determinar el pixel cuyo color esta en el rango de color seleccionado
+    img_bin = cv2.inRange(img_hsv, lower, upper)
+    # Aplicar filtro
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
+    img_filtered = cv2.erode(img_bin, kernel)
+    img_filtered = cv2.dilate(img_filtered, kernel)
+    # Calcular el centroide de todos los pixeles en el rango de color dado.
+    non_zero_points = cv2.findNonZero(img_filtered)    
+    if non_zero_points is not None:
+        centroid = cv2.mean(non_zero_points)
+        img_x, img_y = int(centroid[0]), int(centroid[1])
+        # Calcular el centroide en el espacio cartesiano usando la nube de puntos
+        x, y, z = points[img_y, img_x][0], points[img_y, img_x][1], points[img_y, img_x][2]
+    else:
+        img_x, img_y, x, y, z = 0, 0, 0, 0, 0
     
     return [img_x, img_y, x,y,1]
 
