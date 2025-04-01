@@ -19,7 +19,7 @@
 #define DISTANCE_THRESHOLD  0.2
 #define ANGLE_THRESHOLD     0.2
 
-#define NOMBRE "APELLIDO_PATERNO_APELLIDO_MATERNO_NOMBRE"
+#define NOMBRE "PACHECO JARILLO JUAN SALVADOR"
 
 std::vector<geometry_msgs::Pose2D> get_initial_distribution(int N, float min_x, float max_x, float min_y, float max_y,
                                                              float min_a, float max_a)
@@ -35,6 +35,10 @@ std::vector<geometry_msgs::Pose2D> get_initial_distribution(int N, float min_x, 
     
     /*
      */
+    for(int i = 0; i < N; i++)
+    {	
+	// particles[i].x = rnd.uniformReal()
+    }
     return particles;
 }
 
@@ -49,7 +53,19 @@ void move_particles(std::vector<geometry_msgs::Pose2D>& particles, float delta_x
      * is the orientation of the i-th particle.
      * Add gaussian noise to each new position. Use sigma2 as variance.
      * You can use the function rnd.gaussian(mean, variance)
+     * FOR PARA RECORRER LAS PARtÍCULAS
+     * for i e [0, N] 
+     * delta = 0 
+     * 	for j e [0, M] M = simulated_scans[i].size()
+     * 
      */
+     
+     
+     
+    for(int i = 0; i < particles.size(); i++)
+    {	
+	// * particles[i].x = rnd.uniformReal()
+    }
 
 }
 

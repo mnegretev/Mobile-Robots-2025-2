@@ -100,6 +100,7 @@ def rejection_force(laser_readings, zeta, d0):
     force_y = force_y/N
     
     
+
     return numpy.asarray([force_x, force_y])
 
 def move_by_pot_fields(global_goal_x, global_goal_y, epsilon, tol, eta, zeta, d0, alpha, beta):
@@ -125,13 +126,11 @@ def move_by_pot_fields(global_goal_x, global_goal_y, epsilon, tol, eta, zeta, d0
         Fr = rejection_force(laser_readings, zeta, d0)
         F = Fa + Fr
         P = -epsilon*F
-        v, w = calculate_control(Pg[0], Pg[1], alpha, beta)
+        v, w = calculate_control(P[0], P[1], alpha, beta)
         
         publish_speed_and_forces(v, w, Fa, Fr, F)
         Pg = get_goal_point_wrt_robot(global_goal_x, global_goal_y)
    
-         
-        
 
 def get_goal_point_wrt_robot(goal_x, goal_y):
     robot_x, robot_y, robot_a = get_robot_pose(listener)

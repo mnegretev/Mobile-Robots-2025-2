@@ -20,7 +20,7 @@ from sensor_msgs.msg import PointCloud2
 from geometry_msgs.msg import PointStamped, Point
 from vision_msgs.srv import RecognizeObject, RecognizeObjectResponse
 
-NAME = "FULL_NAME"
+NAME = "PACHECO JARILLO JUAN SALVADOR"
 
 def segment_by_color(img_bgr, points, obj_name):
     global img_hsv, img_bin, img_filtered
@@ -34,6 +34,7 @@ def segment_by_color(img_bgr, points, obj_name):
     #   Check online documentation for cv2.cvtColor function
     # - Determine the pixels whose color is in the selected color range.
     #   Check online documentation for cv2.inRange
+    
     # - Calculate the centroid of all pixels in the given color range (ball position).
     #   Check online documentation for cv2.findNonZero and cv2.mean
     # - Calculate the centroid of the segmented region in the cartesian space
@@ -41,6 +42,47 @@ def segment_by_color(img_bgr, points, obj_name):
     #   Example: 'points[240,320][1]' gets the 'y' value of the point corresponding to
     #   the pixel in the center of the image.
     #
+
+ # Assign lower and upper color limits according to the requested object
+    if obj_name == "pringles":
+        lim_low = (25, 50, 50)
+        lim_up = (35, 255, 255)
+    elif obj_name == "drink":
+        lim_low = (15, 50, 50)
+        lim_up = (15, 255, 255)
+    else:
+        lim_low = (10, 200, 50)
+        lim_up = (20, 255, 255)
+        
+    img_hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
+    # Máscara binaria
+    img_bin= cv2.inRange(img_hsv,lim_low,lim_up)
+    kernel=cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(7,7))
+    img_filtered=cv2.erode(img_bin,kernel)
+    img_filtered=cv2.dilate(img_filtered,kernel)
+    locs=cv2.findNonZero(img_filtered)
+   
+    
+    centroid=cv2.mean(locs)
+    print(centroid)
+    img_x=centroid[0]
+    img_y=centroid[1]
+    x,y,z = 0,0,0
+    
+    if locs is not None:
+	    for [[c,r]] in locs:
+	        x+=points[r,c][0]
+	        y+=points[r,c][1]
+	        z+=points[r,c][2]
+	    x /= len(locs)
+	    y /= len(locs)
+	    z /= len(locs)
+	    print("x: ", x)
+	    print("y:",y)
+	    print("z:",z)
+    else:
+    # No funciona el rango
+    	print("No se encontró el objeto.")
     
     return [img_x, img_y, x,y,1]
 
