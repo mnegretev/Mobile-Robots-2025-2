@@ -43,32 +43,48 @@ def segment_by_color(img_bgr, points, obj_name):
  
       
     # 1. Asignar los límites inferiores y superiores de color según el objeto solicitado.
+   # Validar que la imagen y la nube de puntos no estén vacías
+    if img_bgr is None or points is None:
+        print("[ERROR] La imagen o la nube de puntos están vacías.")
+        return [img_x, img_y, x, y, z]
+
+    # Definir límites de color HSV
     if obj_name == 'pringles':
         lower_color = np.array([25, 50, 50])
         upper_color = np.array([35, 255, 255])
-    else:  # Para 'drink'
+    else:  # 'drink'
         lower_color = np.array([10, 200, 50])
         upper_color = np.array([20, 255, 255])
 
-    # 2. Cambiar el espacio de color de BGR a HSV.
+    # Convertir imagen de BGR a HSV
     img_hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
-    
-    # 3. Determinar los píxeles cuyo color está dentro del rango seleccionado.
+
+    # Crear máscara binaria con el rango de color
     img_bin = cv2.inRange(img_hsv, lower_color, upper_color)
+
+    # Ver si se detecta alguna región
+    non_zero_points = cv2.findNonZero(img_bin)
+    if non_zero_points is None:
+        print(f"[INFO] No se encontraron píxeles para el objeto '{obj_name}'.")
+        return [img_x, img_y, x, y, z]
+
+    # Calcular centroide
+    moments = cv2.moments(img_bin)
+    if moments['m00'] != 0:
+        img_x = int(moments['m10'] / moments['m00'])  # Centroide X en imagen
+        img_y = int(moments['m01'] / moments['m00'])  # Centroide Y en imagen
+        print(f"[INFO] Centroide en imagen: ({img_x}, {img_y})")
+
+        # Validar que img_x e img_y no estén fuera del rango de la nube de puntos
+        h, w, _ = img_bgr.shape
+        if 0 <= img_x < w and 0 <= img_y < h:
+            x = points[img_y, img_x][0]  # Coordenada X en espacio cartesiano
+            y = points[img_y, img_x][1]  # Coordenada Y en espacio cartesiano
+            z = points[img_y, img_x][2]  # Coordenada Z en espacio cartesiano
+            print(f"[INFO] Centroide en espacio 3D: ({x}, {y}, {z})")
+        else:
+            print("[ERROR] Centroide fuera de la imagen, no se puede obtener posición 3D.")
     
-    # 4. Calcular el centroide de todos los píxeles en el rango de color seleccionado.
-    non_zero_points = cv2.findNonZero(img_bin)  # Encuentra las coordenadas de los píxeles no nulos
-    if non_zero_points is not None:
-        moments = cv2.moments(non_zero_points)
-        if moments['m00'] != 0:
-            img_x = int(moments['m10'] / moments['m00'])  # Coordenada x del centroide en imagen
-            img_y = int(moments['m01'] / moments['m00'])  # Coordenada y del centroide en imagen
-        
-        # 5. Calcular el centroide de la región segmentada en el espacio cartesiano.
-        # Obtenemos la coordenada 3D correspondiente a los píxeles (img_x, img_y) de la imagen.
-        x = points[img_y, img_x][0]  # Coordenada X en espacio cartesiano
-        y = points[img_y, img_x][1]  # Coordenada Y en espacio cartesiano
-        z = points[img_y, img_x][2]  # Coordenada Z en espacio cartesiano
         
     return [img_x, img_y, x,y,z]
 
