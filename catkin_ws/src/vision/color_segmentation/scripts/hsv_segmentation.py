@@ -20,7 +20,7 @@ from sensor_msgs.msg import PointCloud2
 from geometry_msgs.msg import PointStamped, Point
 from vision_msgs.srv import RecognizeObject, RecognizeObjectResponse
 
-NAME = "LUJAN PEREZ CARLOS EDUARDO"
+NAME = "Jorge Eithan Treviño Selles"
 
 def segment_by_color(img_bgr, points, obj_name):
     global img_hsv, img_bin, img_filtered
@@ -41,31 +41,40 @@ def segment_by_color(img_bgr, points, obj_name):
     #   Example: 'points[240,320][1]' gets the 'y' value of the point corresponding to
     #   the pixel in the center of the image.
     #
-    img_hsv = cv2.cvtColor(img_bgr,cv2.COLOR_BGR2HSV)
     if obj_name == "pringles":
-    	img_bin = cv2.inRange(img_hsv,(25,150,50),(35,255,255))
-    	print("pringle")
-    elif obj_name == "drink":
-    	img_bin = cv2.inRange(img_hsv,(15,200,50),(25,255,255))
-    	print("sod")
+        lower_color = numpy.array([25, 50, 50])
+        upper_color = numpy.array([35, 255, 255])
     else:
-    	img_bin = cv2.inRange(img_hsv,(0,150,50),(10,255,255))
-    	print("aple")
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(7,7))
-    img_filtered = cv2.erode(img_bin,kernel)
-    img_filtered = cv2.dilate(img_filtered,kernel)
-    nonz = cv2.findNonZero(img_filtered)
-    centroid = cv2.mean(nonz)
-    img_x = centroid[0]
-    img_y = centroid[1]
-    for [[r,c]] in nonz:
-    	x += points[r,c][0]
-    	y += points[r,c][1]
-    	z += points[r,c][2]
-    x = x/len(nonz)
-    y = y/len(nonz)
-    z = z/len(nonz)
-    return [img_x, img_y, x,y,z]
+        lower_color = numpy.array([10, 200, 50])
+        upper_color = numpy.array([20, 255, 255])
+
+    img_hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
+    img_bin = cv2.inRange(img_hsv, lower_color, upper_color)
+
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
+    img_filtered = cv2.erode(img_bin, kernel)
+    img_filtered = cv2.dilate(img_filtered, kernel)
+
+    non_zero_pixels = cv2.findNonZero(img_filtered)
+    if non_zero_pixels is None:
+        return [img_x, img_y, x, y, z]
+
+    centroid = cv2.mean(non_zero_pixels)
+    img_x = int(centroid[0])
+    img_y = int(centroid[1])
+
+    for [[r, c]] in non_zero_pixels:
+        x += points[r, c][0]
+        y += points[r, c][1]
+        z += points[r, c][2]
+
+    if len(non_zero_pixels) > 0:
+        x = x / len(non_zero_pixels)
+        y = y / len(non_zero_pixels)
+        z = z / len(non_zero_pixels)
+
+    
+    return [img_x, img_y, x,y,1]
 
 def callback_find_object(req):
     global pub_point, img_bgr
@@ -112,4 +121,3 @@ if __name__ == '__main__':
         main()
     except rospy.ROSInterruptException:
         pass
-
