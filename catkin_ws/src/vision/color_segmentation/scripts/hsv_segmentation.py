@@ -24,57 +24,48 @@ NAME = "Lujan perez carlos eduardo "
 
 def segment_by_color(img_bgr, points, obj_name):
     global img_hsv, img_bin, img_filtered
-    img_x, img_y, x,y,z = 0,0,0,0,0
-    #
-    # TODO:
-    # - Assign lower and upper color limits according to the requested object:
-    #   If obj_name == 'pringles': [25, 50, 50] - [35, 255, 255]
-    #   otherwise                : [10,200, 50] - [20, 255, 255]
-    # - Change color space from RGB to HSV.
-    #   Check online documentation for cv2.cvtColor function
-    # - Determine the pixels whose color is in the selected color range.
-    #   Check online documentation for cv2.inRange
-    # - Calculate the centroid of all pixels in the given color range (ball position).
-    #   Check online documentation for cv2.findNonZero and cv2.mean
-    # - Calculate the centroid of the segmented region in the cartesian space
-    #   using the point cloud 'points'. Use numpy array notation to process the point cloud data.
-    #   Example: 'points[240,320][1]' gets the 'y' value of the point corresponding to
-    #   the pixel in the center of the image.
-    #
-    if obj_name == "pringles":
-        lower_color = numpy.array([25, 50, 50])
-        upper_color = numpy.array([35, 255, 255])
+
+    # Identifica los rangos de colores para cada objeto
+    if obj_name == 'pringles':
+        lower = (25, 50, 50)
+        upper = (35, 255, 255)
+    elif obj_name == 'drink':
+        lower = (10, 200, 50)
+        upper = (20, 255, 255)
     else:
-        lower_color = numpy.array([10, 200, 50])
-        upper_color = numpy.array([20, 255, 255])
+        # Si el objeto no es 'pringles' ni 'drink', retorna ceros
+        return [0, 0, 0, 0, 0]
 
     img_hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
-    img_bin = cv2.inRange(img_hsv, lower_color, upper_color)
-
+    img_bin = cv2.inRange(img_hsv, lower, upper)
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
     img_filtered = cv2.erode(img_bin, kernel)
     img_filtered = cv2.dilate(img_filtered, kernel)
+    locs = cv2.findNonZero(img_filtered)
 
-    non_zero_pixels = cv2.findNonZero(img_filtered)
-    if non_zero_pixels is None:
-        return [img_x, img_y, x, y, z]
+    centroid = cv2.mean(locs)
+    print(centroid)
 
-    centroid = cv2.mean(non_zero_pixels)
-    img_x = int(centroid[0])
-    img_y = int(centroid[1])
+    img_x = centroid[0]
+    img_y = centroid[1]
 
-    for [[r, c]] in non_zero_pixels:
-        x += points[r, c][0]
-        y += points[r, c][1]
-        z += points[r, c][2]
+    sum_x, sum_y, sum_z = 0, 0, 0
+    for pt in locs:
+        c, r = pt[0]
+        sum_x += points[r, c][0]
+        sum_y += points[r, c][1]
+        sum_z += points[r, c][2]
+    count = len(locs)
+    centroid_x = sum_x / count
+    centroid_y = sum_y / count
+    centroid_z = sum_z / count
 
-    if len(non_zero_pixels) > 0:
-        x = x / len(non_zero_pixels)
-        y = y / len(non_zero_pixels)
-        z = z / len(non_zero_pixels)
+    print("x: ", centroid_x)
+    print("y: ", centroid_y)
+    print("z: ", centroid_z)
+    
 
-    print(x,y,z)
-    return [img_x, img_y, x,y,1]
+    return [img_x, img_y, centroid_x, centroid_y, centroid_z]
 
 def callback_find_object(req):
     global pub_point, img_bgr
