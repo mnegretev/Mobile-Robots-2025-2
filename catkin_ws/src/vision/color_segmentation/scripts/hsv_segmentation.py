@@ -27,7 +27,7 @@ def segment_by_color(img_bgr, points, obj_name):
 
     # Identifica los rangos de colores para cada objeto
     if obj_name == 'pringles':
-        lower = (25, 50, 50)
+        lower = (25, 150, 50)
         upper = (35, 255, 255)
     elif obj_name == 'drink':
         lower = (10, 200, 50)
