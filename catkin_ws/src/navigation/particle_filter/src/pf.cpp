@@ -15,6 +15,7 @@
 #include "tf/transform_listener.h"
 #include "geometry_msgs/PoseArray.h"
 #include "geometry_msgs/Pose2D.h"
+#include <numeric>
 #include "tf/transform_broadcaster.h"
 #define DISTANCE_THRESHOLD  0.2
 #define ANGLE_THRESHOLD     0.2
