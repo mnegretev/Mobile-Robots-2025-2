@@ -16,6 +16,7 @@
 #include "geometry_msgs/PoseArray.h"
 #include "geometry_msgs/Pose2D.h"
 #include "tf/transform_broadcaster.h"
+#include <numeric>
 #define DISTANCE_THRESHOLD  0.2
 #define ANGLE_THRESHOLD     0.2
 
@@ -32,8 +33,7 @@ std::vector<geometry_msgs::Pose2D> get_initial_distribution(int N, float min_x, 
      * with positions uniformly distributed within bounding box given by min_x, ..., max_a.
      * To generate uniformly distributed random numbers, you can use the funcion rnd.uniformReal(min, max)
      */
-    for (int i = 0; i < N; ++i)
-    {
+    for (int i = 0; i < N; ++i) {
         geometry_msgs::Pose2D particle;
         particle.x = rnd.uniformReal(min_x, max_x); // Generar posición x aleatoria
         particle.y = rnd.uniformReal(min_y, max_y); // Generar posición y aleatoria
@@ -56,8 +56,7 @@ void move_particles(std::vector<geometry_msgs::Pose2D>& particles, float delta_x
      * Add gaussian noise to each new position. Use sigma2 as variance.
      * You can use the function rnd.gaussian(mean, variance)
      */
-    for (auto& particle : particles)
-    {
+    for (auto& particle : particles) {
         // Rotar delta_x y delta_y en el marco de referencia de la partícula
         float cos_theta = std::cos(particle.theta);
         float sin_theta = std::sin(particle.theta);
@@ -80,8 +79,7 @@ std::vector<sensor_msgs::LaserScan> simulate_particle_scans(std::vector<geometry
      * Review the code to simulate a laser scan for each particle given the set of particles and a static map. 
      */
     std::vector<sensor_msgs::LaserScan> simulated_scans(particles.size());
-    for(size_t i=0; i < particles.size(); i++)
-    {
+    for(size_t i=0; i < particles.size(); i++) {
         geometry_msgs::Pose sensor_pose;
         sensor_pose.position.x    = particles[i].x;
         sensor_pose.position.y    = particles[i].y;
@@ -130,7 +128,7 @@ std::vector<float> calculate_similarities(std::vector<sensor_msgs::LaserScan>& s
     }
     
     // Normalizar las similitudes
-    if (sum_similarities > 0.0f){
+    if (sum_similarities > 0.0f) {
         for (auto& sim : similarities){
             sim /= sum_similarities;
         }
@@ -140,6 +138,7 @@ std::vector<float> calculate_similarities(std::vector<sensor_msgs::LaserScan>& s
         float uniform_weight = 1.0 / similarities.size();
         for (float& similarity : similarities) {
             similarity = uniform_weight;
+        }
     }
     
     return similarities;
@@ -362,7 +361,7 @@ int main(int argc, char** argv)
              * Resample particles by calling the resample_particles function
              */
             move_particles(particles, delta_pose.x, delta_pose.y, delta_pose.theta, sigma2_movement);
-            simulated_scans = simulate_particle_scans(particle, static_map, sensor_specs);
+            simulated_scans = simulate_particle_scans(particles, static_map, sensor_specs);
             similarities = calculate_similarities(simulated_scans, real_scan, downsampling, sigma2_sensor);
             particles = resample_particles(particles, similarities, sigma2_resampling);
             
