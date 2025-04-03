@@ -152,7 +152,10 @@ std::vector<float> calculate_similarities(std::vector<sensor_msgs::LaserScan>& s
     return similarities;
 }
 
-int random_choice(std::vector<float>& probabilities)
+// pf.cpp
+namespace particle_filter {
+    int random_choice(std::vector<float>& probabilities) {
+        int random_choice(std::vector<float>& probabilities)
 {
     random_numbers::RandomNumberGenerator rnd;
     /*
@@ -178,6 +181,8 @@ int random_choice(std::vector<float>& probabilities)
     /*
      */
 }
+    }
+
 
 
 std::vector<geometry_msgs::Pose2D> resample_particles(std::vector<geometry_msgs::Pose2D>& particles,
