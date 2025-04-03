@@ -103,15 +103,35 @@ std::vector<float> calculate_similarities(std::vector<sensor_msgs::LaserScan>& s
     
     /*
      */
-    float delta;
-    for(int i=0; i<simulated_scans.size(); i++){
-        delta= 0;
-        for(int j=0; j<simulated_scans[i].size(); j++){
-            if((simulated_scans[i].ranges[j] < numeric_limits<float>::max()) && (simulated_scans[i].ranges[j] > numeric_limits<float>::min())){
-                delta += 1;
+    float sum_similarities = 0.0;
+    for (size_t i = 0; i < simulated_scans.size(); i++)
+    {
+        float similarity = 0.0;
+        for (size_t j = 0; j < simulated_scans[i].ranges.size(); j++)
+        {
+            size_t real_idx = j * downsampling;
+            if (real_idx < real_scan.ranges.size())
+            {
+                float real_range = real_scan.ranges[real_idx];
+                float sim_range = simulated_scans[i].ranges[j];
+
+                if (std::isfinite(real_range) && std::isfinite(sim_range))
+                {
+                    float diff = real_range - sim_range;
+                    similarity += exp(-diff * diff / (2 * sigma2));
+                }
             }
         }
-        delta /= j;
+        similarities[i] = similarity;
+        sum_similarities += similarity;
+    }
+
+    if (sum_similarities > 0)
+    {
+        for (size_t i = 0; i < similarities.size(); i++)
+        {
+            similarities[i] /= sum_similarities;
+        }
     }
     return similarities;
 }
@@ -129,7 +149,19 @@ int random_choice(std::vector<float>& probabilities)
     
     /*
      */
-    return -1;
+    float r = rnd.uniformReal(0.0, 1.0);
+    float cumulative_prob = 0.0;
+
+    for (size_t i = 0; i < probabilities.size(); i++)
+    {
+        cumulative_prob += probabilities[i];
+        if (r <= cumulative_prob)
+        {
+            return static_cast<int>(i);
+        }
+    }
+    return probabilities.size() - 1;
+
 }
 
 std::vector<geometry_msgs::Pose2D> resample_particles(std::vector<geometry_msgs::Pose2D>& particles,
@@ -318,7 +350,10 @@ int main(int argc, char** argv)
              * Get the set of similarities by calling the calculate_similarities function
              * Resample particles by calling the resample_particles function
              */
-            
+            move_particles(particles, delta_pose.x, delta_pose.y, delta_pose.theta, sigma2_movement);
+            simulated_scans = simulate_particle_scans(particles, static_map, sensor_specs);
+            similarities = calculate_similarities(simulated_scans, real_scan, downsampling, sigma2_sensor);
+            particles = resample_particles(particles, similarities, sigma2_resampling);             
 
             /*
              */
