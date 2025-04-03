@@ -6,7 +6,7 @@
  * Write the code necessary to implement localization by particle filters.
  * Modify only the sections marked with the TODO comment. 
  */
-
+#include <numeric>
 #include "ros/ros.h"
 #include "sensor_msgs/LaserScan.h"
 #include "nav_msgs/GetMap.h"
@@ -37,8 +37,12 @@ std::vector<geometry_msgs::Pose2D> get_initial_distribution(int N, float min_x, 
      */
     for(int i = 0; i < N; i++)
     {	
-	// particles[i].x = rnd.uniformReal()
+	particles[i].x = rnd.uniformReal(min_x, max_x);
+    	particles[i].y = rnd.uniformReal(min_y, max_y);
+    	particles[i].theta = rnd.uniformReal(min_a, max_a);
     }
+    
+    
     return particles;
 }
 
@@ -65,6 +69,9 @@ void move_particles(std::vector<geometry_msgs::Pose2D>& particles, float delta_x
     for(int i = 0; i < particles.size(); i++)
     {	
 	// * particles[i].x = rnd.uniformReal()
+	particles[i].x += delta_x*cos(particles[i].theta) - delta_y*sin(particles[i].theta) + rnd.gaussian(0, sigma2);
+    	particles[i].y += delta_x*sin(particles[i].theta) + delta_y*cos(particles[i].theta) + rnd.gaussian(0, sigma2);
+    	particles[i].theta += delta_t + rnd.gaussian(0, sigma2);
     }
 
 }
@@ -109,6 +116,58 @@ std::vector<float> calculate_similarities(std::vector<sensor_msgs::LaserScan>& s
     
     /*
      */
+for (size_t i=0; i < simulated_scans.size(); i++)
+    {
+        float delta_sum = 0.0;
+        int valid_comparisons = 0;
+
+        for (size_t j = 0; j < simulated_scans[i].ranges.size(); ++j)
+        {
+            size_t real_index = j * downsampling;
+            if (real_index < real_scan.ranges.size())
+            {
+                float simulated_range = simulated_scans[i].ranges[j];
+                float real_range = real_scan.ranges[real_index];
+
+                if (std::isfinite(simulated_range) && std::isfinite(real_range))
+                {
+                    delta_sum += std::abs(real_range - simulated_range);
+                    valid_comparisons++;
+                }
+            }
+        }
+
+        float delta = 0.0;
+        if (valid_comparisons > 0)
+        {
+            delta = delta_sum / valid_comparisons;
+        }
+
+        similarities[i] = std::exp(-(delta * delta) / sigma2);
+    }
+
+    double sum_similarities = std::accumulate(similarities.begin(), similarities.end(), 0.0);
+    if (sum_similarities > 0.0)
+    {
+        for (float& similarity : similarities)
+        {
+            similarity /= sum_similarities;
+        }
+    }
+    else
+    {
+        float uniform_probability = 1.0f / similarities.size();
+        for (float& similarity : similarities)
+        {
+            similarity = uniform_probability;
+        }
+    }
+     
+     
+     
+     
+     
+     
     return similarities;
 }
 
@@ -125,6 +184,20 @@ int random_choice(std::vector<float>& probabilities)
     
     /*
      */
+    float x = rnd.uniformReal(0,1);
+    int idx = 0;
+    while (idx < probabilities.size())
+    {
+	    if(x < probabilities[idx])
+	    {
+	        return idx;
+	    }
+	    else
+	    {
+     	        x -= probabilities[idx];
+	        idx ++;
+	    }
+    }
     return -1;
 }
 
@@ -143,8 +216,19 @@ std::vector<geometry_msgs::Pose2D> resample_particles(std::vector<geometry_msgs:
     
     /*
      */
+    for(size_t i = 0; i < particles.size(); i++)
+    {
+        int idx = random_choice(probabilities);
+        resampled_particles[i] = particles[idx];
+        resampled_particles[i].x += rnd.gaussian(0,sigma2);
+        resampled_particles[i].y += rnd.gaussian(0,sigma2);
+        resampled_particles[i].theta += rnd.gaussian(0,sigma2);
+    }
+
     return resampled_particles;
 }
+
+
 
 geometry_msgs::Pose2D get_robot_odometry()
 {
@@ -308,7 +392,11 @@ int main(int argc, char** argv)
              * Get the set of similarities by calling the calculate_similarities function
              * Resample particles by calling the resample_particles function
              */
-            
+            move_particles(particles, delta_pose.x, delta_pose.y, delta_pose.theta, sigma2_movement);
+	    simulated_scans = simulate_particle_scans(particles, static_map, sensor_specs);
+	    similarities = calculate_similarities(simulated_scans, real_scan, downsampling, sigma2_sensor);
+	    particles = resample_particles(particles, similarities, sigma2_resampling);
+
 
             /*
              */
