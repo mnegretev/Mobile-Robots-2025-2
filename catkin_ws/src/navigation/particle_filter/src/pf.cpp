@@ -181,7 +181,7 @@ int random_choice(std::vector<float>& probabilities)
 
 
 std::vector<geometry_msgs::Pose2D> resample_particles(std::vector<geometry_msgs::Pose2D>& particles,
-                                                      std::vector<float>& probabilities, float sigma2)
+                                                        std::vector<float>& probabilities, float sigma2)
 {
     random_numbers::RandomNumberGenerator rnd;
     std::vector<geometry_msgs::Pose2D> resampled_particles(particles.size());
@@ -192,7 +192,14 @@ std::vector<geometry_msgs::Pose2D> resample_particles(std::vector<geometry_msgs:
      * Use the random_choice function to pick a particle with the correct probability.
      * Add gaussian noise to each sampled particle (add noise to x,y and theta). Use sigma2 as noise variance.
      */
-    
+
+    for (size_t i = 0; i < particles.size(); ++i) {
+        int chosen_index = particle_filter::random_choice(probabilities);
+        resampled_particles[i].x = particles[chosen_index].x + rnd.gaussian(0, sigma2);
+        resampled_particles[i].y = particles[chosen_index].y + rnd.gaussian(0, sigma2);
+        resampled_particles[i].theta = particles[chosen_index].theta + rnd.gaussian(0, sigma2);
+    }
+
     /*
      */
     return resampled_particles;
