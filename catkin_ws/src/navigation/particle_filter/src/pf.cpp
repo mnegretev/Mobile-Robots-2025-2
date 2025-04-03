@@ -152,35 +152,34 @@ std::vector<float> calculate_similarities(std::vector<sensor_msgs::LaserScan>& s
     return similarities;
 }
 
-// pf.cpp
 namespace particle_filter {
+
     int random_choice(std::vector<float>& probabilities) {
-        int random_choice(std::vector<float>& probabilities)
-{
-    random_numbers::RandomNumberGenerator rnd;
-    /*
-     * TODO:
-     *
-     * Write an algorithm to choice an integer in the range [0, N-1], with N, the length of 'probabilities'.
-     * Probability of picking an integer 'i' is given by the corresponding probabilities[i] value.
-     * Return the chosen integer. 
-     */
+        random_numbers::RandomNumberGenerator rnd;
+        /*
+         * TODO:
+         *
+         * Write an algorithm to choice an integer in the range [0, N-1], with N, the length of 'probabilities'.
+         * Probability of picking an integer 'i' is given by the corresponding probabilities[i] value.
+         * Return the chosen integer. 
+         */
 
-    float random_value = rnd.uniformReal(0.0, 1.0);
-    float cumulative_probability = 0.0;
+        float random_value = rnd.uniformReal(0.0, 1.0);
+        float cumulative_probability = 0.0;
 
-    for (size_t i = 0; i < probabilities.size(); ++i) {
-        cumulative_probability += probabilities[i];
-        if (random_value < cumulative_probability) {
-            return static_cast<int>(i);
+        for (size_t i = 0; i < probabilities.size(); ++i) {
+            cumulative_probability += probabilities[i];
+            if (random_value < cumulative_probability) {
+                return static_cast<int>(i);
+            }
         }
-    }
 
-    // Should not reach here if probabilities sum to 1.0, but handle it just in case
-    return static_cast<int>(probabilities.size() - 1);
-    /*
-     */
-}
+        // Should not reach here if probabilities sum to 1.0, but handle it just in case
+        if (probabilities.size() > 0){
+            return static_cast<int>(probabilities.size() - 1);
+        } else {
+            return 0; // if probabilities vector is empty.
+        }
     }
 
 
