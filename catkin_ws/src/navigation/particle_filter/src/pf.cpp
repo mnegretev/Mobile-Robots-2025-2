@@ -91,10 +91,11 @@ std::vector<sensor_msgs::LaserScan> simulate_particle_scans(std::vector<geometry
 }
 
 std::vector<float> calculate_similarities(std::vector<sensor_msgs::LaserScan>& simulated_scans,
-                                                   sensor_msgs::LaserScan& real_scan, int downsampling, float sigma2)
+                                            sensor_msgs::LaserScan& real_scan, int downsampling, float sigma2)
 {
     std::vector<float> similarities;
     similarities.resize(simulated_scans.size());
+
     /*
      * TODO:
      * For each particle, calculate the similarity between its simulated scan and the real scan.
@@ -107,7 +108,45 @@ std::vector<float> calculate_similarities(std::vector<sensor_msgs::LaserScan>& s
      * IMPORTANT NOTE 2. Both, simulated an real scans, can have infinite distances. Thus, when comparing readings,
      * ensure both simulated and real ranges are finite values. 
      */
-    
+
+    for (size_t i = 0; i < simulated_scans.size(); ++i) {
+        float delta_sum = 0.0;
+        int count = 0;
+        for (size_t j = 0; j < simulated_scans[i].ranges.size(); ++j) {
+            size_t real_index = j * downsampling;
+            if (real_index < real_scan.ranges.size() &&
+                std::isfinite(simulated_scans[i].ranges[j]) &&
+                std::isfinite(real_scan.ranges[real_index])) {
+                delta_sum += std::abs(real_scan.ranges[real_index] - simulated_scans[i].ranges[j]);
+                count++;
+            }
+        }
+        if (count > 0) {
+            float delta = delta_sum / count;
+            similarities[i] = std::exp(-delta * delta / sigma2);
+        } else {
+            similarities[i] = 0.0; // Or another suitable default value if no valid comparisons
+        }
+    }
+
+    // Normalize similarities
+    float sum_similarities = 0.0;
+    for (float similarity : similarities) {
+        sum_similarities += similarity;
+    }
+
+    if (sum_similarities > 0.0) {
+        for (float& similarity : similarities) {
+            similarity /= sum_similarities;
+        }
+    } else {
+        // Handle the case where all similarities are zero (e.g., assign uniform weights)
+        float uniform_weight = 1.0 / similarities.size();
+        for (float& similarity : similarities) {
+            similarity = uniform_weight;
+        }
+    }
+
     /*
      */
     return similarities;
