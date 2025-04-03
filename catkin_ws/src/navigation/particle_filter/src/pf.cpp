@@ -6,7 +6,7 @@
  * Write the code necessary to implement localization by particle filters.
  * Modify only the sections marked with the TODO comment. 
  */
-
+#include <numeric>
 #include "ros/ros.h"
 #include "sensor_msgs/LaserScan.h"
 #include "nav_msgs/GetMap.h"
@@ -19,47 +19,40 @@
 #define DISTANCE_THRESHOLD  0.2
 #define ANGLE_THRESHOLD     0.2
 
-#define NOMBRE "APELLIDO_PATERNO_APELLIDO_MATERNO_NOMBRE"
+#define NOMBRE "Frausto Martinez Juan Carlos"
 
 std::vector<geometry_msgs::Pose2D> get_initial_distribution(int N, float min_x, float max_x, float min_y, float max_y,
                                                              float min_a, float max_a)
 {
     random_numbers::RandomNumberGenerator rnd;
     std::vector<geometry_msgs::Pose2D> particles(N);
-    /*
-     * TODO:
-     * Generate a set of N particles (each particle represented by a Pose2D message)
-     * with positions uniformly distributed within bounding box given by min_x, ..., max_a.
-     * To generate uniformly distributed random numbers, you can use the funcion rnd.uniformReal(min, max)
-     */
+    for(int i = 0; i < N; i++)
+    {	
+	particles[i].x = rnd.uniformReal(min_x, max_x);
+    	particles[i].y = rnd.uniformReal(min_y, max_y);
+    	particles[i].theta = rnd.uniformReal(min_a, max_a);
+    }
     
-    /*
-     */
+    
     return particles;
 }
 
 void move_particles(std::vector<geometry_msgs::Pose2D>& particles, float delta_x, float delta_y, float delta_t, float sigma2)
 {
-    random_numbers::RandomNumberGenerator rnd;
-    /*
-     * TODO:
-     * Move each particle a displacement given by delta_x, delta_y and delta_t.
-     * Displacement is given w.r.t. particles's frame, i.e., to calculate the new position for
-     * each particle you need to rotate delta_x and delta_y, on Z axis, an angle theta_i, where theta_i
-     * is the orientation of the i-th particle.
-     * Add gaussian noise to each new position. Use sigma2 as variance.
-     * You can use the function rnd.gaussian(mean, variance)
-     */
+    random_numbers::RandomNumberGenerator rnd;  
+    for(int i = 0; i < particles.size(); i++)
+    {	
+	// * particles[i].x = rnd.uniformReal()
+	particles[i].x += delta_x*cos(particles[i].theta) - delta_y*sin(particles[i].theta) + rnd.gaussian(0, sigma2);
+    	particles[i].y += delta_x*sin(particles[i].theta) + delta_y*cos(particles[i].theta) + rnd.gaussian(0, sigma2);
+    	particles[i].theta += delta_t + rnd.gaussian(0, sigma2);
+    }
 
 }
 
 std::vector<sensor_msgs::LaserScan> simulate_particle_scans(std::vector<geometry_msgs::Pose2D>& particles,
                                                              nav_msgs::OccupancyGrid& map, sensor_msgs::LaserScan& sensor_specs)
 {
-    /*
-     * TODO:
-     * Review the code to simulate a laser scan for each particle given the set of particles and a static map. 
-     */
     std::vector<sensor_msgs::LaserScan> simulated_scans(particles.size());
     for(size_t i=0; i < particles.size(); i++)
     {
@@ -78,37 +71,80 @@ std::vector<float> calculate_similarities(std::vector<sensor_msgs::LaserScan>& s
 {
     std::vector<float> similarities;
     similarities.resize(simulated_scans.size());
-    /*
-     * TODO:
-     * For each particle, calculate the similarity between its simulated scan and the real scan.
-     * Normalize all similarities (the sum of all values must always be 1.0)
-     * Store results in 'similarities'.
-     * IMPORTANT NOTE 1. The real sensor scans are DOWNSAMPLED. That is, only 1 out of 'downsampling' scans is considered, i.e.,
-     * For example, if downsampling=10, then, if real sensor has 500 ranges, simulated scans will only have 50 ranges
-     * When comparing readings, for each reading in the simulated scan, you should skip 'downsampling' readings
-     * in the real sensor.
-     * IMPORTANT NOTE 2. Both, simulated an real scans, can have infinite distances. Thus, when comparing readings,
-     * ensure both simulated and real ranges are finite values. 
-     */
-    
-    /*
-     */
+
+for (size_t i=0; i < simulated_scans.size(); i++)
+    {
+        float delta_sum = 0.0;
+        int valid_comparisons = 0;
+
+        for (size_t j = 0; j < simulated_scans[i].ranges.size(); ++j)
+        {
+            size_t real_index = j * downsampling;
+            if (real_index < real_scan.ranges.size())
+            {
+                float simulated_range = simulated_scans[i].ranges[j];
+                float real_range = real_scan.ranges[real_index];
+
+                if (std::isfinite(simulated_range) && std::isfinite(real_range))
+                {
+                    delta_sum += std::abs(real_range - simulated_range);
+                    valid_comparisons++;
+                }
+            }
+        }
+
+        float delta = 0.0;
+        if (valid_comparisons > 0)
+        {
+            delta = delta_sum / valid_comparisons;
+        }
+
+        similarities[i] = std::exp(-(delta * delta) / sigma2);
+    }
+
+    double sum_similarities = std::accumulate(similarities.begin(), similarities.end(), 0.0);
+    if (sum_similarities > 0.0)
+    {
+        for (float& similarity : similarities)
+        {
+            similarity /= sum_similarities;
+        }
+    }
+    else
+    {
+        float uniform_probability = 1.0f / similarities.size();
+        for (float& similarity : similarities)
+        {
+            similarity = uniform_probability;
+        }
+    }
+     
+     
+     
+     
+     
+     
     return similarities;
 }
 
 int random_choice(std::vector<float>& probabilities)
 {
     random_numbers::RandomNumberGenerator rnd;
-    /*
-     * TODO:
-     *
-     * Write an algorithm to choice an integer in the range [0, N-1], with N, the length of 'probabilities'.
-     * Probability of picking an integer 'i' is given by the corresponding probabilities[i] value.
-     * Return the chosen integer. 
-     */
-    
-    /*
-     */
+
+    float x = rnd.uniformReal(0,1);
+    int idx = 0;
+    while (idx < probabilities.size())
+    {
+	    if(x < probabilities[idx])
+	    {
+	        return idx;
+	    }
+	    else
+	    {
+     	        x -= probabilities[idx];
+	        idx ++;
+	    }
+    }
     return -1;
 }
 
@@ -117,18 +153,20 @@ std::vector<geometry_msgs::Pose2D> resample_particles(std::vector<geometry_msgs:
 {
     random_numbers::RandomNumberGenerator rnd;
     std::vector<geometry_msgs::Pose2D> resampled_particles(particles.size());
-    /*
-     * TODO:
-     * Sample, with replacement, N particles from the set 'particles'.
-     * The probability of the i-th particle to be resampled is given by probabilities[i].
-     * Use the random_choice function to pick a particle with the correct probability.
-     * Add gaussian noise to each sampled particle (add noise to x,y and theta). Use sigma2 as noise variance.
-     */
-    
-    /*
-     */
+
+    for(size_t i = 0; i < particles.size(); i++)
+    {
+        int idx = random_choice(probabilities);
+        resampled_particles[i] = particles[idx];
+        resampled_particles[i].x += rnd.gaussian(0,sigma2);
+        resampled_particles[i].y += rnd.gaussian(0,sigma2);
+        resampled_particles[i].theta += rnd.gaussian(0,sigma2);
+    }
+
     return resampled_particles;
 }
+
+
 
 geometry_msgs::Pose2D get_robot_odometry()
 {
@@ -285,14 +323,11 @@ int main(int argc, char** argv)
         {
             std::cout << "Displacement detected. Updating pose estimation..." << std::endl;
             real_scan = *ros::topic::waitForMessage<sensor_msgs::LaserScan>("/hardware/scan");
-            /*
-             * TODO: Review the functions to:
-             * Move all particles a displacement given by delta_pose (Pose2D message) by calling the move_particles function.
-             * Get the set of simulated scans for each particles. Use the simulate_particle_scans function.
-             * Get the set of similarities by calling the calculate_similarities function
-             * Resample particles by calling the resample_particles function
-             */
-            
+            move_particles(particles, delta_pose.x, delta_pose.y, delta_pose.theta, sigma2_movement);
+	    simulated_scans = simulate_particle_scans(particles, static_map, sensor_specs);
+	    similarities = calculate_similarities(simulated_scans, real_scan, downsampling, sigma2_sensor);
+	    particles = resample_particles(particles, similarities, sigma2_resampling);
+
 
             /*
              */
