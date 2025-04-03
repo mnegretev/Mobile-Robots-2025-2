@@ -20,9 +20,10 @@ from sensor_msgs.msg import PointCloud2
 from geometry_msgs.msg import PointStamped, Point
 from vision_msgs.srv import RecognizeObject, RecognizeObjectResponse
 
-NAME = "FULL_NAME"
+NAME = "Ramiro Sanchez Leonardo"
 
 def segment_by_color(img_bgr, points, obj_name):
+    global img_hsv, img_bin, img_filtered
     img_x, img_y, x,y,z = 0,0,0,0,0
     #
     # TODO:
@@ -40,7 +41,31 @@ def segment_by_color(img_bgr, points, obj_name):
     #   Example: 'points[240,320][1]' gets the 'y' value of the point corresponding to
     #   the pixel in the center of the image.
     #
-    
+    img_hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
+    if obj_name == 'pringles':
+        lower_color = numpy.array([25, 50, 50])
+        upper_color = numpy.array([35, 255, 255])
+    else:
+        lower_color = numpy.array([10, 200, 50])
+        upper_color = numpy.array([20, 255, 255])
+    img_bin = cv2.inRange(img_hsv, (25, 150, 50), (35, 255, 255))
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7,7))
+    img_filtered = cv2.erode(img_bin, kernel)
+    img_filtered = cv2.dilate(img_filtered, kernel)
+    locs = cv2.findNonZero(img_filtered)
+    centroid = cv2.mean(locs)
+    print(centroid)
+    img_x = centroid[0] 
+    img_y = centroid[1]
+    x,y,z = 0,0,0
+    for [[r,c]] in locs:
+        x += points[r,c][0]
+        y += points[r,c][1]
+        z += points[r,c][2]
+    x/=len(locs)
+    y/=len(locs)
+    z/=len(locs)
+    print(x,y,z)
     return [img_x, img_y, x,y,z]
 
 def callback_find_object(req):
