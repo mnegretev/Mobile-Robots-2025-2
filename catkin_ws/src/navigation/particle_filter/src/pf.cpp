@@ -19,20 +19,27 @@
 #define DISTANCE_THRESHOLD  0.2
 #define ANGLE_THRESHOLD     0.2
 
-#define NOMBRE "APELLIDO_PATERNO_APELLIDO_MATERNO_NOMBRE"
+#define NOMBRE "ARENAS HERNÀNDEZ JOSÈ AUGUSTO"
 
 std::vector<geometry_msgs::Pose2D> get_initial_distribution(int N, float min_x, float max_x, float min_y, float max_y,
-                                                             float min_a, float max_a)
+                                                            float min_a, float max_a)
 {
     random_numbers::RandomNumberGenerator rnd;
     std::vector<geometry_msgs::Pose2D> particles(N);
+
     /*
      * TODO:
      * Generate a set of N particles (each particle represented by a Pose2D message)
      * with positions uniformly distributed within bounding box given by min_x, ..., max_a.
      * To generate uniformly distributed random numbers, you can use the funcion rnd.uniformReal(min, max)
      */
-    
+
+    for (int i = 0; i < N; ++i) {
+        particles[i].x = rnd.uniformReal(min_x, max_x);
+        particles[i].y = rnd.uniformReal(min_y, max_y);
+        particles[i].theta = rnd.uniformReal(min_a, max_a);
+    }
+
     /*
      */
     return particles;
