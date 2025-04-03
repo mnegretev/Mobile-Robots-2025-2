@@ -162,11 +162,23 @@ int random_choice(std::vector<float>& probabilities)
      * Probability of picking an integer 'i' is given by the corresponding probabilities[i] value.
      * Return the chosen integer. 
      */
-    
+
+    float random_value = rnd.uniformReal(0.0, 1.0);
+    float cumulative_probability = 0.0;
+
+    for (size_t i = 0; i < probabilities.size(); ++i) {
+        cumulative_probability += probabilities[i];
+        if (random_value < cumulative_probability) {
+            return static_cast<int>(i);
+        }
+    }
+
+    // Should not reach here if probabilities sum to 1.0, but handle it just in case
+    return static_cast<int>(probabilities.size() - 1);
     /*
      */
-    return -1;
 }
+
 
 std::vector<geometry_msgs::Pose2D> resample_particles(std::vector<geometry_msgs::Pose2D>& particles,
                                                       std::vector<float>& probabilities, float sigma2)
