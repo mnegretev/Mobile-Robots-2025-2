@@ -1,7 +1,7 @@
 <launch>
   <arg name="debug" default="False"/>
   <arg name="static_map_file"  default="$(find config_files)/maps/appartment.yaml"/>
-  <arg name="x0" default="10.61"/>
+  <arg name="x0" default="5.61"/>
   <arg name="y0" default="11.24"/>
   <arg name="a0" default="3.14"/>
   
