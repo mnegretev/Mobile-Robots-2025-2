@@ -58,6 +58,16 @@ void move_particles(std::vector<geometry_msgs::Pose2D>& particles, float delta_x
      * You can use the function rnd.gaussian(mean, variance)
      */
 
+    for (auto& particle : particles) {
+        // Rotate the displacement vector based on the particle's orientation
+        float rotated_delta_x = delta_x * std::cos(particle.theta) - delta_y * std::sin(particle.theta);
+        float rotated_delta_y = delta_x * std::sin(particle.theta) + delta_y * std::cos(particle.theta);
+
+        // Add the rotated displacement and gaussian noise to the particle's position
+        particle.x += rotated_delta_x + rnd.gaussian(0, sigma2);
+        particle.y += rotated_delta_y + rnd.gaussian(0, sigma2);
+        particle.theta += delta_t + rnd.gaussian(0, sigma2);
+    }
 }
 
 std::vector<sensor_msgs::LaserScan> simulate_particle_scans(std::vector<geometry_msgs::Pose2D>& particles,
