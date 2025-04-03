@@ -48,7 +48,7 @@ def segment_by_color(img_bgr, points, obj_name):
         lower_bound = numpy.array([25, 50, 50])
     elif obj_name == 'drink':
         upper_bound = numpy.array([24, 255, 255])
-        lower_bound = numpy.array([12, 50, 50)
+        lower_bound = numpy.array([12, 50, 50])
     else:
         upper_bound = numpy.array([35, 255, 255])
         lower_bound = numpy.array([25, 50, 50])
@@ -67,7 +67,7 @@ def segment_by_color(img_bgr, points, obj_name):
     centroid = cv2.mean(nz)
     img_x = int(centroid[0])
     img_y = int(centroid[1])
-    for [[r, c]] in non_zero_pixels:
+    for [[r, c]] in nz:
         x += points[r,c][0]
         y += points[r,c][1]
         z += points[r,c][2]
