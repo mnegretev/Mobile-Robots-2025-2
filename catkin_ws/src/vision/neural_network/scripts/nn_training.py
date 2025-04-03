@@ -32,28 +32,28 @@ class NeuralNetwork(object):
         self.biases =[numpy.random.randn(y,1) for y in layers[1:]] if biases == None else biases
         self.weights=[numpy.random.randn(y,x) for x,y in zip(layers[:-1],layers[1:])] if weights==None else weights
         
-    def feedforward(self, x):
+    def forward(self, x):
         #
         # This function gets the output of the network when input is 'x'.
         #
         for i in range(len(self.biases)):
-            z = numpy.dot(self.weights[i], x) + self.biases[i]
-            x = 1.0 / (1.0 + numpy.exp(-z))  #output of the current layer is the input of the next one
+            u = numpy.dot(self.weights[i], x) + self.biases[i]
+            x = 1.0 / (1.0 + numpy.exp(-u))  #output of the current layer is the input of the next one
         return x
 
-    def feedforward_verbose(self, x):
+    def forward_all_outputs(self, x):
         y = []
         #
         # TODO:
-        # Write a function similar to 'feedforward' but instead of returning only the output layer,
+        # Write a function similar to 'forward' but instead of returning only the output layer,
         # return a list containing the output of each layer, from input to output.
         # Include input x as the first output.
         #
         
         return y
 
-    def backpropagate(self, x, yt):
-        y = self.feedforward_verbose(x)
+    def backpropagate(self, x, t):
+        y = self.forward_all_outputs(x)
         nabla_b = [numpy.zeros(b.shape) for b in self.biases]
         nabla_w = [numpy.zeros(w.shape) for w in self.weights]
         # TODO:
@@ -150,24 +150,15 @@ def main():
 
     training_dataset, testing_dataset = load_dataset(dataset_folder)
     
-    try:
-        saved_data = numpy.load(dataset_folder+"network.npz",allow_pickle=True)
-        layers = [saved_data['w'][0].shape[1]] + [b.shape[0] for b in saved_data['b']]
-        nn = NeuralNetwork(layers, weights=saved_data['w'], biases=saved_data['b'])
-        print("Loading data from previously trained model with layers " + str(layers))
-    except:
-        nn = NeuralNetwork([784,30,10])
-        pass
-    
+    nn = NeuralNetwork([784,30,10])
     nn.train_by_SGD(training_dataset, epochs, batch_size, learning_rate)
-    #numpy.savez(dataset_folder + "network",w=nn.weights, b=nn.biases)
     
     print("\nPress key to test network or ESC to exit...")
     numpy.set_printoptions(formatter={'float_kind':"{:.3f}".format})
     cmd = cv2.waitKey(0)
     while cmd != 27 and not rospy.is_shutdown():
         img,label = testing_dataset[numpy.random.randint(0, 4999)]
-        y = nn.feedforward(img).transpose()
+        y = nn.forward(img).transpose()
         print("\nPerceptron output: " + str(y))
         print("Expected output  : "   + str(label.transpose()))
         print("Recognized digit : "   + str(numpy.argmax(y)))
