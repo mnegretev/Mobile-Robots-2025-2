@@ -14,7 +14,7 @@ import numpy
 import rospy
 import rospkg
 
-NAME = "FULL_NAME"
+NAME = "JOSÈ AUGUSTO ARENAS HERNÀNDEZ"
 
 class NeuralNetwork(object):
     def __init__(self, layers, weights=None, biases=None):
@@ -57,16 +57,16 @@ class NeuralNetwork(object):
         nabla_b = [numpy.zeros(b.shape) for b in self.biases]
         nabla_w = [numpy.zeros(w.shape) for w in self.weights]
         
-        delta = (y[-1] - t) * y[-1] * (1 - y[-1])  # derivada del error con sigmoide
+        delta = (y[-1] - t) * y[-1] * (1 - y[-1])  
         nabla_b[-1] = delta
-        nabla_w[-1] = numpy.dot(delta, y[-2].T)  # y[-2] es la salida de la capa anterior
+        nabla_w[-1] = numpy.dot(delta, y[-2].T)  
         
-        for l in range(2, self.num_layers):  # l = 2 corresponde a la capa anterior a la salida
-            z = y[-l]  # salida de la capa actual
-            sp = z * (1 - z)  # derivada de la sigmoide
+        for l in range(2, self.num_layers):  
+            z = y[-l]  
+            sp = z * (1 - z)  
             delta = numpy.dot(self.weights[-l + 1].T, delta) * sp
             nabla_b[-l] = delta
-            nabla_w[-l] = numpy.dot(delta, y[-l - 1].T)  # y[-l - 1] es la salida de la capa anterior
+            nabla_w[-l] = numpy.dot(delta, y[-l - 1].T)  
         return nabla_w, nabla_b
  
 
