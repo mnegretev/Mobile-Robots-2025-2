@@ -1,0 +1,115 @@
+
+TRAINING A NEURAL NETWORK - Miguel Angel Ruiz Sànchez
+Configuración:
+- Épocas: 3
+- Tamaño de lote: 100
+- Tasa de aprendizaje: 1.0
+- Tiempo de entrenamiento: 4.12 [seg]
+
+Prueba #1: Predicción: 5, Esperado: 3, Correcto: No
+Prueba #2: Predicción: 0, Esperado: 0, Correcto: Sí
+Prueba #3: Predicción: 7, Esperado: 8, Correcto: No
+Prueba #4: Predicción: 1, Esperado: 5, Correcto: No
+Prueba #5: Predicción: 7, Esperado: 9, Correcto: No
+Prueba #6: Predicción: 6, Esperado: 2, Correcto: No
+Prueba #7: Predicción: 9, Esperado: 4, Correcto: No
+Prueba #8: Predicción: 5, Esperado: 3, Correcto: No
+Prueba #9: Predicción: 5, Esperado: 6, Correcto: No
+Prueba #10: Predicción: 5, Esperado: 0, Correcto: No
+Prueba #11: Predicción: 4, Esperado: 4, Correcto: Sí
+Prueba #12: Predicción: 6, Esperado: 5, Correcto: No
+Prueba #13: Predicción: 0, Esperado: 0, Correcto: Sí
+Prueba #14: Predicción: 1, Esperado: 2, Correcto: No
+Prueba #15: Predicción: 5, Esperado: 3, Correcto: No
+Prueba #16: Predicción: 1, Esperado: 9, Correcto: No
+Prueba #17: Predicción: 5, Esperado: 5, Correcto: Sí
+Prueba #18: Predicción: 4, Esperado: 4, Correcto: Sí
+Prueba #19: Predicción: 5, Esperado: 3, Correcto: No
+Prueba #20: Predicción: 1, Esperado: 6, Correcto: No
+Prueba #21: Predicción: 0, Esperado: 9, Correcto: No
+Prueba #22: Predicción: 7, Esperado: 7, Correcto: Sí
+Prueba #23: Predicción: 1, Esperado: 1, Correcto: Sí
+Prueba #24: Predicción: 5, Esperado: 8, Correcto: No
+Prueba #25: Predicción: 7, Esperado: 7, Correcto: Sí
+Prueba #26: Predicción: 7, Esperado: 7, Correcto: Sí
+Prueba #27: Predicción: 5, Esperado: 4, Correcto: No
+Prueba #28: Predicción: 1, Esperado: 6, Correcto: No
+Prueba #29: Predicción: 1, Esperado: 5, Correcto: No
+Prueba #30: Predicción: 4, Esperado: 4, Correcto: Sí
+Prueba #31: Predicción: 7, Esperado: 7, Correcto: Sí
+Prueba #32: Predicción: 1, Esperado: 1, Correcto: Sí
+Prueba #33: Predicción: 0, Esperado: 0, Correcto: Sí
+Prueba #34: Predicción: 7, Esperado: 7, Correcto: Sí
+Prueba #35: Predicción: 6, Esperado: 6, Correcto: Sí
+Prueba #36: Predicción: 6, Esperado: 8, Correcto: No
+Prueba #37: Predicción: 7, Esperado: 7, Correcto: Sí
+Prueba #38: Predicción: 6, Esperado: 7, Correcto: No
+Prueba #39: Predicción: 7, Esperado: 9, Correcto: No
+Prueba #40: Predicción: 4, Esperado: 9, Correcto: No
+Prueba #41: Predicción: 7, Esperado: 7, Correcto: Sí
+Prueba #42: Predicción: 5, Esperado: 3, Correcto: No
+Prueba #43: Predicción: 0, Esperado: 4, Correcto: No
+Prueba #44: Predicción: 5, Esperado: 5, Correcto: Sí
+Prueba #45: Predicción: 7, Esperado: 9, Correcto: No
+Prueba #46: Predicción: 7, Esperado: 2, Correcto: No
+Prueba #47: Predicción: 1, Esperado: 2, Correcto: No
+Prueba #48: Predicción: 7, Esperado: 4, Correcto: No
+Prueba #49: Predicción: 7, Esperado: 2, Correcto: No
+Prueba #50: Predicción: 5, Esperado: 6, Correcto: No
+Prueba #51: Predicción: 6, Esperado: 0, Correcto: No
+Prueba #52: Predicción: 1, Esperado: 2, Correcto: No
+Prueba #53: Predicción: 5, Esperado: 5, Correcto: Sí
+Prueba #54: Predicción: 4, Esperado: 9, Correcto: No
+Prueba #55: Predicción: 4, Esperado: 3, Correcto: No
+Prueba #56: Predicción: 5, Esperado: 3, Correcto: No
+Prueba #57: Predicción: 1, Esperado: 1, Correcto: Sí
+Prueba #58: Predicción: 4, Esperado: 4, Correcto: Sí
+Prueba #59: Predicción: 6, Esperado: 6, Correcto: Sí
+Prueba #60: Predicción: 0, Esperado: 3, Correcto: No
+Prueba #61: Predicción: 6, Esperado: 8, Correcto: No
+Prueba #62: Predicción: 5, Esperado: 6, Correcto: No
+Prueba #63: Predicción: 5, Esperado: 4, Correcto: No
+Prueba #64: Predicción: 1, Esperado: 3, Correcto: No
+Prueba #65: Predicción: 0, Esperado: 6, Correcto: No
+Prueba #66: Predicción: 7, Esperado: 7, Correcto: Sí
+Prueba #67: Predicción: 0, Esperado: 8, Correcto: No
+Prueba #68: Predicción: 5, Esperado: 3, Correcto: No
+Prueba #69: Predicción: 6, Esperado: 8, Correcto: No
+Prueba #70: Predicción: 0, Esperado: 0, Correcto: Sí
+Prueba #71: Predicción: 6, Esperado: 8, Correcto: No
+Prueba #72: Predicción: 7, Esperado: 7, Correcto: Sí
+Prueba #73: Predicción: 1, Esperado: 8, Correcto: No
+Prueba #74: Predicción: 7, Esperado: 7, Correcto: Sí
+Prueba #75: Predicción: 0, Esperado: 5, Correcto: No
+Prueba #76: Predicción: 1, Esperado: 1, Correcto: Sí
+Prueba #77: Predicción: 6, Esperado: 9, Correcto: No
+Prueba #78: Predicción: 4, Esperado: 4, Correcto: Sí
+Prueba #79: Predicción: 1, Esperado: 1, Correcto: Sí
+Prueba #80: Predicción: 6, Esperado: 2, Correcto: No
+Prueba #81: Predicción: 7, Esperado: 9, Correcto: No
+Prueba #82: Predicción: 1, Esperado: 1, Correcto: Sí
+Prueba #83: Predicción: 7, Esperado: 7, Correcto: Sí
+Prueba #84: Predicción: 4, Esperado: 5, Correcto: No
+Prueba #85: Predicción: 4, Esperado: 2, Correcto: No
+Prueba #86: Predicción: 1, Esperado: 2, Correcto: No
+Prueba #87: Predicción: 1, Esperado: 1, Correcto: Sí
+Prueba #88: Predicción: 5, Esperado: 3, Correcto: No
+Prueba #89: Predicción: 4, Esperado: 9, Correcto: No
+Prueba #90: Predicción: 4, Esperado: 5, Correcto: No
+Prueba #91: Predicción: 1, Esperado: 8, Correcto: No
+Prueba #92: Predicción: 6, Esperado: 4, Correcto: No
+Prueba #93: Predicción: 1, Esperado: 1, Correcto: Sí
+Prueba #94: Predicción: 5, Esperado: 3, Correcto: No
+Prueba #95: Predicción: 0, Esperado: 1, Correcto: No
+Prueba #96: Predicción: 0, Esperado: 0, Correcto: Sí
+Prueba #97: Predicción: 5, Esperado: 6, Correcto: No
+Prueba #98: Predicción: 7, Esperado: 7, Correcto: Sí
+Prueba #99: Predicción: 5, Esperado: 3, Correcto: No
+Prueba #100: Predicción: 0, Esperado: 2, Correcto: No
+_____________________________________________
+RESULTADOS FINALES:
+Total de imágenes probadas: 100
+Predicciones correctas: 35
+Precisión: 35.00%
+Tiempo de entrenamiento: 4.12 [seg]
+_____________________________________________

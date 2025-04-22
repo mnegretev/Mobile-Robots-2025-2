@@ -14,7 +14,7 @@ import numpy
 import rospy
 import rospkg
 
-NAME = "FULL_NAME"
+NAME = "Miguel Angel Ruiz Sànchez"
 
 class NeuralNetwork(object):
     def __init__(self, layers, weights=None, biases=None):
@@ -49,7 +49,13 @@ class NeuralNetwork(object):
         # return a list containing the output of each layer, from input to output.
         # Include input x as the first output.
         #
-        
+        y.append(x)
+        activa = x
+
+        for i in range(len(self.biases)):
+            u =  numpy.dot(self.weights[i], activa) + self.biases[i]
+            activa = 1.0 / (1.0 + numpy.exp(-u))
+            y.append(activa)
         return y
 
     def backpropagate(self, x, t):
@@ -73,7 +79,14 @@ class NeuralNetwork(object):
         #     nabla_b[-l] = delta
         #     nabla_w[-l] = delta*ylpT  where ylpT is the transpose of outputs vector of layer l-1
         #
-        
+        delta = (y[-1]-t) * y[-1] * (1- y[-1])
+        nabla_b[-1] = delta
+        nabla_w[-1] = numpy.dot(delta, y[-2].transpose())
+
+        for l in range(2, self.num_layers):
+            delta = numpy.dot(self.weights[-l+1].transpose(), delta) * y[-l] *(1-y[-l])
+            nabla_b[-l] = delta
+            nabla_w[-l] = numpy.dot(delta, y[-l-1].transpose())
         
         return nabla_w, nabla_b
 
@@ -151,20 +164,74 @@ def main():
     training_dataset, testing_dataset = load_dataset(dataset_folder)
     
     nn = NeuralNetwork([784,30,10])
+    start_time = rospy.get_time()
     nn.train_by_SGD(training_dataset, epochs, batch_size, learning_rate)
+    training_time = rospy.get_time() - start_time
     
-    print("\nPress key to test network or ESC to exit...")
-    numpy.set_printoptions(formatter={'float_kind':"{:.3f}".format})
-    cmd = cv2.waitKey(0)
-    while cmd != 27 and not rospy.is_shutdown():
-        img,label = testing_dataset[numpy.random.randint(0, 4999)]
-        y = nn.forward(img).transpose()
-        print("\nPerceptron output: " + str(y))
-        print("Expected output  : "   + str(label.transpose()))
-        print("Recognized digit : "   + str(numpy.argmax(y)))
-        cv2.imshow("Digit", numpy.reshape(numpy.asarray(img, dtype="float32"), (28,28,1)))
-        cmd = cv2.waitKey(0)
+    print("\nIniciando entrenamiento con:")
+    print("- Épocas: {}".format(epochs))
+    print("- Tamaño de lote: {}".format(batch_size))
+    print("- Tasa de aprendizaje: {}".format(learning_rate)) 
+    print("- Tiempo de entrenamiento: {:.2f} [seg]".format(training_time))
     
+    print("\nIniciando pruebas ...")
+  
+    num_test_samples = 100
+    correct_predictions = 0
+    
+    with open("res_nn.txt", "w") as f:
+        f.write("\nTRAINING A NEURAL NETWORK - " + NAME + "\n")
+        f.write("Configuración:\n")
+        f.write("- Épocas: {}\n".format(epochs))
+        f.write("- Tamaño de lote: {}\n".format(batch_size))
+        f.write("- Tasa de aprendizaje: {}\n".format(learning_rate))
+        f.write("- Tiempo de entrenamiento: {:.2f} [seg]\n\n".format(training_time))
+        
+        for i in range(num_test_samples):
+            if rospy.is_shutdown():
+                break
+                
+            idx = numpy.random.randint(0, len(testing_dataset))
+            img, label = testing_dataset[idx]
+            
+            y = nn.forward(img)
+            predicted_digit = numpy.argmax(y)
+            expected_digit = numpy.argmax(label)
+            
+            is_correct = (predicted_digit == expected_digit)
+            if is_correct:
+                correct_predictions += 1
+                
+            f.write("Prueba #{}: ".format(i+1))
+            f.write("Predicción: {}, Esperado: {}, ".format(predicted_digit, expected_digit))
+            f.write("Correcto: {}\n".format("Sí" if is_correct else "No"))
+            
+            # Mostrar progreso en la consola
+            if (i + 1) % 10 == 0:
+                print("Procesadas {} imágenes, precisión actual: {:.2f}%".format(i + 1, (correct_predictions / (i + 1)) * 100))
+            
+            cv2.imshow("Digit", numpy.reshape(numpy.asarray(img, dtype="float32"), (28,28,1)))
+            cv2.waitKey(50) 
+        
+        accuracy = (correct_predictions / num_test_samples) * 100 
+
+        f.write("_"*45)
+        f.write("\nRESULTADOS FINALES:\n")
+        f.write("Total de imágenes probadas: {}\n".format(num_test_samples))
+        f.write("Predicciones correctas: {}\n".format(correct_predictions))
+        f.write("Precisión: {:.2f}%\n".format(accuracy))
+        f.write("Tiempo de entrenamiento: {:.2f} [seg]\n".format(training_time))
+
+        f.write("_"*45 + "\n")
+    
+    print("\nPruebas automatizadas completadas")
+    print("Se procesaron {} imágenes de prueba".format(num_test_samples))
+    print("Precisión final: {:.2f}%".format(accuracy))
+    print("Tiempo de entrenamiento: {:.2f} [seg]".format(training_time))
+    print("Los resultados han sido guardados en 'res_nn.txt'")
+    
+    #print("\nPresiona cualquier tecla para salir...")
+    #cv2.waitKey(0)
 
 if __name__ == '__main__':
     main()
