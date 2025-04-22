@@ -49,7 +49,11 @@ class NeuralNetwork(object):
         # return a list containing the output of each layer, from input to output.
         # Include input x as the first output.
         #
-        
+        y.append(x)
+        for i in range(len(self.biases)):
+            u = numpy.dot(self.weights[i], x) + self.biases[i]
+            x = 1.0 / (1.0 + numpy.exp(-u))
+            y.append(x)
         return y
 
     def backpropagate(self, x, t):
@@ -74,7 +78,16 @@ class NeuralNetwork(object):
         #     nabla_w[-l] = delta*ylpT  where ylpT is the transpose of outputs vector of layer l-1
         #
         
-        
+        # Calculate delta for the output layer
+        delta = (y[-1] - t) * y[-1] * (1 - y[-1])
+        nabla_b[-1] = delta
+        nabla_w[-1] = numpy.dot(delta, y[-2].transpose())
+
+        # Backpropagate through the layers
+        for l in range(2, self.num_layers):
+            delta = numpy.dot(self.weights[-l + 1].transpose(), delta) * y[-l] * (1 - y[-l])
+            nabla_b[-l] = delta
+            nabla_w[-l] = numpy.dot(delta, y[-l - 1].transpose())
         return nabla_w, nabla_b
 
     def update_with_batch(self, batch, eta):
