@@ -14,7 +14,7 @@ import numpy
 import rospy
 import rospkg
 
-NAME = "FULL_NAME"
+NAME = "Camarena Olivos Alan Misael"
 
 class NeuralNetwork(object):
     def __init__(self, layers, weights=None, biases=None):
@@ -33,7 +33,7 @@ class NeuralNetwork(object):
         self.weights=[numpy.random.randn(y,x) for x,y in zip(layers[:-1],layers[1:])] if weights==None else weights
         
     def feedforward(self, x):
-        #
+       
         # This function gets the output of the network when input is 'x'.
         #
         for i in range(len(self.biases)):
@@ -42,14 +42,16 @@ class NeuralNetwork(object):
         return x
 
     def feedforward_verbose(self, x):
-        y = []
+        y = [x]
         #
         # TODO:
         # Write a function similar to 'feedforward' but instead of returning only the output layer,
         # return a list containing the output of each layer, from input to output.
         # Include input x as the first output.
-        #
-        
+        #for i in range(len(self.biases)):
+        for i in range(len(self.biases)):
+            z = numpy.dot(self.weights[i], y[-1]) + self.biases[i]
+            y.append(1.0 / (1.0 + numpy.exp(-z)))  
         return y
 
     def backpropagate(self, x, yt):
@@ -73,8 +75,15 @@ class NeuralNetwork(object):
         #     nabla_b[-l] = delta
         #     nabla_w[-l] = delta*ylpT  where ylpT is the transpose of outputs vector of layer l-1
         #
-        
-        
+        delta = (y[-1] - yt) * y[-1] * (1 - y[-1])
+        nabla_b[-1] = delta
+        nabla_w[-1] = numpy.dot(delta, y[-2].transpose())
+    
+        for l in range(2, self.num_layers):
+            delta = numpy.dot(self.weights[-l+1].transpose(), delta) * y[-l] * (1 - y[-l])
+            nabla_b[-l] = delta
+            nabla_w[-l] = numpy.dot(delta, y[-l-1].transpose())
+    
         return nabla_w, nabla_b
 
     def update_with_batch(self, batch, eta):

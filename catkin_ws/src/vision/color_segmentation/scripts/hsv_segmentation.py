@@ -20,7 +20,7 @@ from sensor_msgs.msg import PointCloud2
 from geometry_msgs.msg import PointStamped, Point
 from vision_msgs.srv import RecognizeObject, RecognizeObjectResponse
 
-NAME = "FULL_NAME"
+NAME = "Camarena Olivos Alan Misael"
 
 def segment_by_color(img_bgr, points, obj_name):
     global img_hsv, img_bin, img_filtered
@@ -41,7 +41,33 @@ def segment_by_color(img_bgr, points, obj_name):
     #   Example: 'points[240,320][1]' gets the 'y' value of the point corresponding to
     #   the pixel in the center of the image.
     #
+    color_ranges = {
+        "pringles": ((25, 150, 50), (35, 255, 255)),
+        "drink": ((15, 200, 50), (25, 255, 255)),
+        "default": ((0, 150, 50), (10, 255, 255))
+    }
+
+    img_hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
     
+    lower_bound, upper_bound = color_ranges.get(obj_name, color_ranges["pringles"])
+    img_bin = cv2.inRange(img_hsv, lower_bound, upper_bound)
+
+
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7,7))
+    img_filtered = cv2.morphologyEx(img_bin, cv2.MORPH_OPEN, kernel)
+
+    
+    nonz = cv2.findNonZero(img_filtered)
+    if nonz is not None:
+        centroid = cv2.mean(nonz)
+        img_x, img_y = centroid[0], centroid[1]
+        
+       
+        points_sum = numpy.array([0.0, 0.0, 0.0])
+        for [[r,c]] in nonz:
+            points_sum += points[r,c][:3]
+        x, y, z = points_sum / len(nonz)
+
     return [img_x, img_y, x,y,1]
 
 def callback_find_object(req):
