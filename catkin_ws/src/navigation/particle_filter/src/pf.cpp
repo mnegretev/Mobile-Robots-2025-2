@@ -21,6 +21,8 @@
 
 #define NOMBRE "MURILLO SANTOS JAVIER EDUARDO"
 
+int displacement_counter = 0;  // contador global
+
 std::vector<geometry_msgs::Pose2D> get_initial_distribution(int N, float min_x, float max_x, float min_y, float max_y,
                                                              float min_a, float max_a)
 {
@@ -354,7 +356,8 @@ int main(int argc, char** argv)
     {
         if(check_displacement(delta_pose))
         {
-            std::cout << "Displacement detected. Updating pose estimation..." << std::endl;
+            displacement_counter++;
+            std::cout << "Displacement detected. Updating pose estimation... " << displacement_counter << std::endl;
             real_scan = *ros::topic::waitForMessage<sensor_msgs::LaserScan>("/hardware/scan");
             /*
              * TODO: Review the functions to:
