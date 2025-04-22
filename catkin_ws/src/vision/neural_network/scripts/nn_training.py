@@ -13,8 +13,9 @@ import random
 import numpy
 import rospy
 import rospkg
+import time
 
-NAME = "FULL_NAME"
+NAME = "ADRIAN MARTINEZ MANZO"
 
 class NeuralNetwork(object):
     def __init__(self, layers, weights=None, biases=None):
@@ -42,21 +43,22 @@ class NeuralNetwork(object):
         return x
 
     def forward_all_outputs(self, x):
-        y = []
+        y = [x]
         #
-        # TODO:
-        # Write a function similar to 'forward' but instead of returning only the output layer,
-        # return a list containing the output of each layer, from input to output.
+        # This function returns a list containing the output of each layer, from input to output.
         # Include input x as the first output.
         #
-        
+        for i in range(len(self.biases)):
+            u = numpy.dot(self.weights[i], x) + self.biases[i]
+            x = 1.0 / (1.0 + numpy.exp(-u))  # Sigmoid activation
+            y.append(x)
         return y
 
     def backpropagate(self, x, t):
         y = self.forward_all_outputs(x)
         nabla_b = [numpy.zeros(b.shape) for b in self.biases]
         nabla_w = [numpy.zeros(w.shape) for w in self.weights]
-        # TODO:
+        
         # Return a tuple [nabla_w, nabla_b] containing the gradient of cost function C with respect to
         # each weight and bias of all the network. The gradient is calculated assuming only one training
         # example is given: the input 'x' and the corresponding label 'yt'.
@@ -74,6 +76,18 @@ class NeuralNetwork(object):
         #     nabla_w[-l] = delta*ylpT  where ylpT is the transpose of outputs vector of layer l-1
         #
         
+        # Calculate delta for the output layer L
+        delta = (y[-1] - t) * y[-1] * (1 - y[-1])
+        nabla_b[-1] = delta
+        nabla_w[-1] = numpy.dot(delta, y[-2].transpose())
+        
+        # Backpropagate through the hidden layers
+        for l in range(2, self.num_layers):
+            z = y[-l]
+            sp = z * (1 - z)  # Derivative of sigmoid
+            delta = numpy.dot(self.weights[-l + 1].transpose(), delta) * sp
+            nabla_b[-l] = delta
+            nabla_w[-l] = numpy.dot(delta, y[-l - 1].transpose())
         
         return nabla_w, nabla_b
 
@@ -132,6 +146,41 @@ def load_dataset(folder):
         testing_labels   += [label for j in range(len(images)//2)]
     return list(zip(training_dataset, training_labels)), list(zip(testing_dataset, testing_labels))
 
+def test_and_train(training_dataset, testing_dataset, epochs, batch_size, learning_rate, autotest):
+    nn = NeuralNetwork([784,30,10])
+    recognition_rate = -1
+
+    start_time = time.time()
+    nn.train_by_SGD(training_dataset, epochs, batch_size, learning_rate)
+    elapsed_time = time.time() - start_time
+    print(f"\nTraining completed in {elapsed_time:.2f} seconds.")
+    
+    if not autotest:
+        print("\nPress key to test network or ESC to exit...")
+        numpy.set_printoptions(formatter={'float_kind':"{:.3f}".format})
+        cmd = cv2.waitKey(0)
+        while cmd != 27 and not rospy.is_shutdown():
+            img,label = testing_dataset[numpy.random.randint(0, 4999)]
+            y = nn.forward(img).transpose()
+            print("\nPerceptron output: " + str(y))
+            print("Expected output  : "   + str(label.transpose()))
+            print("Recognized digit : "   + str(numpy.argmax(y)))
+            cv2.imshow("Digit", numpy.reshape(numpy.asarray(img, dtype="float32"), (28,28,1)))
+            cmd = cv2.waitKey(0)
+    else:
+        print("\nTesting network for " + str(len(testing_dataset)) + " images...")
+        correct = 0
+        for img,label in testing_dataset:
+            y = nn.forward(img).transpose()
+            if numpy.argmax(y) == numpy.argmax(label):
+                correct += 1
+        recognition_rate = correct / len(testing_dataset) * 100
+        print("Correctly recognized " + str(correct) + " out of " + str(len(testing_dataset)) + " images.")
+        print("Recognition rate: " + str(recognition_rate) + "%")
+
+    return elapsed_time, recognition_rate
+
+
 def main():
     print("TRAINING A NEURAL NETWORK - " + NAME)
     rospy.init_node("nn_training")
@@ -140,6 +189,7 @@ def main():
     epochs        = 3
     batch_size    = 10
     learning_rate = 3.0
+    autotest      = False
     
     if rospy.has_param("~epochs"):
         epochs = rospy.get_param("~epochs")
@@ -147,24 +197,34 @@ def main():
         batch_size = rospy.get_param("~batch_size")
     if rospy.has_param("~learning_rate"):
         learning_rate = rospy.get_param("~learning_rate") 
+    if rospy.has_param("~auto_test"):
+        autotest = rospy.get_param("~auto_test")
 
     training_dataset, testing_dataset = load_dataset(dataset_folder)
     
-    nn = NeuralNetwork([784,30,10])
-    nn.train_by_SGD(training_dataset, epochs, batch_size, learning_rate)
-    
-    print("\nPress key to test network or ESC to exit...")
-    numpy.set_printoptions(formatter={'float_kind':"{:.3f}".format})
-    cmd = cv2.waitKey(0)
-    while cmd != 27 and not rospy.is_shutdown():
-        img,label = testing_dataset[numpy.random.randint(0, 4999)]
-        y = nn.forward(img).transpose()
-        print("\nPerceptron output: " + str(y))
-        print("Expected output  : "   + str(label.transpose()))
-        print("Recognized digit : "   + str(numpy.argmax(y)))
-        cv2.imshow("Digit", numpy.reshape(numpy.asarray(img, dtype="float32"), (28,28,1)))
-        cmd = cv2.waitKey(0)
-    
+    # Verify that epochs, batch_size and learning_rate are list if not convert them to list of single value
+    if not isinstance(epochs, list):
+        epochs = [epochs]
+    if not isinstance(batch_size, list):
+        batch_size = [batch_size]
+    if not isinstance(learning_rate, list):
+        learning_rate = [learning_rate]
+
+    # Create a CSV file to save the results
+    with open("results.csv", "w") as f:
+        f.write("epochs,batch_size,learning_rate,elapsed_time,recognition_rate\n")
+
+    # Iterate over all combinations of epochs, batch_size and learning_rate
+    for e in epochs:
+        for b in batch_size:
+            for lr in learning_rate:
+                print(f"\nTraining with epochs={e}, batch_size={b}, learning_rate={lr}")
+                elapsed_time, recognition_rate = test_and_train(training_dataset, testing_dataset, e, b, lr, autotest)
+                print(f"Training completed in {elapsed_time:.2f} seconds. Recognition rate: {recognition_rate:.2f}%")
+                # Save the results to the CSV file
+                with open("results.csv", "a") as f:
+                    f.write(f"{e},{b},{lr},{elapsed_time:.2f},{recognition_rate:.2f}\n")
+                    
 
 if __name__ == '__main__':
     main()
