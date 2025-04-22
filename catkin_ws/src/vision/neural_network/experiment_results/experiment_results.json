@@ -1,0 +1,1538 @@
+[
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 0.5,
+        "epochs": 3,
+        "batch_size": 5,
+        "training_time": 2.3384299278259277,
+        "success_rate": 67.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 0.5,
+        "epochs": 3,
+        "batch_size": 10,
+        "training_time": 1.8197343349456787,
+        "success_rate": 55.00000000000001
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 0.5,
+        "epochs": 3,
+        "batch_size": 30,
+        "training_time": 1.6461985111236572,
+        "success_rate": 34.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 0.5,
+        "epochs": 3,
+        "batch_size": 100,
+        "training_time": 1.402817726135254,
+        "success_rate": 28.999999999999996
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 0.5,
+        "epochs": 10,
+        "batch_size": 5,
+        "training_time": 8.619173049926758,
+        "success_rate": 79.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 0.5,
+        "epochs": 10,
+        "batch_size": 10,
+        "training_time": 12.587721586227417,
+        "success_rate": 76.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 0.5,
+        "epochs": 10,
+        "batch_size": 30,
+        "training_time": 13.476623296737671,
+        "success_rate": 55.00000000000001
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 0.5,
+        "epochs": 10,
+        "batch_size": 100,
+        "training_time": 6.491958379745483,
+        "success_rate": 32.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 0.5,
+        "epochs": 50,
+        "batch_size": 5,
+        "training_time": 60.243621826171875,
+        "success_rate": 92.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 0.5,
+        "epochs": 50,
+        "batch_size": 10,
+        "training_time": 37.06782627105713,
+        "success_rate": 85.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 0.5,
+        "epochs": 50,
+        "batch_size": 30,
+        "training_time": 69.5346474647522,
+        "success_rate": 85.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 0.5,
+        "epochs": 50,
+        "batch_size": 100,
+        "training_time": 62.982311964035034,
+        "success_rate": 74.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 0.5,
+        "epochs": 100,
+        "batch_size": 5,
+        "training_time": 141.80911827087402,
+        "success_rate": 89.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 0.5,
+        "epochs": 100,
+        "batch_size": 10,
+        "training_time": 176.12828850746155,
+        "success_rate": 92.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 0.5,
+        "epochs": 100,
+        "batch_size": 30,
+        "training_time": 164.9454472064972,
+        "success_rate": 87.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 0.5,
+        "epochs": 100,
+        "batch_size": 100,
+        "training_time": 162.71811652183533,
+        "success_rate": 70.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 1.0,
+        "epochs": 3,
+        "batch_size": 5,
+        "training_time": 3.733841896057129,
+        "success_rate": 92.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 1.0,
+        "epochs": 3,
+        "batch_size": 10,
+        "training_time": 4.183222055435181,
+        "success_rate": 57.99999999999999
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 1.0,
+        "epochs": 3,
+        "batch_size": 30,
+        "training_time": 12.724859952926636,
+        "success_rate": 48.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 1.0,
+        "epochs": 3,
+        "batch_size": 100,
+        "training_time": 9.421402931213379,
+        "success_rate": 9.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 1.0,
+        "epochs": 10,
+        "batch_size": 5,
+        "training_time": 15.270023345947266,
+        "success_rate": 71.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 1.0,
+        "epochs": 10,
+        "batch_size": 10,
+        "training_time": 10.536521196365356,
+        "success_rate": 77.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 1.0,
+        "epochs": 10,
+        "batch_size": 30,
+        "training_time": 30.060499668121338,
+        "success_rate": 75.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 1.0,
+        "epochs": 10,
+        "batch_size": 100,
+        "training_time": 18.30522394180298,
+        "success_rate": 44.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 1.0,
+        "epochs": 50,
+        "batch_size": 5,
+        "training_time": 149.42303133010864,
+        "success_rate": 86.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 1.0,
+        "epochs": 50,
+        "batch_size": 10,
+        "training_time": 151.84370255470276,
+        "success_rate": 89.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 1.0,
+        "epochs": 50,
+        "batch_size": 30,
+        "training_time": 107.11489725112915,
+        "success_rate": 89.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 1.0,
+        "epochs": 50,
+        "batch_size": 100,
+        "training_time": 81.97094988822937,
+        "success_rate": 80.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 1.0,
+        "epochs": 100,
+        "batch_size": 5,
+        "training_time": 302.1845757961273,
+        "success_rate": 86.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 1.0,
+        "epochs": 100,
+        "batch_size": 10,
+        "training_time": 79.1175184249878,
+        "success_rate": 91.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 1.0,
+        "epochs": 100,
+        "batch_size": 30,
+        "training_time": 100.90816164016724,
+        "success_rate": 89.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 1.0,
+        "epochs": 100,
+        "batch_size": 100,
+        "training_time": 114.32881212234497,
+        "success_rate": 83.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 3.0,
+        "epochs": 3,
+        "batch_size": 5,
+        "training_time": 7.063348054885864,
+        "success_rate": 77.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 3.0,
+        "epochs": 3,
+        "batch_size": 10,
+        "training_time": 7.4913341999053955,
+        "success_rate": 81.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 3.0,
+        "epochs": 3,
+        "batch_size": 30,
+        "training_time": 5.202634811401367,
+        "success_rate": 67.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 3.0,
+        "epochs": 3,
+        "batch_size": 100,
+        "training_time": 4.482945203781128,
+        "success_rate": 53.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 3.0,
+        "epochs": 10,
+        "batch_size": 5,
+        "training_time": 18.31589126586914,
+        "success_rate": 95.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 3.0,
+        "epochs": 10,
+        "batch_size": 10,
+        "training_time": 19.848716020584106,
+        "success_rate": 90.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 3.0,
+        "epochs": 10,
+        "batch_size": 30,
+        "training_time": 15.243834972381592,
+        "success_rate": 71.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 3.0,
+        "epochs": 10,
+        "batch_size": 100,
+        "training_time": 12.24342679977417,
+        "success_rate": 70.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 3.0,
+        "epochs": 50,
+        "batch_size": 5,
+        "training_time": 78.80283570289612,
+        "success_rate": 92.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 3.0,
+        "epochs": 50,
+        "batch_size": 10,
+        "training_time": 49.085007429122925,
+        "success_rate": 88.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 3.0,
+        "epochs": 50,
+        "batch_size": 30,
+        "training_time": 36.77154350280762,
+        "success_rate": 90.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 3.0,
+        "epochs": 50,
+        "batch_size": 100,
+        "training_time": 27.113205671310425,
+        "success_rate": 87.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 3.0,
+        "epochs": 100,
+        "batch_size": 5,
+        "training_time": 213.55202841758728,
+        "success_rate": 92.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 3.0,
+        "epochs": 100,
+        "batch_size": 10,
+        "training_time": 298.3625762462616,
+        "success_rate": 86.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 3.0,
+        "epochs": 100,
+        "batch_size": 30,
+        "training_time": 254.99196338653564,
+        "success_rate": 91.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 3.0,
+        "epochs": 100,
+        "batch_size": 100,
+        "training_time": 218.03169441223145,
+        "success_rate": 86.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 10.0,
+        "epochs": 3,
+        "batch_size": 5,
+        "training_time": 11.899888277053833,
+        "success_rate": 87.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 10.0,
+        "epochs": 3,
+        "batch_size": 10,
+        "training_time": 10.321948528289795,
+        "success_rate": 71.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 10.0,
+        "epochs": 3,
+        "batch_size": 30,
+        "training_time": 9.041327953338623,
+        "success_rate": 77.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 10.0,
+        "epochs": 3,
+        "batch_size": 100,
+        "training_time": 7.69219446182251,
+        "success_rate": 82.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 10.0,
+        "epochs": 10,
+        "batch_size": 5,
+        "training_time": 37.74188423156738,
+        "success_rate": 86.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 10.0,
+        "epochs": 10,
+        "batch_size": 10,
+        "training_time": 37.30544996261597,
+        "success_rate": 92.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 10.0,
+        "epochs": 10,
+        "batch_size": 30,
+        "training_time": 26.113850116729736,
+        "success_rate": 92.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 10.0,
+        "epochs": 10,
+        "batch_size": 100,
+        "training_time": 19.00747847557068,
+        "success_rate": 81.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 10.0,
+        "epochs": 50,
+        "batch_size": 5,
+        "training_time": 152.38079237937927,
+        "success_rate": 87.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 10.0,
+        "epochs": 50,
+        "batch_size": 10,
+        "training_time": 99.94548749923706,
+        "success_rate": 93.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 10.0,
+        "epochs": 50,
+        "batch_size": 30,
+        "training_time": 49.13725304603577,
+        "success_rate": 84.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 10.0,
+        "epochs": 50,
+        "batch_size": 100,
+        "training_time": 46.34849309921265,
+        "success_rate": 93.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 10.0,
+        "epochs": 100,
+        "batch_size": 5,
+        "training_time": 227.0321638584137,
+        "success_rate": 90.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 10.0,
+        "epochs": 100,
+        "batch_size": 10,
+        "training_time": 153.4007842540741,
+        "success_rate": 94.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 10.0,
+        "epochs": 100,
+        "batch_size": 30,
+        "training_time": 85.31956338882446,
+        "success_rate": 91.0
+    },
+    {
+        "architecture": "[784, 30, 10]",
+        "learning_rate": 10.0,
+        "epochs": 100,
+        "batch_size": 100,
+        "training_time": 70.33450031280518,
+        "success_rate": 91.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 0.5,
+        "epochs": 3,
+        "batch_size": 5,
+        "training_time": 104.84179782867432,
+        "success_rate": 65.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 0.5,
+        "epochs": 3,
+        "batch_size": 10,
+        "training_time": 111.71846055984497,
+        "success_rate": 62.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 0.5,
+        "epochs": 3,
+        "batch_size": 30,
+        "training_time": 105.28273367881775,
+        "success_rate": 36.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 0.5,
+        "epochs": 3,
+        "batch_size": 100,
+        "training_time": 106.8699471950531,
+        "success_rate": 12.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 0.5,
+        "epochs": 10,
+        "batch_size": 5,
+        "training_time": 416.86299109458923,
+        "success_rate": 94.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 0.5,
+        "epochs": 10,
+        "batch_size": 10,
+        "training_time": 394.2126214504242,
+        "success_rate": 57.99999999999999
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 0.5,
+        "epochs": 10,
+        "batch_size": 30,
+        "training_time": 377.80036306381226,
+        "success_rate": 52.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 0.5,
+        "epochs": 10,
+        "batch_size": 100,
+        "training_time": 153.00137901306152,
+        "success_rate": 28.999999999999996
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 0.5,
+        "epochs": 50,
+        "batch_size": 5,
+        "training_time": 366.45173835754395,
+        "success_rate": 89.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 0.5,
+        "epochs": 50,
+        "batch_size": 10,
+        "training_time": 339.3434672355652,
+        "success_rate": 89.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 0.5,
+        "epochs": 50,
+        "batch_size": 30,
+        "training_time": 357.5000216960907,
+        "success_rate": 75.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 0.5,
+        "epochs": 50,
+        "batch_size": 100,
+        "training_time": 301.88229513168335,
+        "success_rate": 65.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 0.5,
+        "epochs": 100,
+        "batch_size": 5,
+        "training_time": 827.2195265293121,
+        "success_rate": 89.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 0.5,
+        "epochs": 100,
+        "batch_size": 10,
+        "training_time": 829.368700504303,
+        "success_rate": 84.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 0.5,
+        "epochs": 100,
+        "batch_size": 30,
+        "training_time": 841.8197224140167,
+        "success_rate": 71.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 0.5,
+        "epochs": 100,
+        "batch_size": 100,
+        "training_time": 856.8244247436523,
+        "success_rate": 85.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 1.0,
+        "epochs": 3,
+        "batch_size": 5,
+        "training_time": 28.307843923568726,
+        "success_rate": 65.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 1.0,
+        "epochs": 3,
+        "batch_size": 10,
+        "training_time": 24.743170261383057,
+        "success_rate": 75.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 1.0,
+        "epochs": 3,
+        "batch_size": 30,
+        "training_time": 26.21335220336914,
+        "success_rate": 41.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 1.0,
+        "epochs": 3,
+        "batch_size": 100,
+        "training_time": 27.416382789611816,
+        "success_rate": 9.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 1.0,
+        "epochs": 10,
+        "batch_size": 5,
+        "training_time": 88.43384909629822,
+        "success_rate": 76.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 1.0,
+        "epochs": 10,
+        "batch_size": 10,
+        "training_time": 83.44670629501343,
+        "success_rate": 59.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 1.0,
+        "epochs": 10,
+        "batch_size": 30,
+        "training_time": 87.96789622306824,
+        "success_rate": 67.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 1.0,
+        "epochs": 10,
+        "batch_size": 100,
+        "training_time": 90.27088332176208,
+        "success_rate": 35.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 1.0,
+        "epochs": 50,
+        "batch_size": 5,
+        "training_time": 446.41527223587036,
+        "success_rate": 76.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 1.0,
+        "epochs": 50,
+        "batch_size": 10,
+        "training_time": 415.95432305336,
+        "success_rate": 90.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 1.0,
+        "epochs": 50,
+        "batch_size": 30,
+        "training_time": 438.1800570487976,
+        "success_rate": 73.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 1.0,
+        "epochs": 50,
+        "batch_size": 100,
+        "training_time": 455.4684057235718,
+        "success_rate": 78.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 1.0,
+        "epochs": 100,
+        "batch_size": 5,
+        "training_time": 893.3495531082153,
+        "success_rate": 91.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 1.0,
+        "epochs": 100,
+        "batch_size": 10,
+        "training_time": 833.8936049938202,
+        "success_rate": 91.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 1.0,
+        "epochs": 100,
+        "batch_size": 30,
+        "training_time": 1009.6039371490479,
+        "success_rate": 84.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 1.0,
+        "epochs": 100,
+        "batch_size": 100,
+        "training_time": 911.5039484500885,
+        "success_rate": 82.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 3.0,
+        "epochs": 3,
+        "batch_size": 5,
+        "training_time": 27.68079972267151,
+        "success_rate": 87.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 3.0,
+        "epochs": 3,
+        "batch_size": 10,
+        "training_time": 25.72672200202942,
+        "success_rate": 72.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 3.0,
+        "epochs": 3,
+        "batch_size": 30,
+        "training_time": 27.11792802810669,
+        "success_rate": 67.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 3.0,
+        "epochs": 3,
+        "batch_size": 100,
+        "training_time": 27.779632329940796,
+        "success_rate": 34.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 3.0,
+        "epochs": 10,
+        "batch_size": 5,
+        "training_time": 91.11820101737976,
+        "success_rate": 80.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 3.0,
+        "epochs": 10,
+        "batch_size": 10,
+        "training_time": 89.66237592697144,
+        "success_rate": 92.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 3.0,
+        "epochs": 10,
+        "batch_size": 30,
+        "training_time": 89.84807777404785,
+        "success_rate": 78.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 3.0,
+        "epochs": 10,
+        "batch_size": 100,
+        "training_time": 94.3026270866394,
+        "success_rate": 83.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 3.0,
+        "epochs": 50,
+        "batch_size": 5,
+        "training_time": 456.4080111980438,
+        "success_rate": 91.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 3.0,
+        "epochs": 50,
+        "batch_size": 10,
+        "training_time": 430.7340829372406,
+        "success_rate": 87.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 3.0,
+        "epochs": 50,
+        "batch_size": 30,
+        "training_time": 439.5242805480957,
+        "success_rate": 78.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 3.0,
+        "epochs": 50,
+        "batch_size": 100,
+        "training_time": 454.6783390045166,
+        "success_rate": 87.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 3.0,
+        "epochs": 100,
+        "batch_size": 5,
+        "training_time": 905.8025450706482,
+        "success_rate": 88.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 3.0,
+        "epochs": 100,
+        "batch_size": 10,
+        "training_time": 851.1551325321198,
+        "success_rate": 97.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 3.0,
+        "epochs": 100,
+        "batch_size": 30,
+        "training_time": 870.5470955371857,
+        "success_rate": 92.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 3.0,
+        "epochs": 100,
+        "batch_size": 100,
+        "training_time": 898.2240724563599,
+        "success_rate": 82.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 10.0,
+        "epochs": 3,
+        "batch_size": 5,
+        "training_time": 27.52353811264038,
+        "success_rate": 26.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 10.0,
+        "epochs": 3,
+        "batch_size": 10,
+        "training_time": 24.99349880218506,
+        "success_rate": 19.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 10.0,
+        "epochs": 3,
+        "batch_size": 30,
+        "training_time": 26.552189826965332,
+        "success_rate": 14.000000000000002
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 10.0,
+        "epochs": 3,
+        "batch_size": 100,
+        "training_time": 26.55151915550232,
+        "success_rate": 13.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 10.0,
+        "epochs": 10,
+        "batch_size": 5,
+        "training_time": 90.48740029335022,
+        "success_rate": 9.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 10.0,
+        "epochs": 10,
+        "batch_size": 10,
+        "training_time": 84.78291583061218,
+        "success_rate": 28.000000000000004
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 10.0,
+        "epochs": 10,
+        "batch_size": 30,
+        "training_time": 87.84390258789062,
+        "success_rate": 18.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 10.0,
+        "epochs": 10,
+        "batch_size": 100,
+        "training_time": 90.36673426628113,
+        "success_rate": 37.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 10.0,
+        "epochs": 50,
+        "batch_size": 5,
+        "training_time": 512.8941411972046,
+        "success_rate": 43.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 10.0,
+        "epochs": 50,
+        "batch_size": 10,
+        "training_time": 417.5072522163391,
+        "success_rate": 9.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 10.0,
+        "epochs": 50,
+        "batch_size": 30,
+        "training_time": 441.0655243396759,
+        "success_rate": 57.99999999999999
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 10.0,
+        "epochs": 50,
+        "batch_size": 100,
+        "training_time": 450.15776681900024,
+        "success_rate": 71.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 10.0,
+        "epochs": 100,
+        "batch_size": 5,
+        "training_time": 882.9889626502991,
+        "success_rate": 6.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 10.0,
+        "epochs": 100,
+        "batch_size": 10,
+        "training_time": 828.58944439888,
+        "success_rate": 95.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 10.0,
+        "epochs": 100,
+        "batch_size": 30,
+        "training_time": 869.3483414649963,
+        "success_rate": 39.0
+    },
+    {
+        "architecture": "[784, 100, 50, 10]",
+        "learning_rate": 10.0,
+        "epochs": 100,
+        "batch_size": 100,
+        "training_time": 842.9980127811432,
+        "success_rate": 75.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 0.5,
+        "epochs": 3,
+        "batch_size": 5,
+        "training_time": 24.790523290634155,
+        "success_rate": 28.000000000000004
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 0.5,
+        "epochs": 3,
+        "batch_size": 10,
+        "training_time": 23.671534299850464,
+        "success_rate": 16.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 0.5,
+        "epochs": 3,
+        "batch_size": 30,
+        "training_time": 23.54567837715149,
+        "success_rate": 32.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 0.5,
+        "epochs": 3,
+        "batch_size": 100,
+        "training_time": 23.56681251525879,
+        "success_rate": 11.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 0.5,
+        "epochs": 10,
+        "batch_size": 5,
+        "training_time": 87.22965621948242,
+        "success_rate": 52.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 0.5,
+        "epochs": 10,
+        "batch_size": 10,
+        "training_time": 79.71476888656616,
+        "success_rate": 43.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 0.5,
+        "epochs": 10,
+        "batch_size": 30,
+        "training_time": 80.73799562454224,
+        "success_rate": 24.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 0.5,
+        "epochs": 10,
+        "batch_size": 100,
+        "training_time": 80.92074346542358,
+        "success_rate": 46.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 0.5,
+        "epochs": 50,
+        "batch_size": 5,
+        "training_time": 438.5774269104004,
+        "success_rate": 72.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 0.5,
+        "epochs": 50,
+        "batch_size": 10,
+        "training_time": 402.7511022090912,
+        "success_rate": 42.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 0.5,
+        "epochs": 50,
+        "batch_size": 30,
+        "training_time": 404.0030207633972,
+        "success_rate": 63.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 0.5,
+        "epochs": 50,
+        "batch_size": 100,
+        "training_time": 398.83244228363037,
+        "success_rate": 56.99999999999999
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 0.5,
+        "epochs": 100,
+        "batch_size": 5,
+        "training_time": 877.7565476894379,
+        "success_rate": 71.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 0.5,
+        "epochs": 100,
+        "batch_size": 10,
+        "training_time": 801.4827299118042,
+        "success_rate": 79.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 0.5,
+        "epochs": 100,
+        "batch_size": 30,
+        "training_time": 804.1008772850037,
+        "success_rate": 52.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 0.5,
+        "epochs": 100,
+        "batch_size": 100,
+        "training_time": 789.6139698028564,
+        "success_rate": 54.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 1.0,
+        "epochs": 3,
+        "batch_size": 5,
+        "training_time": 25.64600944519043,
+        "success_rate": 27.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 1.0,
+        "epochs": 3,
+        "batch_size": 10,
+        "training_time": 23.652796030044556,
+        "success_rate": 35.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 1.0,
+        "epochs": 3,
+        "batch_size": 30,
+        "training_time": 24.403022050857544,
+        "success_rate": 27.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 1.0,
+        "epochs": 3,
+        "batch_size": 100,
+        "training_time": 23.446614742279053,
+        "success_rate": 32.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 1.0,
+        "epochs": 10,
+        "batch_size": 5,
+        "training_time": 86.96222949028015,
+        "success_rate": 37.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 1.0,
+        "epochs": 10,
+        "batch_size": 10,
+        "training_time": 79.62464451789856,
+        "success_rate": 68.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 1.0,
+        "epochs": 10,
+        "batch_size": 30,
+        "training_time": 78.68507647514343,
+        "success_rate": 43.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 1.0,
+        "epochs": 10,
+        "batch_size": 100,
+        "training_time": 77.49982953071594,
+        "success_rate": 33.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 1.0,
+        "epochs": 50,
+        "batch_size": 5,
+        "training_time": 432.12827825546265,
+        "success_rate": 80.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 1.0,
+        "epochs": 50,
+        "batch_size": 10,
+        "training_time": 400.2292923927307,
+        "success_rate": 74.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 1.0,
+        "epochs": 50,
+        "batch_size": 30,
+        "training_time": 394.10625100135803,
+        "success_rate": 41.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 1.0,
+        "epochs": 50,
+        "batch_size": 100,
+        "training_time": 396.0355064868927,
+        "success_rate": 38.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 1.0,
+        "epochs": 100,
+        "batch_size": 5,
+        "training_time": 844.0797090530396,
+        "success_rate": 87.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 1.0,
+        "epochs": 100,
+        "batch_size": 10,
+        "training_time": 729.7652161121368,
+        "success_rate": 66.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 1.0,
+        "epochs": 100,
+        "batch_size": 30,
+        "training_time": 695.3250677585602,
+        "success_rate": 70.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 1.0,
+        "epochs": 100,
+        "batch_size": 100,
+        "training_time": 879.6117737293243,
+        "success_rate": 67.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 3.0,
+        "epochs": 3,
+        "batch_size": 5,
+        "training_time": 22.441519498825073,
+        "success_rate": 54.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 3.0,
+        "epochs": 3,
+        "batch_size": 10,
+        "training_time": 21.628266096115112,
+        "success_rate": 51.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 3.0,
+        "epochs": 3,
+        "batch_size": 30,
+        "training_time": 20.805919408798218,
+        "success_rate": 10.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 3.0,
+        "epochs": 3,
+        "batch_size": 100,
+        "training_time": 20.481984853744507,
+        "success_rate": 44.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 3.0,
+        "epochs": 10,
+        "batch_size": 5,
+        "training_time": 80.8603892326355,
+        "success_rate": 56.99999999999999
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 3.0,
+        "epochs": 10,
+        "batch_size": 10,
+        "training_time": 76.2973690032959,
+        "success_rate": 57.99999999999999
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 3.0,
+        "epochs": 10,
+        "batch_size": 30,
+        "training_time": 77.69995021820068,
+        "success_rate": 64.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 3.0,
+        "epochs": 10,
+        "batch_size": 100,
+        "training_time": 78.96078419685364,
+        "success_rate": 35.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 3.0,
+        "epochs": 50,
+        "batch_size": 5,
+        "training_time": 400.2463598251343,
+        "success_rate": 59.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 3.0,
+        "epochs": 50,
+        "batch_size": 10,
+        "training_time": 372.4349901676178,
+        "success_rate": 71.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 3.0,
+        "epochs": 50,
+        "batch_size": 30,
+        "training_time": 388.06999468803406,
+        "success_rate": 56.00000000000001
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 3.0,
+        "epochs": 50,
+        "batch_size": 100,
+        "training_time": 387.4154849052429,
+        "success_rate": 70.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 3.0,
+        "epochs": 100,
+        "batch_size": 5,
+        "training_time": 802.4702997207642,
+        "success_rate": 76.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 3.0,
+        "epochs": 100,
+        "batch_size": 10,
+        "training_time": 741.1564152240753,
+        "success_rate": 38.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 3.0,
+        "epochs": 100,
+        "batch_size": 30,
+        "training_time": 760.7349698543549,
+        "success_rate": 86.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 3.0,
+        "epochs": 100,
+        "batch_size": 100,
+        "training_time": 782.0070118904114,
+        "success_rate": 92.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 10.0,
+        "epochs": 3,
+        "batch_size": 5,
+        "training_time": 23.687261819839478,
+        "success_rate": 26.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 10.0,
+        "epochs": 3,
+        "batch_size": 10,
+        "training_time": 22.185038089752197,
+        "success_rate": 22.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 10.0,
+        "epochs": 3,
+        "batch_size": 30,
+        "training_time": 23.320502996444702,
+        "success_rate": 28.000000000000004
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 10.0,
+        "epochs": 3,
+        "batch_size": 100,
+        "training_time": 23.48665428161621,
+        "success_rate": 22.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 10.0,
+        "epochs": 10,
+        "batch_size": 5,
+        "training_time": 80.07831120491028,
+        "success_rate": 26.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 10.0,
+        "epochs": 10,
+        "batch_size": 10,
+        "training_time": 76.63388109207153,
+        "success_rate": 32.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 10.0,
+        "epochs": 10,
+        "batch_size": 30,
+        "training_time": 77.41287326812744,
+        "success_rate": 65.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 10.0,
+        "epochs": 10,
+        "batch_size": 100,
+        "training_time": 78.86604332923889,
+        "success_rate": 31.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 10.0,
+        "epochs": 50,
+        "batch_size": 5,
+        "training_time": 397.28749561309814,
+        "success_rate": 26.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 10.0,
+        "epochs": 50,
+        "batch_size": 10,
+        "training_time": 381.76415491104126,
+        "success_rate": 57.99999999999999
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 10.0,
+        "epochs": 50,
+        "batch_size": 30,
+        "training_time": 386.5820758342743,
+        "success_rate": 54.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 10.0,
+        "epochs": 50,
+        "batch_size": 100,
+        "training_time": 393.1515004634857,
+        "success_rate": 42.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 10.0,
+        "epochs": 100,
+        "batch_size": 5,
+        "training_time": 796.1083030700684,
+        "success_rate": 23.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 10.0,
+        "epochs": 100,
+        "batch_size": 10,
+        "training_time": 756.8977918624878,
+        "success_rate": 62.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 10.0,
+        "epochs": 100,
+        "batch_size": 30,
+        "training_time": 765.5005352497101,
+        "success_rate": 68.0
+    },
+    {
+        "architecture": "[784, 200, 10]",
+        "learning_rate": 10.0,
+        "epochs": 100,
+        "batch_size": 100,
+        "training_time": 743.1821653842926,
+        "success_rate": 42.0
+    }
+]
