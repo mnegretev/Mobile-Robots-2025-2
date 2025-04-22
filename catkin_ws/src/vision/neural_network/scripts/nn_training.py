@@ -13,8 +13,9 @@ import random
 import numpy
 import rospy
 import rospkg
+import time
 
-NAME = "FULL_NAME"
+NAME = "JORGE EITHAN TREVIÑO SELLES"
 
 class NeuralNetwork(object):
     def __init__(self, layers, weights=None, biases=None):
@@ -42,13 +43,17 @@ class NeuralNetwork(object):
         return x
 
     def forward_all_outputs(self, x):
-        y = []
-        #
-        # TODO:
-        # Write a function similar to 'forward' but instead of returning only the output layer,
-        # return a list containing the output of each layer, from input to output.
-        # Include input x as the first output.
-        #
+        # Assign the first element of the list to the input
+        ## This will be the first element of the list
+        ## and the first layer of the network
+        y = [x]
+        for i in range(len(self.biases)):
+            # Calculate the output of the layer
+            u = numpy.dot(self.weights[i], x) + self.biases[i]
+            # Apply the sigmoid function to the output
+            x = 1.0 / (1.0 + numpy.exp(-u))
+            # Append the output to the list
+            y.append(x)
         
         return y
 
@@ -56,25 +61,19 @@ class NeuralNetwork(object):
         y = self.forward_all_outputs(x)
         nabla_b = [numpy.zeros(b.shape) for b in self.biases]
         nabla_w = [numpy.zeros(w.shape) for w in self.weights]
-        # TODO:
-        # Return a tuple [nabla_w, nabla_b] containing the gradient of cost function C with respect to
-        # each weight and bias of all the network. The gradient is calculated assuming only one training
-        # example is given: the input 'x' and the corresponding label 'yt'.
-        # nabla_w and nabla_b should have the same dimensions as the corresponding
-        # self.weights and self.biases
-        # You can calculate the gradient following these steps:
-        #
-        # Calculate delta for the output layer L: delta=(yL-yt)*yL*(1-yL)
-        # nabla_b of output layer = delta      
-        # nabla_w of output layer = delta*yLpT where yLpT is the transpose of the ouput vector of layer L-1
-        # FOR all layers 'l' from L-1 to input layer: 
-        #     delta = (WT * delta)*yl*(1 - yl)
-        #     where 'WT' is the transpose of the matrix of weights of layer l+1 and 'yl' is the output of layer l
-        #     nabla_b[-l] = delta
-        #     nabla_w[-l] = delta*ylpT  where ylpT is the transpose of outputs vector of layer l-1
-        #
         
+        # Calculate delta for the output layer
+        delta = (y[-1] - t) * y[-1] * (1 - y[-1])
+        # Calculate nabla_b and nabla_w for the output layer
+        nabla_b[-1] = delta
+        nabla_w[-1] = numpy.dot(delta, y[-2].T)
         
+        # Iterate over the layers from L-1 to 1
+        for l in range(2, self.num_layers):
+            delta = numpy.dot(self.weights[-l+1].T, delta) * y[-l] * (1 - y[-l])
+            nabla_b[-l] = delta
+            nabla_w[-l] = numpy.dot(delta, y[-l-1].T)
+            
         return nabla_w, nabla_b
 
     def update_with_batch(self, batch, eta):
