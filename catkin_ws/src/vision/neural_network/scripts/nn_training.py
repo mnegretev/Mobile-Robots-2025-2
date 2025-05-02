@@ -13,6 +13,7 @@ import random
 import numpy
 import rospy
 import rospkg
+import time
 
 NAME = "RAMIRO SANCHEZ LEONARDO"
 
@@ -145,6 +146,40 @@ def load_dataset(folder):
         testing_dataset  += images[len(images)//2:len(images)]
         testing_labels   += [label for j in range(len(images)//2)]
     return list(zip(training_dataset, training_labels)), list(zip(testing_dataset, testing_labels))
+    
+def run_automated_tests(nn, test_data, n_tests=100):
+    print("\n=== Ejecutando las pruebas de forma automàtica ===")
+    total_correct = 0
+    total_time = 0.0
+    
+    for i in range(n_tests):
+        try:
+            x, y_true = random.choice(test_data)
+        
+            start_time = time.time()
+            y_pred = nn.feedforward(x)
+            elapsed_time = time.time() - start_time
+            total_time += elapsed_time
+        
+            if numpy.argmax(y_pred) == numpy.argmax(y_true):
+                total_correct += 1
+        
+            
+            sys.stdout.write(f"\rPrueba: {i+1}/{n_tests} completadas")
+            sys.stdout.flush()
+        
+        except Exception as e:
+            
+            print("\nError en prueba {}: {}".format(i+1,str(e)))
+            continue
+        
+    avg_time = (total_time / n_tests) * 1000
+    accuracy = (total_correct / float(n_tests)) * 100
+        
+    print("\nResultados:")
+    print("- Tiempo promedio por inferencia: {:.2f} ms".format(avg_time))
+    print("- Precisiòn promedio {:.2f}%".format(accuracy))
+    print("="*50)
 
 def main():
     print("TRAINING A NEURAL NETWORK - " + NAME)
@@ -175,6 +210,8 @@ def main():
     
     nn.train_by_SGD(training_dataset, epochs, batch_size, learning_rate)
     #numpy.savez(dataset_folder + "network",w=nn.weights, b=nn.biases)
+    
+    run_automated_tests(nn, testing_dataset)
     
     print("\nPress key to test network or ESC to exit...")
     numpy.set_printoptions(formatter={'float_kind':"{:.3f}".format})
