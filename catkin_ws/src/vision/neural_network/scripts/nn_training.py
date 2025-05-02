@@ -14,7 +14,7 @@ import numpy
 import rospy
 import rospkg
 
-NAME = "FULL_NAME"
+NAME = "RAMIRO SANCHEZ LEONARDO"
 
 class NeuralNetwork(object):
     def __init__(self, layers, weights=None, biases=None):
@@ -41,7 +41,7 @@ class NeuralNetwork(object):
             x = 1.0 / (1.0 + numpy.exp(-z))  #output of the current layer is the input of the next one
         return x
 
-    def feedforward_verbose(self, x):
+    def forward_all_outputs(self, x):
         y = []
         #
         # TODO:
@@ -50,10 +50,15 @@ class NeuralNetwork(object):
         # Include input x as the first output.
         #
         
+        y = [x]
+        for b, w in zip(self.biases, self.weights):
+            x= 1.0 / (1.0 + numpy.exp(-(numpy.dot(w, x) + b)))
+            y.append(x)
+            
         return y
 
-    def backpropagate(self, x, yt):
-        y = self.feedforward_verbose(x)
+    def backpropagate(self, x, t):
+        y = self.forward_all_outputs(x)
         nabla_b = [numpy.zeros(b.shape) for b in self.biases]
         nabla_w = [numpy.zeros(w.shape) for w in self.weights]
         # TODO:
@@ -74,6 +79,15 @@ class NeuralNetwork(object):
         #     nabla_w[-l] = delta*ylpT  where ylpT is the transpose of outputs vector of layer l-1
         #
         
+        delta=(y[-1]-t)*y[-1]*(1-y[-1])
+        nabla_b[-1]=delta
+        nabla_w[-1]=numpy.dot(delta,y[-2].T)
+        
+        for l in range(2, self.num_layers):
+            delta=numpy.dot(self.weights[-l+1].T,delta)*y[-l]*(1-y[-l])
+            nabla_b[-l]=delta
+            nabla_w[-l]=numpy.dot(delta,y[-l-1].T)
+            
         
         return nabla_w, nabla_b
 
