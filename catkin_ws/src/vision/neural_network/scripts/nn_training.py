@@ -14,7 +14,7 @@ import numpy
 import rospy
 import rospkg
 
-NAME = "FULL_NAME"
+NAME = "Efren Hazael Rivera Perez"
 
 class NeuralNetwork(object):
     def __init__(self, layers, weights=None, biases=None):
@@ -49,7 +49,11 @@ class NeuralNetwork(object):
         # return a list containing the output of each layer, from input to output.
         # Include input x as the first output.
         #
-        
+        y.append(x)
+        for i in range(len(self.biases)):
+            u = numpy.dot(self.weights[i], x) + self.biases[i]
+            x = 1.0 / (1.0 + numpy.exp(-u))
+            y.append(x)
         return y
 
     def backpropagate(self, x, t):
@@ -73,8 +77,13 @@ class NeuralNetwork(object):
         #     nabla_b[-l] = delta
         #     nabla_w[-l] = delta*ylpT  where ylpT is the transpose of outputs vector of layer l-1
         #
-        
-        
+        delta = (y[-1]-t)*y[-1]*(1-y[-1])
+        nabla_b[-1] = delta
+        nabla_w[-1] = delta*y[-2].transpose()
+        for i in range (2, self.num_layers):
+        	delta = numpy.dot(self.weights[-i+1].transpose(),delta)*y[-i]*(1-y[-i])
+        	nabla_b[-i] = delta
+        	nabla_w[-i] = numpy.dot(delta,y[-1-i].transpose())        
         return nabla_w, nabla_b
 
     def update_with_batch(self, batch, eta):
@@ -139,7 +148,7 @@ def main():
     dataset_folder = rospack.get_path("neural_network") + "/handwritten_digits/"
     epochs        = 3
     batch_size    = 10
-    learning_rate = 3.0
+    learning_rate = 1.0
     
     if rospy.has_param("~epochs"):
         epochs = rospy.get_param("~epochs")
@@ -156,14 +165,23 @@ def main():
     print("\nPress key to test network or ESC to exit...")
     numpy.set_printoptions(formatter={'float_kind':"{:.3f}".format})
     cmd = cv2.waitKey(0)
+    exitos = 0
     while cmd != 27 and not rospy.is_shutdown():
-        img,label = testing_dataset[numpy.random.randint(0, 4999)]
-        y = nn.forward(img).transpose()
-        print("\nPerceptron output: " + str(y))
-        print("Expected output  : "   + str(label.transpose()))
-        print("Recognized digit : "   + str(numpy.argmax(y)))
-        cv2.imshow("Digit", numpy.reshape(numpy.asarray(img, dtype="float32"), (28,28,1)))
-        cmd = cv2.waitKey(0)
+    	for i in range(1,101):
+        	img,label = testing_dataset[numpy.random.randint(0, 4999)]
+        	y = nn.forward(img).transpose()
+        	print("\nExperimento numero " + str(i))
+        	print("Perceptron output: " + str(y))
+        	print("Expected output  : "   + str(label.transpose()))
+        	print("Recognized digit : "   + str(numpy.argmax(y)))
+        	if label.transpose()[0][numpy.argmax(y)] == 1:
+        		exitos += 1
+        		print("Exito numero "+str(exitos))
+        	#cv2.imshow("Digit", numpy.reshape(numpy.asarray(img, dtype="float32"), (28,28,1)))
+        	#Generaba muchas imagenes que no se podian cerrar de forma colectiva
+    	print("Numero de exitos: "+str(exitos))
+    	exitos = 0
+    	cmd = cv2.waitKey(0)
     
 
 if __name__ == '__main__':
