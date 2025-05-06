@@ -140,7 +140,7 @@ def main():
     training_dataset, testing_dataset = load_dataset(dataset_folder)
 
     epochs_list = [20, 30, 50,]
-    batch_sizes = [5, 10, 30, 50]
+    batch_sizes = [5, 10, 30]
     learning_rates = [3.0, 5.0, 7.5]
 
     total_combinations = len(epochs_list) * len(batch_sizes) * len(learning_rates)
