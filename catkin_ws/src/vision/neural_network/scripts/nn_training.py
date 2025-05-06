@@ -33,21 +33,26 @@ class NeuralNetwork(object):
         self.layer_sizes = layers
         self.biases =[numpy.random.randn(y,1) for y in layers[1:]] if biases == None else biases
         self.weights=[numpy.random.randn(y,x) for x,y in zip(layers[:-1],layers[1:])] if weights==None else weights
-        
-    def feedforward(self, x):
-       
+       #asdasd 
+    def forward(self, x):
+        #
         # This function gets the output of the network when input is 'x'.
         #
         for i in range(len(self.biases)):
-            z = numpy.dot(self.weights[i], x) + self.biases[i]
-            x = 1.0 / (1.0 + numpy.exp(-z))  #output of the current layer is the input of the next one
+            u = numpy.dot(self.weights[i], x) + self.biases[i]
+            x = 1.0 / (1.0 + numpy.exp(-u))  #output of the current layer is the input of the next one
         return x
 
+<<<<<<< HEAD
     def feedforward_verbose(self, x):
         y = [x]
+=======
+    def forward_all_outputs(self, x):
+        y = []
+>>>>>>> 087a3b5db675d82e2f497c2a27699f7c42e7864a
         #
         # TODO:
-        # Write a function similar to 'feedforward' but instead of returning only the output layer,
+        # Write a function similar to 'forward' but instead of returning only the output layer,
         # return a list containing the output of each layer, from input to output.
         # Include input x as the first output.
         #for i in range(len(self.biases)):
@@ -56,8 +61,8 @@ class NeuralNetwork(object):
             y.append(1.0 / (1.0 + numpy.exp(-z)))  
         return y
 
-    def backpropagate(self, x, yt):
-        y = self.feedforward_verbose(x)
+    def backpropagate(self, x, t):
+        y = self.forward_all_outputs(x)
         nabla_b = [numpy.zeros(b.shape) for b in self.biases]
         nabla_w = [numpy.zeros(w.shape) for w in self.weights]
         # TODO:
@@ -168,6 +173,7 @@ def main():
     
     training_dataset, testing_dataset = load_dataset(dataset_folder)
     
+<<<<<<< HEAD
     
     results_file = dataset_folder + "results/nn_results.txt"
     os.makedirs(os.path.dirname(results_file), exist_ok=True)
@@ -219,6 +225,22 @@ def main():
                 
                 if rospy.is_shutdown():
                     return
+=======
+    nn = NeuralNetwork([784,30,10])
+    nn.train_by_SGD(training_dataset, epochs, batch_size, learning_rate)
+    
+    print("\nPress key to test network or ESC to exit...")
+    numpy.set_printoptions(formatter={'float_kind':"{:.3f}".format})
+    cmd = cv2.waitKey(0)
+    while cmd != 27 and not rospy.is_shutdown():
+        img,label = testing_dataset[numpy.random.randint(0, 4999)]
+        y = nn.forward(img).transpose()
+        print("\nPerceptron output: " + str(y))
+        print("Expected output  : "   + str(label.transpose()))
+        print("Recognized digit : "   + str(numpy.argmax(y)))
+        cv2.imshow("Digit", numpy.reshape(numpy.asarray(img, dtype="float32"), (28,28,1)))
+        cmd = cv2.waitKey(0)
+>>>>>>> 087a3b5db675d82e2f497c2a27699f7c42e7864a
     
     print(f"\nExperimentos completados. Resultados guardados en: {results_file}")  
 
