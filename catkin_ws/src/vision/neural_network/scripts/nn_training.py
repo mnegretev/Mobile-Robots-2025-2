@@ -16,7 +16,7 @@ import rospkg
 import time       # Import the time module
 import csv        # Import the csv module
 
-NAME = "FULL_NAME" # Remember to change this to your full name
+NAME = "Germán Zaír Romero Hernández" # Remember to change this to your full name
 
 class NeuralNetwork(object):
     def __init__(self, layers, weights=None, biases=None):
