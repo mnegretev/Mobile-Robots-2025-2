@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 #
+# AUTOMATED TRAINING AND EVALUATION SCRIPT
 # MOBILE ROBOTS - FI-UNAM, 2025-2
-# TRAINING A NEURAL NETWORK
-#
-# Instructions:
-# Complete the code to train a neural network for
-# handwritten digits recognition.
-#
+
 import cv2
 import sys
 import random
@@ -17,37 +14,20 @@ import rospy
 import rospkg
 
 NAME = "LUJAN PEREZ CARLOS EDUARDO"
-#PREGUNTAR SOBRE epocas
+
 class NeuralNetwork(object):
-        #
-        # The list 'layers' indicates the number of neurons in each layer.
-        # Remember that the first layer indicates the dimension of the inputs and thus,
-        # there is no bias vector fot the first layer.
-        # For this practice, 'layers' should be something like [784, n2, n3, ..., nl, 10]
-        # All weights and biases are initialized with random values. In each layer we have a matrix
-        # of weights where row j contains all the weights of the j-th neuron in that layer. For this example,
-        # the first matrix should be of order n2 x 784 and last matrix should be 10 x nl.
-        #
     def __init__(self, layers, weights=None, biases=None):
         self.num_layers  = len(layers)
         self.layer_sizes = layers
         self.biases  = [numpy.random.randn(y, 1) for y in layers[1:]] if biases is None else biases
         self.weights = [numpy.random.randn(y, x) for x, y in zip(layers[:-1], layers[1:])] if weights is None else weights
 
-
     def forward(self, x):
-        #
-        # This function gets the output of the network when input is 'x'.
-        #
         for b, w in zip(self.biases, self.weights):
             x = 1.0 / (1.0 + numpy.exp(-(numpy.dot(w, x) + b)))
         return x
 
     def forward_all_outputs(self, x):
-        # Write a function similar to 'forward' but instead of returning only the output layer,
-        # return a list containing the output of each layer, from input to output.
-        # Include input x as the first output.
-        #
         y = [x]
         for b, w in zip(self.biases, self.weights):
             x = 1.0 / (1.0 + numpy.exp(-(numpy.dot(w, x) + b)))
@@ -58,22 +38,6 @@ class NeuralNetwork(object):
         y = self.forward_all_outputs(x)
         nabla_b = [numpy.zeros_like(b) for b in self.biases]
         nabla_w = [numpy.zeros_like(w) for w in self.weights]
-        # Return a tuple [nabla_w, nabla_b] containing the gradient of cost function C with respect to
-        # each weight and bias of all the network. The gradient is calculated assuming only one training
-        # example is given: the input 'x' and the corresponding label 'yt'.
-        # nabla_w and nabla_b should have the same dimensions as the corresponding
-        # self.weights and self.biases
-        # You can calculate the gradient following these steps:
-        #
-        # Calculate delta for the output layer L: delta=(yL-yt)*yL*(1-yL)
-        # nabla_b of output layer = delta      
-        # nabla_w of output layer = delta*yLpT where yLpT is the transpose of the ouput vector of layer L-1
-        # FOR all layers 'l' from L-1 to input layer: 
-        #     delta = (WT * delta)*yl*(1 - yl)
-        #     where 'WT' is the transpose of the matrix of weights of layer l+1 and 'yl' is the output of layer l
-        #     nabla_b[-l] = delta
-        #     nabla_w[-l] = delta*ylpT  where ylpT is the transpose of outputs vector of layer l-1
-        #
 
         delta = (y[-1] - t) * y[-1] * (1 - y[-1])
         nabla_b[-1] = delta
@@ -84,14 +48,10 @@ class NeuralNetwork(object):
             delta = numpy.dot(self.weights[-l + 1].T, delta) * z * (1 - z)
             nabla_b[-l] = delta
             nabla_w[-l] = numpy.dot(delta, y[-l - 1].T)
+
         return nabla_w, nabla_b
 
     def update_with_batch(self, batch, eta):
-        #
-        # This function exectutes gradient descend for the subset of examples
-        # given by 'batch' with learning rate 'eta'
-        # 'batch' is a list of training examples [(x,y), ..., (x,y)]
-        #
         nabla_b = [numpy.zeros_like(b) for b in self.biases]
         nabla_w = [numpy.zeros_like(w) for w in self.weights]
         m = len(batch)
@@ -119,17 +79,12 @@ class NeuralNetwork(object):
                 if rospy.is_shutdown():
                     return 0.0
                 nabla_w, nabla_b = self.update_with_batch(batch, eta)
-                grad_mag = self.get_gradient_mag(nabla_w, nabla_b)  # guarda el gradiente más reciente
+                grad_mag = self.get_gradient_mag(nabla_w, nabla_b)
                 sys.stdout.write("\rGradient magnitude: %f            " % grad_mag)
                 sys.stdout.flush()
             print("Epoch:", j)
-        return grad_mag  # magnitud final
+        return grad_mag
 
-    #
-    ### END OF CLASS
-    #
-
-    
 def load_dataset(folder):
     if not folder.endswith("/"):
         folder += "/"
@@ -163,7 +118,6 @@ def run_experiment(nn_arch, train_data, test_data, epochs, batch_size, lr):
 
     return training_time, eval_time, final_grad_mag, correct
 
-
 def main():
     print("TRAINING A NEURAL NETWORK –", NAME)
     rospy.init_node("nn_training_auto", anonymous=True)
@@ -175,7 +129,6 @@ def main():
     learning_rates = [0.5, 1.0, 3.0, 10.0]
     epochs_list    = [3, 10, 50, 100]
     batch_sizes    = [5, 10, 30, 100]
-    
     nn_arch = [784, 64, 32, 10]
 
     csv_file = "experiment_results.csv"
