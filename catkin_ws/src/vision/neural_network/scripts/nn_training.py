@@ -14,7 +14,7 @@ import numpy
 import rospy
 import rospkg
 
-NAME = "FULL_NAME"
+NAME = "CRUZ ZAMORA JOEL DAVID"
 
 class NeuralNetwork(object):
     def __init__(self, layers, weights=None, biases=None):
@@ -49,7 +49,15 @@ class NeuralNetwork(object):
         # return a list containing the output of each layer, from input to output.
         # Include input x as the first output.
         #
-        
+
+        # Initialize the output list with the input x
+        y.append(x)
+        for i in range(len(self.biases)):
+            u = numpy.dot(self.weights[i], x) + self.biases[i]
+            x = 1.0 / (1.0 + numpy.exp(-u))
+            y.append(x)
+        # Convert to numpy array
+        y = numpy.array(y)
         return y
 
     def backpropagate(self, x, t):
@@ -74,7 +82,27 @@ class NeuralNetwork(object):
         #     nabla_w[-l] = delta*ylpT  where ylpT is the transpose of outputs vector of layer l-1
         #
         
+        # Calculate delta for the output layer L
+        delta = (y[-1] - t) * y[-1] * (1 - y[-1])
+        nabla_b[-1] = delta
+        nabla_w[-1] = numpy.dot(delta, y[-2].transpose())
+
+        # FOR all layers 'l' from L-1 to input layer
+        for l in range(2, self.num_layers):
+            # Calculate delta for layer L-l
+            delta = numpy.dot(self.weights[-l+1].transpose(), delta) * y[-l] * (1 - y[-l])
+            nabla_b[-l] = delta
+            nabla_w[-l] = numpy.dot(delta, y[-l-1].transpose())
         
+        # Return the gradients for weights and biases
+        # as a tuple [nabla_w, nabla_b]
+        # nabla_w and nabla_b should have the same dimensions as the corresponding
+        # self.weights and self.biases
+        # Convert nabla_w and nabla_b to numpy arrays
+        nabla_w = numpy.array(nabla_w)
+        nabla_b = numpy.array(nabla_b)
+        # Return the gradients as a tuple
+        # [nabla_w, nabla_b]
         return nabla_w, nabla_b
 
     def update_with_batch(self, batch, eta):
