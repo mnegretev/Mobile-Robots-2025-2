@@ -139,9 +139,9 @@ def main():
     dataset_folder = rospack.get_path("neural_network") + "/handwritten_digits/"
     training_dataset, testing_dataset = load_dataset(dataset_folder)
 
-    epochs_list = [3, 10, 20, 30, 50, 75, 100]
-    batch_sizes = [5, 10, 30, 50, 75, 100]
-    learning_rates = [0.5, 1.0, 2.0, 3.0, 5.0, 7.5, 10.0]
+    epochs_list = [20, 30, 50,]
+    batch_sizes = [5, 10, 30, 50]
+    learning_rates = [3.0, 5.0, 7.5]
 
     total_combinations = len(epochs_list) * len(batch_sizes) * len(learning_rates)
     combo_index = 1
