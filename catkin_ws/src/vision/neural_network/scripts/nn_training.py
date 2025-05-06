@@ -17,7 +17,7 @@ import rospy
 import rospkg
 
 NAME = "LUJAN PEREZ CARLOS EDUARDO"
-#PREGUNTAR SOBRE CLASES
+#PREGUNTAR SOBRE epocas
 class NeuralNetwork(object):
         #
         # The list 'layers' indicates the number of neurons in each layer.
