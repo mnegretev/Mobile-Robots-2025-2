@@ -13,6 +13,11 @@ import random
 import numpy
 import rospy
 import rospkg
+import time
+import csv
+import os
+from itertools import product
+
 
 NAME = "JOSÈ AUGUSTO ARENAS HERNÀNDEZ"
 
@@ -132,34 +137,50 @@ def main():
     rospy.init_node("nn_training")
     rospack = rospkg.RosPack()
     dataset_folder = rospack.get_path("neural_network") + "/handwritten_digits/"
-    epochs        = 3
-    batch_size    = 10
-    learning_rate = 3.0
-    
-    if rospy.has_param("~epochs"):
-        epochs = rospy.get_param("~epochs")
-    if rospy.has_param("~batch_size"):
-        batch_size = rospy.get_param("~batch_size")
-    if rospy.has_param("~learning_rate"):
-        learning_rate = rospy.get_param("~learning_rate") 
-
     training_dataset, testing_dataset = load_dataset(dataset_folder)
+
+    epochs_list = [3, 10, 50, 100]
+    batch_sizes = [5, 10, 30, 100]
+    learning_rates = [0.5, 1.0, 3.0, 10.0]
+
+    total_combinations = len(epochs_list) * len(batch_sizes) * len(learning_rates)
+    combo_index = 1
+
+   
+    with open("resultados_entrenamiento.csv", mode="w", newline="") as file:
+        writer = csv.writer(file)
+        writer.writerow(["Epochs", "Batch Size", "Learning Rate", "Training Time (s)", "Accuracy (%)"])
+
+       
+        for epochs, batch_size, learning_rate in product(epochs_list, batch_sizes, learning_rates):
+            print(f"\n--- COMBINACIÓN {combo_index}/{total_combinations} ---")
+            print(f"Epochs: {epochs}, Batch size: {batch_size}, Learning rate: {learning_rate}")
+
+           
+            nn = NeuralNetwork([784, 30, 10])
+            start_time = time.time()
+            nn.train_by_SGD(training_dataset, epochs, batch_size, learning_rate)
+            training_time = time.time() - start_time
+
+            
+            correct = 0
+            for _ in range(100):
+                img, label = testing_dataset[numpy.random.randint(0, len(testing_dataset))]
+                output = nn.forward(img)
+                if numpy.argmax(output) == numpy.argmax(label):
+                    correct += 1
+
+            accuracy = (correct / 100) * 100  
+            print(f"Tiempo de entrenamiento: {training_time:.2f} segundos")
+            print(f"Precisión sobre 100 pruebas: {accuracy:.2f}%")
+
+            
+            writer.writerow([epochs, batch_size, learning_rate, round(training_time, 2), round(accuracy, 2)])
+
+            combo_index += 1
+
     
-    nn = NeuralNetwork([784,30,10])
-    nn.train_by_SGD(training_dataset, epochs, batch_size, learning_rate)
-    
-    print("\nPress key to test network or ESC to exit...")
-    numpy.set_printoptions(formatter={'float_kind':"{:.3f}".format})
-    cmd = cv2.waitKey(0)
-    while cmd != 27 and not rospy.is_shutdown():
-        img,label = testing_dataset[numpy.random.randint(0, 4999)]
-        y = nn.forward(img).transpose()
-        print("\nPerceptron output: " + str(y))
-        print("Expected output  : "   + str(label.transpose()))
-        print("Recognized digit : "   + str(numpy.argmax(y)))
-        cv2.imshow("Digit", numpy.reshape(numpy.asarray(img, dtype="float32"), (28,28,1)))
-        cmd = cv2.waitKey(0)
-    
+    print("Archivo CSV guardado en:", os.path.abspath("resultados_entrenamiento.csv"))
 
 if __name__ == '__main__':
     main()
