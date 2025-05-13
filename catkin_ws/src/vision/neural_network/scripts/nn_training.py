@@ -13,8 +13,11 @@ import random
 import numpy
 import rospy
 import rospkg
+import time
+import pandas as pd
 
-NAME = "FULL_NAME"
+
+NAME = "Jurado Ramirez Eduardo"
 
 class NeuralNetwork(object):
     def __init__(self, layers, weights=None, biases=None):
@@ -42,14 +45,18 @@ class NeuralNetwork(object):
         return x
 
     def forward_all_outputs(self, x):
-        y = []
+        y = [x]
         #
         # TODO:
         # Write a function similar to 'forward' but instead of returning only the output layer,
         # return a list containing the output of each layer, from input to output.
         # Include input x as the first output.
         #
-        
+        for i in range(len(self.biases)):
+            z = numpy.dot(self.weights[i], y[-1]) + self.biases[i]
+            x = 1.0 / (1.0 + numpy.exp(-z))
+            y.append(x)
+
         return y
 
     def backpropagate(self, x, t):
@@ -73,7 +80,14 @@ class NeuralNetwork(object):
         #     nabla_b[-l] = delta
         #     nabla_w[-l] = delta*ylpT  where ylpT is the transpose of outputs vector of layer l-1
         #
+        delta = (y[-1] - t) * y[-1] * (1 - y[-1])
+        nabla_b[-1] = delta
+        nabla_w[-1] = numpy.dot(delta.reshape(-1, 1), y[-2].reshape(1, -1))
         
+        for l in range(2, len(self.biases) + 1):
+            delta = numpy.dot(self.weights[-l+1].T, delta) * y[-l] * (1 - y[-l])
+            nabla_b[-l] = delta
+            nabla_w[-l] = numpy.dot(delta.reshape(-1, 1), y[-l-1].reshape(1, -1))        
         
         return nabla_w, nabla_b
 
@@ -153,18 +167,58 @@ def main():
     nn = NeuralNetwork([784,30,10])
     nn.train_by_SGD(training_dataset, epochs, batch_size, learning_rate)
     
-    print("\nPress key to test network or ESC to exit...")
+        
+    learning_rates = [0.5, 1.0, 3.0, 10.0]
+    epochs_list = [3, 10, 50, 100]
+    batch_sizes = [5, 10, 30, 100]
+
+
+
+    identificador = 0
+    resultados = []
+
+
+    print("\nPress key to tst network or ESC to exit...")
     numpy.set_printoptions(formatter={'float_kind':"{:.3f}".format})
     cmd = cv2.waitKey(0)
-    while cmd != 27 and not rospy.is_shutdown():
-        img,label = testing_dataset[numpy.random.randint(0, 4999)]
-        y = nn.forward(img).transpose()
-        print("\nPerceptron output: " + str(y))
-        print("Expected output  : "   + str(label.transpose()))
-        print("Recognized digit : "   + str(numpy.argmax(y)))
-        cv2.imshow("Digit", numpy.reshape(numpy.asarray(img, dtype="float32"), (28,28,1)))
-        cmd = cv2.waitKey(0)
-    
+
+
+    pruebas=100
+
+
+    for tasa_aprendizaje in learning_rates:
+        for epocas in epochs_list:
+            for tamano_lote in batch_sizes:
+                identificador += 1
+                inicio_entrenamiento = time.time()
+                nn.train_by_SGD(training_dataset, epocas, tamano_lote, tasa_aprendizaje)
+                tiempo_entrenamiento = time.time() - inicio_entrenamiento
+
+                exitos = 0
+                for i in range(pruebas):
+                    imagen, etiqueta = testing_dataset[numpy.random.randint(0, 4999)]
+                    salida = nn.forward(imagen).transpose()
+
+                    prediccion_correcta = etiqueta.transpose()[0][numpy.argmax(salida)] == 1
+                    print("Éxito:", prediccion_correcta)
+
+                    if prediccion_correcta:
+                        exitos += 1
+
+                tasa_exito = exitos / pruebas
+
+                resultados.append({
+                    "ID del Experimento": identificador,
+                    "Tasa de Aprendizaje (η)": tasa_aprendizaje,
+                    "Épocas": epocas,
+                    "Tamaño de Lote": tamano_lote,
+                    "Tiempo de Entrenamiento": tiempo_entrenamiento,
+                    "Tasa de Éxito": tasa_exito
+                })
+
+    df_resultados = pd.DataFrame(resultados)
+    df_resultados.to_csv("resultados_experimentos.csv", index=False)
+
 
 if __name__ == '__main__':
     main()
