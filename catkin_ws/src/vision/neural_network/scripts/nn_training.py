@@ -13,8 +13,10 @@ import random
 import numpy
 import rospy
 import rospkg
+import time
+import os
 
-NAME = "FULL_NAME"
+NAME = "Camarena Olivos Alan Misael y Suástegui Rodríguez Kevin Xavier"
 
 class NeuralNetwork(object):
     def __init__(self, layers, weights=None, biases=None):
@@ -31,7 +33,7 @@ class NeuralNetwork(object):
         self.layer_sizes = layers
         self.biases =[numpy.random.randn(y,1) for y in layers[1:]] if biases == None else biases
         self.weights=[numpy.random.randn(y,x) for x,y in zip(layers[:-1],layers[1:])] if weights==None else weights
-        
+       #asdasd 
     def forward(self, x):
         #
         # This function gets the output of the network when input is 'x'.
@@ -41,19 +43,21 @@ class NeuralNetwork(object):
             x = 1.0 / (1.0 + numpy.exp(-u))  #output of the current layer is the input of the next one
         return x
 
-    def forward_all_outputs(self, x):
-        y = []
+    def feedforward_verbose(self, x):
+        y = [x]
         #
         # TODO:
         # Write a function similar to 'forward' but instead of returning only the output layer,
         # return a list containing the output of each layer, from input to output.
         # Include input x as the first output.
-        #
-        
+        #for i in range(len(self.biases)):
+        for i in range(len(self.biases)):
+            z = numpy.dot(self.weights[i], y[-1]) + self.biases[i]
+            y.append(1.0 / (1.0 + numpy.exp(-z)))  
         return y
 
     def backpropagate(self, x, t):
-        y = self.forward_all_outputs(x)
+        y = self.feedforward_verbose(x)
         nabla_b = [numpy.zeros(b.shape) for b in self.biases]
         nabla_w = [numpy.zeros(w.shape) for w in self.weights]
         # TODO:
@@ -73,10 +77,17 @@ class NeuralNetwork(object):
         #     nabla_b[-l] = delta
         #     nabla_w[-l] = delta*ylpT  where ylpT is the transpose of outputs vector of layer l-1
         #
-        
-        
-        return nabla_w, nabla_b
+        delta = (y[-1] - t) * y[-1] * (1 - y[-1])
+        nabla_b[-1] = delta
+        nabla_w[-1] = numpy.dot(delta, y[-2].transpose())
 
+        for l in range(2, self.num_layers):
+            delta = numpy.dot(self.weights[-l+1].transpose(), delta) * y[-l] * (1 - y[-l])
+            nabla_b[-l] = delta
+            nabla_w[-l] = numpy.dot(delta, y[-l-1].transpose())
+
+        return nabla_w, nabla_b
+        
     def update_with_batch(self, batch, eta):
         #
         # This function exectutes gradient descend for the subset of examples
@@ -116,6 +127,14 @@ class NeuralNetwork(object):
     ### END OF CLASS
     #
 
+def evaluate_performance(nn, testing_dataset, num_tests=100):
+    correct = 0
+    for _ in range(num_tests):
+        img, label = testing_dataset[numpy.random.randint(0, 4999)]
+        y = nn.forward(img)
+        if numpy.argmax(y) == numpy.argmax(label):
+            correct += 1
+    return (correct / num_tests) * 100
 
 def load_dataset(folder):
     print("Loading data set from " + folder)
@@ -137,34 +156,72 @@ def main():
     rospy.init_node("nn_training")
     rospack = rospkg.RosPack()
     dataset_folder = rospack.get_path("neural_network") + "/handwritten_digits/"
-    epochs        = 3
-    batch_size    = 10
-    learning_rate = 3.0
     
-    if rospy.has_param("~epochs"):
-        epochs = rospy.get_param("~epochs")
-    if rospy.has_param("~batch_size"):
-        batch_size = rospy.get_param("~batch_size")
-    if rospy.has_param("~learning_rate"):
-        learning_rate = rospy.get_param("~learning_rate") 
-
+   
+    architecture = [784, 30, 10]
+    
+    # parametros
+    learning_rates = [0.5, 1.0, 3.0, 10.0]
+    epochs_list = [3, 10, 50, 100]
+    batch_sizes = [5, 10, 30, 100]
+    num_tests = 100  #pruebas para cada configuración
+    
     training_dataset, testing_dataset = load_dataset(dataset_folder)
     
-    nn = NeuralNetwork([784,30,10])
-    nn.train_by_SGD(training_dataset, epochs, batch_size, learning_rate)
     
-    print("\nPress key to test network or ESC to exit...")
-    numpy.set_printoptions(formatter={'float_kind':"{:.3f}".format})
-    cmd = cv2.waitKey(0)
-    while cmd != 27 and not rospy.is_shutdown():
-        img,label = testing_dataset[numpy.random.randint(0, 4999)]
-        y = nn.forward(img).transpose()
-        print("\nPerceptron output: " + str(y))
-        print("Expected output  : "   + str(label.transpose()))
-        print("Recognized digit : "   + str(numpy.argmax(y)))
-        cv2.imshow("Digit", numpy.reshape(numpy.asarray(img, dtype="float32"), (28,28,1)))
-        cmd = cv2.waitKey(0)
+    results_file = dataset_folder + "results/nn_results.txt"
+    os.makedirs(os.path.dirname(results_file), exist_ok=True)
     
+    with open(results_file, 'w') as f:
+        f.write("RESULTADOS DE EXPERIMENTOS RED NEURONAL\n")
+        f.write("=" * 50 + "\n")
 
+    for lr in learning_rates:
+        for eps in epochs_list:
+            for bs in batch_sizes:
+                print(f"\nPrueba con configuración:")
+                print(f"Tasa de aprendizaje: {lr}")
+                print(f"Épocas: {eps}")
+                print(f"Tamaño de lote: {bs}")
+                
+                total_success_rate = 0
+                total_training_time = 0
+                
+                # for para realizar 100 pruebas en cad una
+                for test in range(num_tests):
+                    print(f"Prueba {test + 1}/{num_tests}")
+                    
+                    # entrenamiento 
+                    start_time = time.time()
+                    nn = NeuralNetwork(architecture)
+                    nn.train_by_SGD(training_dataset, eps, bs, lr)
+                    training_time = time.time() - start_time
+                    
+                    
+                    success_rate = evaluate_performance(nn, testing_dataset)
+                    
+                    total_success_rate += success_rate
+                    total_training_time += training_time
+                
+                # calcular promedios
+                avg_success_rate = total_success_rate / num_tests
+                avg_training_time = total_training_time / num_tests
+                
+                
+                with open(results_file, 'a') as f:
+                    f.write(f"\nConfiguración:\n")
+                    f.write(f"Tasa de aprendizaje: {lr}\n")
+                    f.write(f"Épocas: {eps}\n")
+                    f.write(f"Tamaño de lote: {bs}\n")
+                    f.write(f"Tiempo promedio de entrenamiento: {avg_training_time:.2f} segundos\n")
+                    f.write(f"Tasa promedio de éxito: {avg_success_rate:.2f}%\n")
+                    f.write("-" * 50 + "\n")
+                
+                if rospy.is_shutdown():
+                    return
+    
+    print(f"\nExperimentos completados. Resultados guardados en: {results_file}")  
+#prueba para ver que sucede error github
+#cambio por que no se que sucede
 if __name__ == '__main__':
     main()
