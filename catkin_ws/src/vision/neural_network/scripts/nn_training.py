@@ -13,6 +13,8 @@ import random
 import numpy
 import rospy
 import rospkg
+import time
+import csv
 
 NAME = "CRUZ ZAMORA JOEL DAVID"
 
@@ -179,20 +181,37 @@ def main():
     training_dataset, testing_dataset = load_dataset(dataset_folder)
     
     nn = NeuralNetwork([784,30,10])
+    start = time.time()
     nn.train_by_SGD(training_dataset, epochs, batch_size, learning_rate)
-    
+    print("\nTraining time: " + str(time.time()-start) + " seconds")
+
     print("\nPress key to test network or ESC to exit...")
     numpy.set_printoptions(formatter={'float_kind':"{:.3f}".format})
     cmd = cv2.waitKey(0)
+    count = 0
+    data = [
+        ["Expected_digit" , "Recognized_digit"]
+    ]
     while cmd != 27 and not rospy.is_shutdown():
+        count += 1
         img,label = testing_dataset[numpy.random.randint(0, 4999)]
         y = nn.forward(img).transpose()
-        print("\nPerceptron output: " + str(y))
+        print("\nTesting example: " + str(count))
+        print("Perceptron output: " + str(y))
         print("Expected output  : "   + str(label.transpose()))
-        print("Recognized digit : "   + str(numpy.argmax(y)))
+        expDigit = numpy.argmax(label)
+        recDigit = numpy.argmax(y)
+        print("Expected digit   : "   + str(expDigit))
+        print("Recognized digit : "   + str(recDigit))
+        data.append([expDigit, recDigit])
         cv2.imshow("Digit", numpy.reshape(numpy.asarray(img, dtype="float32"), (28,28,1)))
         cmd = cv2.waitKey(0)
     
+    print("\nSaving results to file...")
+    with open("results.csv", "w") as f:
+        writer = csv.writer(f)
+        writer.writerows(data)
+    print("Results saved to results.csv")
 
 if __name__ == '__main__':
     main()
