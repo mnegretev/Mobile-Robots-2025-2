@@ -43,13 +43,8 @@ class NeuralNetwork(object):
             x = 1.0 / (1.0 + numpy.exp(-u))  #output of the current layer is the input of the next one
         return x
 
-<<<<<<< HEAD
     def feedforward_verbose(self, x):
         y = [x]
-=======
-    def forward_all_outputs(self, x):
-        y = []
->>>>>>> 087a3b5db675d82e2f497c2a27699f7c42e7864a
         #
         # TODO:
         # Write a function similar to 'forward' but instead of returning only the output layer,
@@ -62,7 +57,7 @@ class NeuralNetwork(object):
         return y
 
     def backpropagate(self, x, t):
-        y = self.forward_all_outputs(x)
+        y = self.feedforward_verbose(x)
         nabla_b = [numpy.zeros(b.shape) for b in self.biases]
         nabla_w = [numpy.zeros(w.shape) for w in self.weights]
         # TODO:
@@ -82,17 +77,17 @@ class NeuralNetwork(object):
         #     nabla_b[-l] = delta
         #     nabla_w[-l] = delta*ylpT  where ylpT is the transpose of outputs vector of layer l-1
         #
-        delta = (y[-1] - yt) * y[-1] * (1 - y[-1])
+        delta = (y[-1] - t) * y[-1] * (1 - y[-1])
         nabla_b[-1] = delta
         nabla_w[-1] = numpy.dot(delta, y[-2].transpose())
-    
+
         for l in range(2, self.num_layers):
             delta = numpy.dot(self.weights[-l+1].transpose(), delta) * y[-l] * (1 - y[-l])
             nabla_b[-l] = delta
             nabla_w[-l] = numpy.dot(delta, y[-l-1].transpose())
-    
-        return nabla_w, nabla_b
 
+        return nabla_w, nabla_b
+        
     def update_with_batch(self, batch, eta):
         #
         # This function exectutes gradient descend for the subset of examples
@@ -136,7 +131,7 @@ def evaluate_performance(nn, testing_dataset, num_tests=100):
     correct = 0
     for _ in range(num_tests):
         img, label = testing_dataset[numpy.random.randint(0, 4999)]
-        y = nn.feedforward(img)
+        y = nn.forward(img)
         if numpy.argmax(y) == numpy.argmax(label):
             correct += 1
     return (correct / num_tests) * 100
@@ -173,7 +168,6 @@ def main():
     
     training_dataset, testing_dataset = load_dataset(dataset_folder)
     
-<<<<<<< HEAD
     
     results_file = dataset_folder + "results/nn_results.txt"
     os.makedirs(os.path.dirname(results_file), exist_ok=True)
@@ -225,22 +219,6 @@ def main():
                 
                 if rospy.is_shutdown():
                     return
-=======
-    nn = NeuralNetwork([784,30,10])
-    nn.train_by_SGD(training_dataset, epochs, batch_size, learning_rate)
-    
-    print("\nPress key to test network or ESC to exit...")
-    numpy.set_printoptions(formatter={'float_kind':"{:.3f}".format})
-    cmd = cv2.waitKey(0)
-    while cmd != 27 and not rospy.is_shutdown():
-        img,label = testing_dataset[numpy.random.randint(0, 4999)]
-        y = nn.forward(img).transpose()
-        print("\nPerceptron output: " + str(y))
-        print("Expected output  : "   + str(label.transpose()))
-        print("Recognized digit : "   + str(numpy.argmax(y)))
-        cv2.imshow("Digit", numpy.reshape(numpy.asarray(img, dtype="float32"), (28,28,1)))
-        cmd = cv2.waitKey(0)
->>>>>>> 087a3b5db675d82e2f497c2a27699f7c42e7864a
     
     print(f"\nExperimentos completados. Resultados guardados en: {results_file}")  
 

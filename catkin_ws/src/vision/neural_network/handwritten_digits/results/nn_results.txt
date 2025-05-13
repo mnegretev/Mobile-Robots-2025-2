@@ -5,62 +5,126 @@ Configuración:
 Tasa de aprendizaje: 0.5
 Épocas: 3
 Tamaño de lote: 5
-Tiempo promedio de entrenamiento: 2.22 segundos
-Tasa promedio de éxito: 65.90%
+Tiempo promedio de entrenamiento: 2.55 segundos
+Tasa promedio de éxito: 66.81%
 --------------------------------------------------
 
 Configuración:
 Tasa de aprendizaje: 0.5
 Épocas: 3
 Tamaño de lote: 10
-Tiempo promedio de entrenamiento: 2.27 segundos
-Tasa promedio de éxito: 52.11%
+Tiempo promedio de entrenamiento: 2.14 segundos
+Tasa promedio de éxito: 53.68%
 --------------------------------------------------
 
 Configuración:
 Tasa de aprendizaje: 0.5
 Épocas: 3
 Tamaño de lote: 30
-Tiempo promedio de entrenamiento: 2.22 segundos
-Tasa promedio de éxito: 32.78%
+Tiempo promedio de entrenamiento: 1.92 segundos
+Tasa promedio de éxito: 32.14%
 --------------------------------------------------
 
 Configuración:
 Tasa de aprendizaje: 0.5
 Épocas: 3
 Tamaño de lote: 100
-Tiempo promedio de entrenamiento: 1.95 segundos
-Tasa promedio de éxito: 18.49%
+Tiempo promedio de entrenamiento: 1.84 segundos
+Tasa promedio de éxito: 17.93%
 --------------------------------------------------
 
 Configuración:
 Tasa de aprendizaje: 0.5
 Épocas: 10
 Tamaño de lote: 5
-Tiempo promedio de entrenamiento: 8.26 segundos
-Tasa promedio de éxito: 82.50%
+Tiempo promedio de entrenamiento: 7.68 segundos
+Tasa promedio de éxito: 80.86%
 --------------------------------------------------
 
 Configuración:
 Tasa de aprendizaje: 0.5
 Épocas: 10
 Tamaño de lote: 10
-Tiempo promedio de entrenamiento: 8.14 segundos
-Tasa promedio de éxito: 74.18%
+Tiempo promedio de entrenamiento: 7.33 segundos
+Tasa promedio de éxito: 75.40%
 --------------------------------------------------
 
 Configuración:
 Tasa de aprendizaje: 0.5
 Épocas: 10
 Tamaño de lote: 30
-Tiempo promedio de entrenamiento: 7.69 segundos
-Tasa promedio de éxito: 54.92%
+Tiempo promedio de entrenamiento: 6.17 segundos
+Tasa promedio de éxito: 57.19%
 --------------------------------------------------
 
 Configuración:
 Tasa de aprendizaje: 0.5
 Épocas: 10
 Tamaño de lote: 100
-Tiempo promedio de entrenamiento: 6.23 segundos
-Tasa promedio de éxito: 32.68%
+Tiempo promedio de entrenamiento: 5.92 segundos
+Tasa promedio de éxito: 30.81%
+--------------------------------------------------
+
+Configuración:
+Tasa de aprendizaje: 0.5
+Épocas: 50
+Tamaño de lote: 5
+Tiempo promedio de entrenamiento: 37.01 segundos
+Tasa promedio de éxito: 87.42%
+--------------------------------------------------
+
+Configuración:
+Tasa de aprendizaje: 0.5
+Épocas: 50
+Tamaño de lote: 10
+Tiempo promedio de entrenamiento: 32.76 segundos
+Tasa promedio de éxito: 86.39%
+--------------------------------------------------
+
+Configuración:
+Tasa de aprendizaje: 0.5
+Épocas: 50
+Tamaño de lote: 30
+Tiempo promedio de entrenamiento: 29.69 segundos
+Tasa promedio de éxito: 80.08%
+--------------------------------------------------
+
+Configuración:
+Tasa de aprendizaje: 0.5
+Épocas: 50
+Tamaño de lote: 100
+Tiempo promedio de entrenamiento: 28.25 segundos
+Tasa promedio de éxito: 63.84%
+--------------------------------------------------
+
+Configuración:
+Tasa de aprendizaje: 0.5
+Épocas: 100
+Tamaño de lote: 5
+Tiempo promedio de entrenamiento: 70.85 segundos
+Tasa promedio de éxito: 88.47%
+--------------------------------------------------
+
+Configuración:
+Tasa de aprendizaje: 0.5
+Épocas: 100
+Tamaño de lote: 10
+Tiempo promedio de entrenamiento: 63.38 segundos
+Tasa promedio de éxito: 87.63%
+--------------------------------------------------
+
+Configuración:
+Tasa de aprendizaje: 0.5
+Épocas: 100
+Tamaño de lote: 30
+Tiempo promedio de entrenamiento: 61.04 segundos
+Tasa promedio de éxito: 83.48%
+--------------------------------------------------
+
+Configuración:
+Tasa de aprendizaje: 0.5
+Épocas: 100
+Tamaño de lote: 100
+Tiempo promedio de entrenamiento: 3.10 segundos
+Tasa promedio de éxito: 13.25%
 --------------------------------------------------
