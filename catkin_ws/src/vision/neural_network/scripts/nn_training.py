@@ -221,6 +221,6 @@ def main():
                     return
     
     print(f"\nExperimentos completados. Resultados guardados en: {results_file}")  
-#cambio final
+#prueba para ver que sucede error github
 if __name__ == '__main__':
     main()
