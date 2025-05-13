@@ -16,7 +16,7 @@ import rospkg
 import time
 import os
 
-NAME = "Camarena Olivos Alan Misael"
+NAME = "Camarena Olivos Alan Misael y Suástegui Rodríguez Kevin Xavier"
 
 class NeuralNetwork(object):
     def __init__(self, layers, weights=None, biases=None):
