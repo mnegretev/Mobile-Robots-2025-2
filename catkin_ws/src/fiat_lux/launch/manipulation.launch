@@ -1,0 +1,22 @@
+<launch>
+  <arg name="la_ik_params"  default="$(find config_files)/justina/manipulation/la_inverse_kinematics.yaml"/>
+  <arg name="ra_ik_params"  default="$(find config_files)/justina/manipulation/ra_inverse_kinematics.yaml"/>
+  <node name="la_inverse_kinematics" pkg="inverse_kinematics" type="ik_numeric.py" output="screen">
+    <rosparam command="load" file="$(arg la_ik_params)"/>
+    <remap from="/manipulation/forward_kinematics" to="/manipulation/la_forward_kinematics"/>
+    <remap from="/manipulation/ik_trajectory"      to="/manipulation/la_ik_trajectory"     />
+    <remap from="/manipulation/ik_pose"            to="/manipulation/la_ik_pose"           />
+    <remap from="/hardware/arm/current_pose"       to="/hardware/left_arm/current_pose"/>
+  </node>
+  
+  
+  <node name="ra_inverse_kinematics" pkg="inverse_kinematics" type="ik_numeric.py" output="screen">
+    <rosparam command="load" file="$(arg ra_ik_params)"/>
+    <remap from="/manipulation/forward_kinematics" to="/manipulation/ra_forward_kinematics"/>
+    <remap from="/manipulation/ik_trajectory"      to="/manipulation/ra_ik_trajectory"     />
+    <remap from="/manipulation/ik_pose"            to="/manipulation/ra_ik_pose"           />
+    <remap from="/hardware/arm/current_pose"       to="/hardware/right_arm/current_pose"/>
+  </node>
+  <node name="trajectory_planner" pkg="trajectory_planner" type="trajectory_planner.py" output="screen"/>
+
+</launch>
