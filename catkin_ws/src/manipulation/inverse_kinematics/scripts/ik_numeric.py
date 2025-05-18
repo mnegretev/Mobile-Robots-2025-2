@@ -77,9 +77,9 @@ def jacobian(q, T, W):
     #     RETURN J
     #
     delta_q = 1e-6
-    J = numpy.asarray([0.0 for a in q] for i in range(6))
-    qn = numpy.asarray([q,]*len(q)) + delta_q*numpy.indentity(len(q))
-    qp = numpy.asarray([q,]*len(q)) - delta_q*numpy.indentity(len(q))
+    J = numpy.asarray([[0.0 for _ in q] for _ in range(6)])
+    qn = numpy.asarray([q,]*len(q)) + delta_q*numpy.identity(len(q))
+    qp = numpy.asarray([q,]*len(q)) - delta_q*numpy.identity(len(q))
     for i in range(len(q)):
         J[:, i] = (forward_kinematics(qn[i], T, W) - forward_kinematics(qp[i], T, W)) / delta_q / 2.0
     return J
