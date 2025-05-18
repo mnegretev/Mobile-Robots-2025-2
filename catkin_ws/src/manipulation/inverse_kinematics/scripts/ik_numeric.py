@@ -77,20 +77,11 @@ def jacobian(q, T, W):
     #     RETURN J
     #
     delta_q = 1e-6
-    n = len(q)
-    # Matriz J de 6 filas (x,y,z,roll,pitch,yaw) por n columnas (uno por cada q_i)
-    J = numpy.zeros((6, n))
-    for i in range(n):
-        # Copias de q para perturbar solo la i-ésima coordenada
-        q_plus  = q.copy()
-        q_minus = q.copy()
-        q_plus[i]  += delta_q
-        q_minus[i] -= delta_q
-        # Cálculo de forward kinematics en q+ y q-
-        f_plus  = forward_kinematics(q_plus,  T, W)
-        f_minus = forward_kinematics(q_minus, T, W)
-        # Aproximación central de la derivada
-        J[:, i] = (f_plus - f_minus) / (2 * delta_q)
+    J = numpy.asarray([0.0 for a in q] for i in range(6))
+    qn = numpy.asarray([q,]*len(q)) + delta_q*numpy.indentity(len(q))
+    qp = numpy.asarray([q,]*len(q)) - delta_q*numpy.indentity(len(q))
+    for i in range(len(q)):
+        J[:, i] = (forward_kinematics(qn[i], T, W) - forward_kinematics(qp[i], T, W)) / delta_q / 2.0
     return J
 
 def inverse_kinematics(x, y, z, roll, pitch, yaw, T, W, init_guess=numpy.zeros(7), max_iter=20):
