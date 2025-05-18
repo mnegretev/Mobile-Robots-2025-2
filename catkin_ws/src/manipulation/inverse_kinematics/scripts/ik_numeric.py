@@ -107,6 +107,12 @@ def jacobian(q, T, W):
     
     return J
 
+def get_q_distance(q, init_guess):
+    # Calculate the distance between two joint configurations
+    # q is the current configuration
+    # init_guess is the initial configuration
+    return numpy.linalg.norm(numpy.array(q) - numpy.array(init_guess))
+
 def inverse_kinematics(x, y, z, roll, pitch, yaw, T, W, init_guess=numpy.zeros(7), max_iter=20):
     pd = numpy.asarray([x, y, z, roll, pitch, yaw])
     TOL = 1e-6  # Tolerance for error
@@ -144,7 +150,7 @@ def inverse_kinematics(x, y, z, roll, pitch, yaw, T, W, init_guess=numpy.zeros(7
 
     with open("results.csv", "a") as file:
         # Write the header only if the file is being created
-        file.write(f"{success}, {iterations}, ({init_guess})\n")
+        file.write(f"{success}, {iterations}, {get_q_distance(q, init_guess)}\n")
     
     return success, q
    
@@ -251,13 +257,6 @@ def callback_ik_for_pose(req):
 def main():
     global joint_names, max_iterations, joints, transforms, prompt
     print("INITIALIZING INVERSE KINEMATIC NODE - " + NAME)
-
-    # Log the results into a CSV file
-    with open("results.csv", "w") as f:
-        f.write("Success, Iterations, Initial Guess\n")
-
-    # Print whole result path
-    print("Result path: " + os.path.abspath("results.csv"))
 
     rospy.init_node("ik_geometric")
     prompt = rospy.get_name().upper() + ".->"
