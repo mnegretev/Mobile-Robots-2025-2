@@ -20,7 +20,7 @@ from manip_msgs.srv import *
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 
 prompt = ""
-NAME = "FULL_NAME"
+NAME = "Alfredo Guadalupe Alcántara Guerrero"
    
 def forward_kinematics(q, T, W):
     x,y,z,R,P,Y = 0,0,0,0,0,0
@@ -45,7 +45,12 @@ def forward_kinematics(q, T, W):
     #     Check online documentation of these functions:
     #     http://docs.ros.org/en/jade/api/tf/html/python/transformations.html
     #
-    
+    H = tft.identity_matrix()
+    for i in range(len(q)):
+        H = tft.concatenate_matrices(H, T[i], tft.rotation_matrix(q[i], W[i]))
+    H = tft.concatenate_matrices(H, T[i])
+    x, y, z = H[0][3], H[1][3], H[2][3]
+    R, P, Y = tft.euler_from_matrix(H)
     return numpy.asarray([x,y,z,R,P,Y])
 
 def jacobian(q, T, W):
@@ -73,7 +78,10 @@ def jacobian(q, T, W):
     #     RETURN J
     #
     J = numpy.asarray([[0.0 for a in q] for i in range(6)])
-    
+    q_n = numpy.asarray([q for i in range(len(q))]) + delta_q * numpy.identity(len(q))
+    q_p = numpy.asarray([q for i in range(len(q))]) - delta_q * numpy.identity(len(q))
+    for i in range(len(q)):
+        J[:,i] = (forward_kinematics(q_n[i], T, W) - forward_kinematics(q_p[i], T, W)) / (2*delta_q)
     return J
 
 def inverse_kinematics(x, y, z, roll, pitch, yaw, T, W, init_guess=numpy.zeros(7), max_iter=20):
@@ -103,6 +111,18 @@ def inverse_kinematics(x, y, z, roll, pitch, yaw, T, W, init_guess=numpy.zeros(7
     #
     q = init_guess
     iterations = 0
+    tol = 0.001
+    p = forward_kinematics(q, T, W)
+    err = p - pd
+    err[3:6] = (err[3:6] + math.pi) % (2*math.pi) - math.pi
+    success = False
+    while numpy.linalg.norm(err) > tol and iterations < max_iter:
+        J = jacobian(q, T, W)
+        q = (q - numpy.dot(numpy.linalg.pinv(J), err) + math.pi) % (2*math.pi) - math.pi
+        p = forward_kinematics(q, T, W)
+        err = p - pd
+        err[3:6] = (err[3:6] + math.pi) % (2*math.pi) - math.pi
+        iterations += 1
     success = iterations < max_iter and angles_in_joint_limits(q)
     
     return success, q
