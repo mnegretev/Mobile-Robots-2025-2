@@ -56,8 +56,9 @@ def forward_kinematics(q, T, W):
 
     x, y, z = trans
     R, P, Y = rot
-    
+
     return numpy.asarray([x,y,z,R,P,Y])
+
 
 
 def jacobian(q, T, W):
