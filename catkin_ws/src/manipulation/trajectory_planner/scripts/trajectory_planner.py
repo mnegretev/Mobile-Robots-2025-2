@@ -19,7 +19,7 @@ from manip_msgs.srv import *
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 
 prompt = ""
-NAME = "FULL_NAME"
+NAME = "JOSÉ AUGUSTO ARENAS HERNÁNDEZ"
 
 def get_polynomial_trajectory(q0, q1, dq0=0, dq1=0, ddq0=0, ddq1=1, t=1.0, step=0.05):
     T = numpy.arange(0, t, step)
@@ -33,8 +33,26 @@ def get_polynomial_trajectory(q0, q1, dq0=0, dq1=0, ddq0=0, ddq1=1, t=1.0, step=
     # Trajectory must have a duration 't' and a sampling time 'step'
     # Return both the time T and position Q vectors 
     #
-    
+
+    # Coeficientes del polinomio de 5° grado:
+    # q(t) = a0 + a1*t + a2*t^2 + a3*t^3 + a4*t^4 + a5*t^5
+    M = numpy.array([
+        [1, 0,    0,     0,      0,       0],
+        [0, 1,    0,     0,      0,       0],
+        [0, 0,    2,     0,      0,       0],
+        [1, t,  t**2,  t**3,   t**4,    t**5],
+        [0, 1,  2*t,  3*t**2, 4*t**3,  5*t**4],
+        [0, 0,   2,   6*t,   12*t**2, 20*t**3]
+    ])
+    b = numpy.array([q0, dq0, ddq0, q1, dq1, ddq1])
+    a = numpy.linalg.solve(M, b)  # Resuelve sistema lineal para coeficientes
+
+    for i in range(len(T)):
+        ti = T[i]
+        Q[i] = a[0] + a[1]*ti + a[2]*ti**2 + a[3]*ti**3 + a[4]*ti**4 + a[5]*ti**5
+
     return T, Q
+
     
 def get_polynomial_trajectory_multi_dof(Q_start, Q_end, Qp_start=[], Qp_end=[],
                                         Qpp_start=[], Qpp_end=[], duration=1.0, time_step=0.05):
