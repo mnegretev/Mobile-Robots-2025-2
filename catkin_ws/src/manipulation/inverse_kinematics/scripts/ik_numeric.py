@@ -20,7 +20,7 @@ from manip_msgs.srv import *
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 
 prompt = ""
-NAME = "FULL_NAME"
+NAME = "JOSÉ AUGUSTO ARENAS HERNÁNDEZ"
    
 def forward_kinematics(q, T, W):
     x,y,z,R,P,Y = 0,0,0,0,0,0
@@ -45,8 +45,20 @@ def forward_kinematics(q, T, W):
     #     Check online documentation of these functions:
     #     http://docs.ros.org/en/jade/api/tf/html/python/transformations.html
     #
+   H = tft.identity_matrix()
+    for i in range(7):
+        Ri = tft.rotation_matrix(q[i], W[i]) 
+        H = tft.concatenate_matrices(H, T[i], Ri)
+    H = tft.concatenate_matrices(H, T[7])
+
+    trans = tft.translation_from_matrix(H)
+    rot = tft.euler_from_matrix(H, axes='sxyz')  
+
+    x, y, z = trans
+    R, P, Y = rot
     
     return numpy.asarray([x,y,z,R,P,Y])
+
 
 def jacobian(q, T, W):
     delta_q = 0.000001
@@ -72,8 +84,20 @@ def jacobian(q, T, W):
     #           i-th column of J = ( FK(i-th row of q_next) - FK(i-th row of q_prev) ) / (2*delta_q)
     #     RETURN J
     #
+   
     J = numpy.asarray([[0.0 for a in q] for i in range(6)])
-    
+    for i in range(7):
+        q_next = numpy.copy(q)
+        q_prev = numpy.copy(q)
+        q_next[i] += delta_q
+        q_prev[i] -= delta_q
+
+        fk_next = forward_kinematics(q_next, T, W)
+        fk_prev = forward_kinematics(q_prev, T, W)
+
+        J[:, i] = (fk_next - fk_prev) / (2 * delta_q)
+
+   
     return J
 
 def inverse_kinematics(x, y, z, roll, pitch, yaw, T, W, init_guess=numpy.zeros(7), max_iter=20):
@@ -104,7 +128,23 @@ def inverse_kinematics(x, y, z, roll, pitch, yaw, T, W, init_guess=numpy.zeros(7
     q = init_guess
     iterations = 0
     success = iterations < max_iter and angles_in_joint_limits(q)
-    
+    while iterations < max_iter:
+        p = forward_kinematics(q, T, W)
+        error = p - pd
+
+        # Ensure orientation errors are in [-pi, pi]
+        error[3:] = (error[3:] + numpy.pi) % (2 * numpy.pi) - numpy.pi
+
+        if numpy.linalg.norm(error) < TOL:
+            break
+
+        J = jacobian(q, T, W)
+        dq = numpy.dot(numpy.linalg.pinv(J), error)
+        q = q - dq       
+        q = (q + numpy.pi) % (2 * numpy.pi) - numpy.pi
+        iterations += 1
+
+    success = iterations < max_iter and angles_in_joint_limits(q)
     return success, q
    
 def get_polynomial_trajectory_multi_dof(Q_start, Q_end, duration=1.0, time_step=0.05):
