@@ -1,13 +1,3 @@
-#!/usr/bin/env python3
-#
-# MOBILE ROBOTS - FI-UNAM, 2025-2
-# TRAJECTORY PLANNING BY POLYNOMIALS
-#
-# Instructions:
-# Complete the code to calculate a trajectory given an initial and final
-# position, velocity and acceleration, using a fifth-degree polynomial.
-# Modify only sections marked with the 'TODO' comment
-#
 import math
 import sys
 import rospy
@@ -21,7 +11,7 @@ from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 prompt = ""
 NAME = "JOSÉ AUGUSTO ARENAS HERNÁNDEZ"
 
-def get_polynomial_trajectory(q0, q1, dq0=0, dq1=0, ddq0=0, ddq1=1, t=1.0, step=0.05):
+def get_polynomial_trajectory(q0, q1, dq0=0, dq1=0, ddq0=0, ddq1=1, t=1.0, step=0.01):
     T = numpy.arange(0, t, step)
     Q = numpy.zeros(T.shape)
     #
@@ -33,26 +23,13 @@ def get_polynomial_trajectory(q0, q1, dq0=0, dq1=0, ddq0=0, ddq1=1, t=1.0, step=
     # Trajectory must have a duration 't' and a sampling time 'step'
     # Return both the time T and position Q vectors 
     #
-
-    # Coeficientes del polinomio de 5° grado:
-    # q(t) = a0 + a1*t + a2*t^2 + a3*t^3 + a4*t^4 + a5*t^5
-    M = numpy.array([
-        [1, 0,    0,     0,      0,       0],
-        [0, 1,    0,     0,      0,       0],
-        [0, 0,    2,     0,      0,       0],
-        [1, t,  t**2,  t**3,   t**4,    t**5],
-        [0, 1,  2*t,  3*t**2, 4*t**3,  5*t**4],
-        [0, 0,   2,   6*t,   12*t**2, 20*t**3]
-    ])
-    b = numpy.array([q0, dq0, ddq0, q1, dq1, ddq1])
-    a = numpy.linalg.solve(M, b)  # Resuelve sistema lineal para coeficientes
-
-    for i in range(len(T)):
-        ti = T[i]
-        Q[i] = a[0] + a[1]*ti + a[2]*ti**2 + a[3]*ti**3 + a[4]*ti**4 + a[5]*ti**5
-
+    A = [[t**5,t**4,t**3,t**2,t,1],[5*t**4,4*t**3,3*t**2,2*t,1,0],[20*t**3,12*t**2,6*t,2,0,0],[0,0,0,0,0,1],[0,0,0,0,1,0],[0,0,0,2,0,0]]
+    A = numpy.asarray(A)
+    B = numpy.asarray([q1,dq1,ddq1,q0,dq0,ddq0]).T
+    X = numpy.dot(numpy.linalg.inv(A),B)
+    a5,a4,a3,a2,a1,a0 = X[0],X[1],X[2],X[3],X[4],X[5]
+    Q = a5*T**5 + a4*T**4 + a3*T**3 + a2*T**2 + a1*T + a0
     return T, Q
-
     
 def get_polynomial_trajectory_multi_dof(Q_start, Q_end, Qp_start=[], Qp_end=[],
                                         Qpp_start=[], Qpp_end=[], duration=1.0, time_step=0.05):
@@ -109,5 +86,4 @@ def main():
 
 if __name__ == '__main__':
     main()
-
 
