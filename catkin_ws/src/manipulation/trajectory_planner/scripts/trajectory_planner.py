@@ -19,7 +19,7 @@ from manip_msgs.srv import *
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 
 prompt = ""
-NAME = "FULL_NAME"
+NAME = "Carlos Castañeda Mora"
 
 def get_polynomial_trajectory(q0, q1, dq0=0, dq1=0, ddq0=0, ddq1=1, t=1.0, step=0.05):
     T = numpy.arange(0, t, step)
@@ -33,7 +33,31 @@ def get_polynomial_trajectory(q0, q1, dq0=0, dq1=0, ddq0=0, ddq1=1, t=1.0, step=
     # Trajectory must have a duration 't' and a sampling time 'step'
     # Return both the time T and position Q vectors 
     #
+    a0 = q0
+    a1 = dq0
+    a2 = ddq0 / 2.0
+    A = numpy.array([
+        [t**3,      t**4,      t**5],
+        [3*t**2,    4*t**3,    5*t**4],
+        [6*t,       12*t**2,   20*t**3]
+    ])
+    C1 = q1 - (a0 + a1*t + a2*t**2)
+    C2 = dq1 - (a1 + 2*a2*t)
+    C3 = ddq1 - 2*a2
+    B = numpy.array([C1, C2, C3])
+
+    try:
+        x = numpy.linalg.solve(A, B)
+    except numpy.linalg.LinAlgError:
+        rospy.logerr("Singular matrix encountered. Check parameters.")
+        return T, Q
     
+    a3, a4, a5 = x
+
+    for i in range(len(T)):
+        ti = T[i]
+        q = a0 + a1*ti + a2*ti**2 + a3*ti**3 + a4*ti**4 + a5*ti**5
+        Q[i] = q
     return T, Q
     
 def get_polynomial_trajectory_multi_dof(Q_start, Q_end, Qp_start=[], Qp_end=[],
