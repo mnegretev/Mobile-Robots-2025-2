@@ -3,11 +3,6 @@
 # MOBILE ROBOTS - FI-UNAM, 2025-2
 # INVERSE KINEMATICS USING NEWTON-RAPHSON
 #
-# Instructions:
-# Calculate the inverse kinematics using
-# the Newton-Raphson method for root finding.
-# Modify only sections marked with the 'TODO' comment
-#
 import math
 import sys
 import rospy
@@ -23,28 +18,6 @@ prompt = ""
 NAME = "Lujan Perez Carlos Eduardo"
    
 def forward_kinematics(q, T, W):
-    x,y,z,R,P,Y = 0,0,0,0,0,0
-    #
-    # TODO:
-    # Calculate the forward kinematics given the set of seven angles 'q'
-    # You can use the following steps:
-    #     H = I   # Assing to H a 4x4 identity matrix
-    #     for all qi in q:
-    #         H = H * Ti * Ri
-    #     H = H * Ti[7]
-    #     Get xyzRPY from the resulting Homogeneous Transformation 'H'
-    # Where:
-    #     Ti are the Homogeneous Transforms from frame i to frame i-1 when joint i is at zero position
-    #     Ri are the Homogeneous Transforms with zero-translation and rotation qi around axis Wi.
-    #     Ti[7] is the final Homogeneous Transformation from gripper center to joint 7.
-    # Hints:
-    #     Use the tft.identity_matrix() function to get the 4x4 I
-    #     Use the tft.concatenate_matrices() function for multiplying Homogeneous Transformations
-    #     Use the tft.rotation_matrix() matrices Ri.
-    #     Use the tft.euler_from_matrix() function to get RPY from matrix H
-    #     Check online documentation of these functions:
-    #     http://docs.ros.org/en/jade/api/tf/html/python/transformations.html
-    #
     H = tft.identity_matrix()
     for i in range(len(q)):
         H = tft.concatenate_matrices(H, T[i], tft.rotation_matrix(q[i], W[i]))
@@ -54,34 +27,12 @@ def forward_kinematics(q, T, W):
     return numpy.asarray([x,y,z,R,P,Y])
 
 def jacobian(q, T, W):
-    #
-    # TODO:
-    # Calculate the Jacobian given a kinematic description Ti and Wi
-    # where:
-    # Ti are the Homogeneous Transformations from frame i to frame i-1 when joint i is at zero position
-    # Wi are the axis of rotation of i-th joint
-    # Use the numeric approximation:   f'(x) = (f(x+delta) - f(x-delta))/(2*delta)
-    #
-    # You can do the following steps:
-    #     J = matrix of 6x7 full of zeros
-    #     q_next = [q1+delta       q2        q3   ....     q7
-    #                  q1       q2+delta     q3   ....     q7
-    #                              ....
-    #                  q1          q2        q3   ....   q7+delta]
-    #     q_prev = [q1-delta       q2        q3   ....     q7
-    #                  q1       q2-delta     q3   ....     q7
-    #                              ....
-    #                  q1          q2        q3   ....   q7-delta]
-    #     FOR i = 1,..,7:
-    #           i-th column of J = ( FK(i-th row of q_next) - FK(i-th row of q_prev) ) / (2*delta_q)
-    #     RETURN J
-    #
     delta_q = 1e-6
-    J = numpy.asarray([[0.0 for _ in q] for _ in range(6)])
-    qn = numpy.asarray([q,]*len(q)) + delta_q*numpy.identity(len(q))
-    qp = numpy.asarray([q,]*len(q)) - delta_q*numpy.identity(len(q))
+    J = numpy.zeros((6, len(q)))
+    qn = numpy.asarray([q,]*len(q)) + delta_q * numpy.identity(len(q))
+    qp = numpy.asarray([q,]*len(q)) - delta_q * numpy.identity(len(q))
     for i in range(len(q)):
-        J[:, i] = (forward_kinematics(qn[i], T, W) - forward_kinematics(qp[i], T, W)) / delta_q / 2.0
+        J[:, i] = (forward_kinematics(qn[i], T, W) - forward_kinematics(qp[i], T, W)) / (2.0 * delta_q)
     return J
 
 def inverse_kinematics(x, y, z, roll, pitch, yaw, T, W, init_guess=numpy.zeros(7), max_iter=100):
@@ -91,7 +42,7 @@ def inverse_kinematics(x, y, z, roll, pitch, yaw, T, W, init_guess=numpy.zeros(7
     iterations = 0
     error = p - pd
     error[3:6] = (error[3:6] + math.pi) % (2*math.pi) - math.pi
-    tolerance = 1e-4  # más preciso
+    tolerance = 1e-4
     while numpy.linalg.norm(error) > tolerance and iterations < max_iter:
         J = jacobian(q, T, W)
         J_inv = numpy.linalg.pinv(J)
@@ -103,7 +54,6 @@ def inverse_kinematics(x, y, z, roll, pitch, yaw, T, W, init_guess=numpy.zeros(7
     success = numpy.linalg.norm(error) < tolerance
     return success, q
 
-   
 def get_polynomial_trajectory_multi_dof(Q_start, Q_end, duration=1.0, time_step=0.05):
     clt = rospy.ServiceProxy("/manipulation/polynomial_trajectory", GetPolynomialTrajectory)
     req = GetPolynomialTrajectoryRequest()
@@ -185,7 +135,6 @@ def callback_ik_for_trajectory(req):
     resp = InverseKinematicsPose2TrajResponse()
     resp.articular_trajectory = trj
     return resp
-    
         
 def callback_ik_for_pose(req):
     global max_iterations
@@ -193,17 +142,16 @@ def callback_ik_for_pose(req):
     print(prompt+"Calculating inverse kinematics for pose: " + str([x,y,z,R,P,Y]))
     if len(req.initial_guess) <= 0 or req.initial_guess == None:
         init_guess = rospy.wait_for_message("/hardware/arm/current_pose", Float64MultiArray, 5.0)
-        init_guess = initial_guess.data
+        init_guess = init_guess.data
     else:
         init_guess = req.initial_guess
     resp = InverseKinematicsPose2PoseResponse()
-    success, q = inverse_kinematics(x, y, z, R, P, Y, init_guess, max_iterations)
+    success, q = inverse_kinematics(x, y, z, R, P, Y, transforms, [j.axis for j in joints], init_guess, max_iterations)
     if not success:
         return False
     resp.q = q
     return resp        
     
-
 def main():
     global joint_names, max_iterations, joints, transforms, prompt
     print("INITIALIZING INVERSE KINEMATIC NODE - " + NAME)
@@ -222,10 +170,10 @@ def main():
     rospy.Service("/manipulation/forward_kinematics"   , ForwardKinematics, callback_forward_kinematics)    
     rospy.Service("/manipulation/ik_trajectory"        , InverseKinematicsPose2Traj, callback_ik_for_trajectory)
     rospy.Service("/manipulation/ik_pose"              , InverseKinematicsPose2Pose, callback_ik_for_pose)
-    #loop = rospy.Rate(10)
     loop = rospy.Rate(40)
     while not rospy.is_shutdown():
         loop.sleep()
 
 if __name__ == '__main__':
     main()
+
