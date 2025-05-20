@@ -84,48 +84,25 @@ def jacobian(q, T, W):
         J[:, i] = (forward_kinematics(qn[i], T, W) - forward_kinematics(qp[i], T, W)) / delta_q / 2.0
     return J
 
-def inverse_kinematics(x, y, z, roll, pitch, yaw, T, W, init_guess=numpy.zeros(7), max_iter=20):
+def inverse_kinematics(x, y, z, roll, pitch, yaw, T, W, init_guess=numpy.zeros(7), max_iter=100):
     pd = numpy.asarray([x,y,z,roll,pitch,yaw])
-    #
-    # TODO:
-    # Solve the IK problem given a kinematic description (Ti, Wi) and a desired configuration.
-    # where:
-    # Ti are the Homogeneous Transformations from frame i to frame i-1 when joint i is at zero position
-    # Wi are the axis of rotation of i-th joint
-    # Use the Newton-Raphson method for root finding. (Find the roots of equation FK(q) - pd = 0)
-    # You can do the following steps:
-    #
-    #    Set an initial guess for joints 'q'
-    #    Calculate Forward Kinematics 'p' by calling the corresponding function
-    #    Calcualte error = p - pd
-    #    Ensure orientation angles of error are in [-pi,pi]
-    #    WHILE |error| > TOL and iterations < maximum iterations:
-    #        Calculate Jacobian
-    #        Update q estimation with q = q - pseudo_inverse(J)*error
-    #        Ensure all angles q are in [-pi,pi]
-    #        Recalculate forward kinematics p
-    #        Recalculate error and ensure angles are in [-pi,pi]
-    #        Increment iterations
-    #    Set success if maximum iterations were not exceeded and calculated angles are in valid range
-    #    Return calculated success and calculated q
-    #
     q = init_guess
     p = forward_kinematics(q, T, W)
     iterations = 0
     error = p - pd
     error[3:6] = (error[3:6] + math.pi) % (2*math.pi) - math.pi
-    tolerance = 0.001
+    tolerance = 1e-4  # más preciso
     while numpy.linalg.norm(error) > tolerance and iterations < max_iter:
         J = jacobian(q, T, W)
         J_inv = numpy.linalg.pinv(J)
-        q = (q - numpy.dot(J_inv, error) + math.pi)% (2*math.pi) - math.pi #Nos aseguramos que los angulos esten en el rango [-pi, pi]
+        q = (q - numpy.dot(J_inv, error) + math.pi)% (2*math.pi) - math.pi
         p = forward_kinematics(q, T, W)
         error = p - pd
         error[3:6] = (error[3:6] + math.pi) % (2*math.pi) - math.pi
         iterations += 1
-    success = iterations < max_iter and angles_in_joint_limits(q)
-    
+    success = numpy.linalg.norm(error) < tolerance
     return success, q
+
    
 def get_polynomial_trajectory_multi_dof(Q_start, Q_end, duration=1.0, time_step=0.05):
     clt = rospy.ServiceProxy("/manipulation/polynomial_trajectory", GetPolynomialTrajectory)
