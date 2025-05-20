@@ -20,7 +20,7 @@ from manip_msgs.srv import *
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 
 prompt = ""
-NAME = "FULL_NAME"
+NAME = "CRUZ ZAMORA JOEL DAVID"
    
 def forward_kinematics(q, T, W):
     x,y,z,R,P,Y = 0,0,0,0,0,0
@@ -45,6 +45,15 @@ def forward_kinematics(q, T, W):
     #     Check online documentation of these functions:
     #     http://docs.ros.org/en/jade/api/tf/html/python/transformations.html
     #
+    H = tft.identity_matrix()
+    for i in range(len(q)):
+        T_i = T[i]
+        R_i = tft.rotation_matrix(q[i], W[i])
+        H = tft.concatenate_matrices(H, T_i, R_i)
+    H = tft.concatenate_matrices(H, T[7])
+    # Get xyzRPY from the resulting Homogeneous Transformation 'H'
+    x, y, z = tft.translation_from_matrix(H)
+    R, P, Y = tft.euler_from_matrix(H)
     
     return numpy.asarray([x,y,z,R,P,Y])
 
@@ -72,8 +81,18 @@ def jacobian(q, T, W):
     #           i-th column of J = ( FK(i-th row of q_next) - FK(i-th row of q_prev) ) / (2*delta_q)
     #     RETURN J
     #
-    J = numpy.asarray([[0.0 for a in q] for i in range(6)])
-    
+    J = numpy.zeros((6,7))
+    q_next = numpy.zeros((7,7))
+    q_prev = numpy.zeros((7,7))
+    for i in range(7):
+        q_next[:,i] = q
+        q_prev[:,i] = q
+        q_next[i,i] += delta_q
+        q_prev[i,i] -= delta_q
+        p_next = forward_kinematics(q_next[:,i], T, W)
+        p_prev = forward_kinematics(q_prev[:,i], T, W)
+        J[:,i] = (p_next - p_prev) / (2*delta_q)
+
     return J
 
 def inverse_kinematics(x, y, z, roll, pitch, yaw, T, W, init_guess=numpy.zeros(7), max_iter=20):
@@ -103,6 +122,28 @@ def inverse_kinematics(x, y, z, roll, pitch, yaw, T, W, init_guess=numpy.zeros(7
     #
     q = init_guess
     iterations = 0
+    tolerance = 0.001
+    # error = numpy.asarray([0,0,0,0,0,0])
+    p = forward_kinematics(q, T, W)
+    error = p - pd
+    # Ensure orientation angles of error are in [-pi,pi]
+    error[3] = math.atan2(math.sin(error[3]), math.cos(error[3]))
+    error[4] = math.atan2(math.sin(error[4]), math.cos(error[4]))
+    error[5] = math.atan2(math.sin(error[5]), math.cos(error[5]))
+    success = False
+    while numpy.linalg.norm(error) > tolerance and iterations < max_iter:
+        J = jacobian(q, T, W)
+        J_inv = numpy.linalg.pinv(J)
+        q = q - numpy.dot(J_inv, error)
+        # Ensure all angles are in [-pi,pi]
+        for i in range(len(q)):
+            q[i] = math.atan2(math.sin(q[i]), math.cos(q[i]))
+        p = forward_kinematics(q, T, W)
+        error = p - pd
+        error[3] = math.atan2(math.sin(error[3]), math.cos(error[3]))
+        error[4] = math.atan2(math.sin(error[4]), math.cos(error[4]))
+        error[5] = math.atan2(math.sin(error[5]), math.cos(error[5]))
+        iterations += 1
     success = iterations < max_iter and angles_in_joint_limits(q)
     
     return success, q
