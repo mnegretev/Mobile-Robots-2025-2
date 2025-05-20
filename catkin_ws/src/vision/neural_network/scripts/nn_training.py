@@ -33,7 +33,11 @@ class NeuralNetwork(object):
         self.layer_sizes = layers
         self.biases =[numpy.random.randn(y,1) for y in layers[1:]] if biases == None else biases
         self.weights=[numpy.random.randn(y,x) for x,y in zip(layers[:-1],layers[1:])] if weights==None else weights
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> 03c75fe8058c1a1b796dc93635380a9cc4155fda
     def forward(self, x):
         #
         # This function gets the output of the network when input is 'x'.
@@ -44,7 +48,11 @@ class NeuralNetwork(object):
         return x
 
     def forward_all_outputs(self, x):
+<<<<<<< HEAD
         y = [x] # Include input x as the first output.
+=======
+        y = []
+>>>>>>> 03c75fe8058c1a1b796dc93635380a9cc4155fda
         #
         # TODO:
         # Write a function similar to 'forward' but instead of returning only the output layer,
@@ -167,6 +175,7 @@ def main():
     num_test_samples = 100 # Number of samples to use from the testing dataset for accuracy calculation
 
     training_dataset, testing_dataset = load_dataset(dataset_folder)
+<<<<<<< HEAD
 
     # Ensure we have enough samples for testing
     if len(testing_dataset) < num_test_samples:
@@ -247,6 +256,24 @@ def main():
     else:
         print("\nNo results to save.")
 
+=======
+    
+    nn = NeuralNetwork([784,30,10])
+    nn.train_by_SGD(training_dataset, epochs, batch_size, learning_rate)
+    
+    print("\nPress key to test network or ESC to exit...")
+    numpy.set_printoptions(formatter={'float_kind':"{:.3f}".format})
+    cmd = cv2.waitKey(0)
+    while cmd != 27 and not rospy.is_shutdown():
+        img,label = testing_dataset[numpy.random.randint(0, 4999)]
+        y = nn.forward(img).transpose()
+        print("\nPerceptron output: " + str(y))
+        print("Expected output  : "   + str(label.transpose()))
+        print("Recognized digit : "   + str(numpy.argmax(y)))
+        cv2.imshow("Digit", numpy.reshape(numpy.asarray(img, dtype="float32"), (28,28,1)))
+        cmd = cv2.waitKey(0)
+    
+>>>>>>> 03c75fe8058c1a1b796dc93635380a9cc4155fda
 
 if __name__ == '__main__':
     main()
