@@ -7,4 +7,4 @@ joint_names:
   - "ra_6_joint"
   - "ra_7_joint"
   - "ra_grip_center_joint"
-max_iterations: 20
+max_iterations: 80
