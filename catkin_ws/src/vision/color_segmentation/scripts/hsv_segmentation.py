@@ -24,7 +24,7 @@ NAME = "Camarena Olivos Alan Misael"
 
 def segment_by_color(img_bgr, points, obj_name):
     global img_hsv, img_bin, img_filtered
-    img_x, img_y, x,y,z = 0,0,0,0,0
+    
     #
     # TODO:
     # - Assign lower and upper color limits according to the requested object:
@@ -54,21 +54,33 @@ def segment_by_color(img_bgr, points, obj_name):
 
 
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7,7))
-    img_filtered = cv2.morphologyEx(img_bin, cv2.MORPH_OPEN, kernel)
+    img_filtered = cv2.erode(img_bin, kernel)
+    img_filtered = cv2.dilate(img_filtered, kernel)
+    locs = cv2.findNonZero(img_filtered)
+    centroid = cv2.mean(locs)
+    print(centroid)
 
+    img_x = centroid[0]
+    img_y = centroid[1]
+
+    sum_x, sum_y, sum_z = 0, 0, 0
+    for pt in locs:
+        c, r = pt[0]
+        sum_x += points[r, c][0]
+        sum_y += points[r, c][1]
+        sum_z += points[r, c][2]
+    count = len(locs)
+    centroid_x = sum_x / count
+    centroid_y = sum_y / count
+    centroid_z = sum_z / count
+
+    print("x: ", centroid_x)
+    print("y: ", centroid_y)
+    print("z: ", centroid_z)
     
-    nonz = cv2.findNonZero(img_filtered)
-    if nonz is not None:
-        centroid = cv2.mean(nonz)
-        img_x, img_y = centroid[0], centroid[1]
-        
-       
-        points_sum = numpy.array([0.0, 0.0, 0.0])
-        for [[r,c]] in nonz:
-            points_sum += points[r,c][:3]
-        x, y, z = points_sum / len(nonz)
 
-    return [img_x, img_y, x,y,1]
+    return [img_x, img_y, centroid_x, centroid_y, centroid_z]
+
 
 def callback_find_object(req):
     global pub_point, img_bgr
