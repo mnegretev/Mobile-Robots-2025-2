@@ -1,0 +1,5 @@
+<launch>
+  <node pkg="manipulation" type="inverse_kinematics/scripts/ik_numeric.py" name="ik_numeric" output="screen" />
+  <node pkg="manipulation" type="trajectory_planner/scripts/trajectory_planner.py" name="trajectory_planner" output="screen" />
+</launch>
+

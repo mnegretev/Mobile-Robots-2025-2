@@ -20,92 +20,72 @@ from manip_msgs.srv import *
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 
 prompt = ""
-NAME = "FULL_NAME"
+NAME = "MURILLO SANTOS JAVIER EDUARDO"
    
 def forward_kinematics(q, T, W):
-    x,y,z,R,P,Y = 0,0,0,0,0,0
-    #
-    # TODO:
-    # Calculate the forward kinematics given the set of seven angles 'q'
-    # You can use the following steps:
-    #     H = I   # Assing to H a 4x4 identity matrix
-    #     for all qi in q:
-    #         H = H * Ti * Ri
-    #     H = H * Ti[7]
-    #     Get xyzRPY from the resulting Homogeneous Transformation 'H'
-    # Where:
-    #     Ti are the Homogeneous Transforms from frame i to frame i-1 when joint i is at zero position
-    #     Ri are the Homogeneous Transforms with zero-translation and rotation qi around axis Wi.
-    #     Ti[7] is the final Homogeneous Transformation from gripper center to joint 7.
-    # Hints:
-    #     Use the tft.identity_matrix() function to get the 4x4 I
-    #     Use the tft.concatenate_matrices() function for multiplying Homogeneous Transformations
-    #     Use the tft.rotation_matrix() matrices Ri.
-    #     Use the tft.euler_from_matrix() function to get RPY from matrix H
-    #     Check online documentation of these functions:
-    #     http://docs.ros.org/en/jade/api/tf/html/python/transformations.html
-    #
+    H = tft.identity_matrix()
     
-    return numpy.asarray([x,y,z,R,P,Y])
+    for i in range(7):
+        R = tft.rotation_matrix(q[i], W[i])
+        H = tft.concatenate_matrices(H, T[i], R)
+
+    H = tft.concatenate_matrices(H, T[7])
+    
+    x, y, z = H[0, 3], H[1, 3], H[2, 3]
+    R, P, Y = tft.euler_from_matrix(H)
+    
+    return numpy.asarray([x, y, z, R, P, Y])
+
 
 def jacobian(q, T, W):
-    delta_q = 0.000001
-    #
-    # TODO:
-    # Calculate the Jacobian given a kinematic description Ti and Wi
-    # where:
-    # Ti are the Homogeneous Transformations from frame i to frame i-1 when joint i is at zero position
-    # Wi are the axis of rotation of i-th joint
-    # Use the numeric approximation:   f'(x) = (f(x+delta) - f(x-delta))/(2*delta)
-    #
-    # You can do the following steps:
-    #     J = matrix of 6x7 full of zeros
-    #     q_next = [q1+delta       q2        q3   ....     q7
-    #                  q1       q2+delta     q3   ....     q7
-    #                              ....
-    #                  q1          q2        q3   ....   q7+delta]
-    #     q_prev = [q1-delta       q2        q3   ....     q7
-    #                  q1       q2-delta     q3   ....     q7
-    #                              ....
-    #                  q1          q2        q3   ....   q7-delta]
-    #     FOR i = 1,..,7:
-    #           i-th column of J = ( FK(i-th row of q_next) - FK(i-th row of q_prev) ) / (2*delta_q)
-    #     RETURN J
-    #
-    J = numpy.asarray([[0.0 for a in q] for i in range(6)])
-    
+    delta_q = 1e-6  # Pequeña perturbación
+    J = numpy.zeros((6, 7))  # Jacobiano de 6 filas (x,y,z,R,P,Y) por 7 articulaciones
+
+    for i in range(7):
+        q_forward = numpy.copy(q)
+        q_backward = numpy.copy(q)
+
+        q_forward[i] += delta_q
+        q_backward[i] -= delta_q
+
+        fk_plus = forward_kinematics(q_forward, T, W)
+        fk_minus = forward_kinematics(q_backward, T, W)
+        diff = (fk_plus - fk_minus) / (2 * delta_q)
+        for j in range(3, 6):
+            diff[j] = (diff[j] + numpy.pi) % (2 * numpy.pi) - numpy.pi
+
+        J[:, i] = diff
+
     return J
 
+
 def inverse_kinematics(x, y, z, roll, pitch, yaw, T, W, init_guess=numpy.zeros(7), max_iter=20):
-    pd = numpy.asarray([x,y,z,roll,pitch,yaw])
-    #
-    # TODO:
-    # Solve the IK problem given a kinematic description (Ti, Wi) and a desired configuration.
-    # where:
-    # Ti are the Homogeneous Transformations from frame i to frame i-1 when joint i is at zero position
-    # Wi are the axis of rotation of i-th joint
-    # Use the Newton-Raphson method for root finding. (Find the roots of equation FK(q) - pd = 0)
-    # You can do the following steps:
-    #
-    #    Set an initial guess for joints 'q'
-    #    Calculate Forward Kinematics 'p' by calling the corresponding function
-    #    Calcualte error = p - pd
-    #    Ensure orientation angles of error are in [-pi,pi]
-    #    WHILE |error| > TOL and iterations < maximum iterations:
-    #        Calculate Jacobian
-    #        Update q estimation with q = q - pseudo_inverse(J)*error
-    #        Ensure all angles q are in [-pi,pi]
-    #        Recalculate forward kinematics p
-    #        Recalculate error and ensure angles are in [-pi,pi]
-    #        Increment iterations
-    #    Set success if maximum iterations were not exceeded and calculated angles are in valid range
-    #    Return calculated success and calculated q
-    #
-    q = init_guess
+    pd = numpy.asarray([x, y, z, roll, pitch, yaw])
+    q = numpy.copy(init_guess)
     iterations = 0
+    TOL = 1e-4
+
+    while iterations < max_iter:
+        p = forward_kinematics(q, T, W)
+        error = p - pd
+
+        for j in range(3, 6):
+            error[j] = (error[j] + numpy.pi) % (2 * numpy.pi) - numpy.pi
+
+        if numpy.linalg.norm(error) < TOL:
+            break
+
+        J = jacobian(q, T, W)
+        dq = numpy.linalg.pinv(J).dot(error)
+        q = q - dq
+        q = (q + numpy.pi) % (2 * numpy.pi) - numpy.pi
+
+        iterations += 1
+
     success = iterations < max_iter and angles_in_joint_limits(q)
-    
-    return success, q
+    print(prompt + f"IK iterations: {iterations}")
+    return success, q, iterations
+
    
 def get_polynomial_trajectory_multi_dof(Q_start, Q_end, duration=1.0, time_step=0.05):
     clt = rospy.ServiceProxy("/manipulation/polynomial_trajectory", GetPolynomialTrajectory)
@@ -173,12 +153,16 @@ def callback_ik_for_trajectory(req):
     t  = req.duration if req.duration > 0 else get_trajectory_time(p1, p2, 0.25)
     dt = req.time_step if req.time_step > 0 else 0.05
     X,T = get_polynomial_trajectory_multi_dof(p1, p2, duration=t, time_step=dt)
+    print(prompt + f"Trajectory: {len(T)} points over {t:.2f} seconds")
     trj = JointTrajectory()
     trj.header.stamp = rospy.Time.now()
     q = initial_guess
     for i in range(len(X)):
         x, y, z, roll, pitch, yaw = X[i]
-        success, q = inverse_kinematics(x, y, z, roll, pitch, yaw, transforms, W, q, max_iterations)
+        success, q, iterations = inverse_kinematics(x, y, z, roll, pitch, yaw, transforms, W, q, max_iterations)
+        print(prompt + "Estoy dentro de la función callback_ik_for_trajectory")
+        print(prompt + f"[STEP {i+1}] Iterations: {iterations}")
+
         if not success:
             return False
         p = JointTrajectoryPoint()
@@ -200,7 +184,7 @@ def callback_ik_for_pose(req):
     else:
         init_guess = req.initial_guess
     resp = InverseKinematicsPose2PoseResponse()
-    success, q = inverse_kinematics(x, y, z, R, P, Y, init_guess, max_iterations)
+    success, q, _ = inverse_kinematics(x, y, z, R, P, Y, transforms, W, init_guess, max_iterations)
     if not success:
         return False
     resp.q = q
