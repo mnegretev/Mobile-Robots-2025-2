@@ -1,13 +1,3 @@
-#!/usr/bin/env python3
-#
-# MOBILE ROBOTS - FI-UNAM, 2025-2
-# TRAJECTORY PLANNING BY POLYNOMIALS
-#
-# Instructions:
-# Complete the code to calculate a trajectory given an initial and final
-# position, velocity and acceleration, using a fifth-degree polynomial.
-# Modify only sections marked with the 'TODO' comment
-#
 import math
 import sys
 import rospy
@@ -19,9 +9,9 @@ from manip_msgs.srv import *
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 
 prompt = ""
-NAME = "FULL_NAME"
+NAME = "JOSÉ AUGUSTO ARENAS HERNÁNDEZ"
 
-def get_polynomial_trajectory(q0, q1, dq0=0, dq1=0, ddq0=0, ddq1=1, t=1.0, step=0.05):
+def get_polynomial_trajectory(q0, q1, dq0=0, dq1=0, ddq0=0, ddq1=1, t=1.0, step=0.01):
     T = numpy.arange(0, t, step)
     Q = numpy.zeros(T.shape)
     #
@@ -33,7 +23,12 @@ def get_polynomial_trajectory(q0, q1, dq0=0, dq1=0, ddq0=0, ddq1=1, t=1.0, step=
     # Trajectory must have a duration 't' and a sampling time 'step'
     # Return both the time T and position Q vectors 
     #
-    
+    A = [[t**5,t**4,t**3,t**2,t,1],[5*t**4,4*t**3,3*t**2,2*t,1,0],[20*t**3,12*t**2,6*t,2,0,0],[0,0,0,0,0,1],[0,0,0,0,1,0],[0,0,0,2,0,0]]
+    A = numpy.asarray(A)
+    B = numpy.asarray([q1,dq1,ddq1,q0,dq0,ddq0]).T
+    X = numpy.dot(numpy.linalg.inv(A),B)
+    a5,a4,a3,a2,a1,a0 = X[0],X[1],X[2],X[3],X[4],X[5]
+    Q = a5*T**5 + a4*T**4 + a3*T**3 + a2*T**2 + a1*T + a0
     return T, Q
     
 def get_polynomial_trajectory_multi_dof(Q_start, Q_end, Qp_start=[], Qp_end=[],
@@ -91,5 +86,4 @@ def main():
 
 if __name__ == '__main__':
     main()
-
 
