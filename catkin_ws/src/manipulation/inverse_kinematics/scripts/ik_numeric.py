@@ -20,7 +20,7 @@ from manip_msgs.srv import *
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 
 prompt = ""
-NAME = "FULL_NAME"
+NAME = "Miguel Angel Ruiz Sànchez"
    
 def forward_kinematics(q, T, W):
     x,y,z,R,P,Y = 0,0,0,0,0,0
@@ -45,7 +45,17 @@ def forward_kinematics(q, T, W):
     #     Check online documentation of these functions:
     #     http://docs.ros.org/en/jade/api/tf/html/python/transformations.html
     #
-    
+    H = tft.identity_matrix()
+    for i in range(len(q)):
+        Ti = T[i]
+        Ri = tft.rotation_matrix(q[i], W[i])
+        H = tft.concatenate_matrices(H, Ti, Ri)
+    H = tft.concatenate_matrices(H, T[len(q)])
+    x = H[0, 3]
+    y = H[1, 3]
+    z = H[2, 3]
+    angles = tft.euler_from_matrix(H, axes='rxyz')
+    R, P, Y = angles
     return numpy.asarray([x,y,z,R,P,Y])
 
 def jacobian(q, T, W):
@@ -73,7 +83,14 @@ def jacobian(q, T, W):
     #     RETURN J
     #
     J = numpy.asarray([[0.0 for a in q] for i in range(6)])
-    
+    for i in range(len(q)):
+        q_next = q.copy()
+        q_next[i] += delta_q
+        f_next = forward_kinematics(q_next, T, W)
+        q_prev = q.copy()
+        q_prev[i] -= delta_q
+        f_prev = forward_kinematics(q_prev, T, W)
+        J[:, i] = (f_next - f_prev) / (2 * delta_q)
     return J
 
 def inverse_kinematics(x, y, z, roll, pitch, yaw, T, W, init_guess=numpy.zeros(7), max_iter=20):
@@ -101,12 +118,30 @@ def inverse_kinematics(x, y, z, roll, pitch, yaw, T, W, init_guess=numpy.zeros(7
     #    Set success if maximum iterations were not exceeded and calculated angles are in valid range
     #    Return calculated success and calculated q
     #
-    q = init_guess
+    pd = numpy.asarray([x, y, z, roll, pitch, yaw])
+    q = numpy.array(init_guess)  
     iterations = 0
+    tolerance = 1e-6
+    success = False
+    while iterations < max_iter:
+        p = forward_kinematics(q, T, W)
+        error = p - pd
+        for i in range(3, 6):
+            error[i] = (error[i] + math.pi) % (2 * math.pi) - math.pi
+        if numpy.linalg.norm(error) < tolerance:
+            success = True
+            break
+        J = jacobian(q, T, W)
+        J_pinv = numpy.linalg.pinv(J)
+        delta_q = J_pinv @ error
+        q -= delta_q
+        for i in range(len(q)):
+            q[i] = (q[i] + math.pi) % (2 * math.pi) - math.pi
+        iterations += 1
     success = iterations < max_iter and angles_in_joint_limits(q)
-    
+
     return success, q
-   
+    
 def get_polynomial_trajectory_multi_dof(Q_start, Q_end, duration=1.0, time_step=0.05):
     clt = rospy.ServiceProxy("/manipulation/polynomial_trajectory", GetPolynomialTrajectory)
     req = GetPolynomialTrajectoryRequest()
@@ -196,7 +231,7 @@ def callback_ik_for_pose(req):
     print(prompt+"Calculating inverse kinematics for pose: " + str([x,y,z,R,P,Y]))
     if len(req.initial_guess) <= 0 or req.initial_guess == None:
         init_guess = rospy.wait_for_message("/hardware/arm/current_pose", Float64MultiArray, 5.0)
-        init_guess = initial_guess.data
+        init_guess = req.initial_guess.data
     else:
         init_guess = req.initial_guess
     resp = InverseKinematicsPose2PoseResponse()
@@ -232,5 +267,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
