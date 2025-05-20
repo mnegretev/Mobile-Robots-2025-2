@@ -76,8 +76,8 @@ def jacobian(q, T, W):
     #           i-th column of J = ( FK(i-th row of q_next) - FK(i-th row of q_prev) ) / (2*delta_q)
     #     RETURN J
     #
-    delta_q = 1e-6
-    J = numpy.asarray([[0.0 for _ in q] for _ in range(6)])
+    delta_q = 0.000001
+    J = numpy.asarray([[0.0 for a in q] for i in range(6)])
     qn = numpy.asarray([q,]*len(q)) + delta_q*numpy.identity(len(q))
     qp = numpy.asarray([q,]*len(q)) - delta_q*numpy.identity(len(q))
     for i in range(len(q)):
@@ -114,7 +114,7 @@ def inverse_kinematics(x, y, z, roll, pitch, yaw, T, W, init_guess=numpy.zeros(7
     iterations = 0
     error = p - pd
     error[3:6] = (error[3:6] + math.pi) % (2*math.pi) - math.pi
-    tolerance = 0.001
+    tolerance = 0.0001
     while numpy.linalg.norm(error) > tolerance and iterations < max_iter:
         J = jacobian(q, T, W)
         J_inv = numpy.linalg.pinv(J)
@@ -124,8 +124,12 @@ def inverse_kinematics(x, y, z, roll, pitch, yaw, T, W, init_guess=numpy.zeros(7
         error[3:6] = (error[3:6] + math.pi) % (2*math.pi) - math.pi
         iterations += 1
     success = iterations < max_iter and angles_in_joint_limits(q)
+    if success:
+        print("IK solution found in: " + str(iterations) + " iterations")
+    else:
+        print("No IK solution found")
     
-    return success, q
+    return success, q, iterations
    
 def get_polynomial_trajectory_multi_dof(Q_start, Q_end, duration=1.0, time_step=0.05):
     clt = rospy.ServiceProxy("/manipulation/polynomial_trajectory", GetPolynomialTrajectory)
@@ -180,6 +184,7 @@ def get_trajectory_time(p1, p2, speed_factor):
 
 def callback_ik_for_trajectory(req):
     global max_iterations
+    total_iterations = 0
     Pd = [req.x, req.y, req.z, req.roll, req.pitch, req.yaw]
     print(prompt+"Calculating IK and trajectory for " + str(Pd))
     if len(req.initial_guess) <= 0 or req.initial_guess == None:
@@ -198,13 +203,15 @@ def callback_ik_for_trajectory(req):
     q = initial_guess
     for i in range(len(X)):
         x, y, z, roll, pitch, yaw = X[i]
-        success, q = inverse_kinematics(x, y, z, roll, pitch, yaw, transforms, W, q, max_iterations)
+        success, q, iterations = inverse_kinematics(x, y, z, roll, pitch, yaw, transforms, W, q, max_iterations)
+        total_iterations += iterations
         if not success:
             return False
         p = JointTrajectoryPoint()
         p.positions = q
         p.time_from_start = rospy.Duration.from_sec(T[i])
         trj.points.append(p)
+    print(prompt+"Total iterations: " + str(total_iterations))
     resp = InverseKinematicsPose2TrajResponse()
     resp.articular_trajectory = trj
     return resp

@@ -7,4 +7,4 @@ joint_names:
   - "la_6_joint"
   - "la_7_joint"
   - "la_grip_center_joint"
-max_iterations: 20
+max_iterations: 100
