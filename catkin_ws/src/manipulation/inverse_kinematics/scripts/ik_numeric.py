@@ -20,15 +20,15 @@ from manip_msgs.srv import *
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 
 prompt = ""
-NAME = "FULL_NAME"
-   
+NAME = "German Zaír Romero Hernández"
+
 def forward_kinematics(q, T, W):
     x,y,z,R,P,Y = 0,0,0,0,0,0
     #
     # TODO:
     # Calculate the forward kinematics given the set of seven angles 'q'
     # You can use the following steps:
-    #     H = I   # Assing to H a 4x4 identity matrix
+    #     H = I     # Assing to H a 4x4 identity matrix
     #     for all qi in q:
     #         H = H * Ti * Ri
     #     H = H * Ti[7]
@@ -45,7 +45,17 @@ def forward_kinematics(q, T, W):
     #     Check online documentation of these functions:
     #     http://docs.ros.org/en/jade/api/tf/html/python/transformations.html
     #
-    
+
+    H = tft.identity_matrix()
+    for i in range(len(q)):
+        R_i = tft.rotation_matrix(q[i], W[i])
+        H = tft.concatenate_matrices(H, T[i], R_i)
+    if len(T) > len(q):
+        H = tft.concatenate_matrices(H, T[len(q)])
+
+    x, y, z = H[0, 3], H[1, 3], H[2, 3]
+    R, P, Y = tft.euler_from_matrix(H[:3, :3])
+
     return numpy.asarray([x,y,z,R,P,Y])
 
 def jacobian(q, T, W):
@@ -56,24 +66,40 @@ def jacobian(q, T, W):
     # where:
     # Ti are the Homogeneous Transformations from frame i to frame i-1 when joint i is at zero position
     # Wi are the axis of rotation of i-th joint
-    # Use the numeric approximation:   f'(x) = (f(x+delta) - f(x-delta))/(2*delta)
+    # Use the numeric approximation:    f'(x) = (f(x+delta) - f(x-delta))/(2*delta)
     #
     # You can do the following steps:
     #     J = matrix of 6x7 full of zeros
-    #     q_next = [q1+delta       q2        q3   ....     q7
-    #                  q1       q2+delta     q3   ....     q7
-    #                              ....
-    #                  q1          q2        q3   ....   q7+delta]
-    #     q_prev = [q1-delta       q2        q3   ....     q7
-    #                  q1       q2-delta     q3   ....     q7
-    #                              ....
-    #                  q1          q2        q3   ....   q7-delta]
+    #     q_next = [q1+delta      q2        q3  ....    q7
+    #               q1        q2+delta    q3  ....    q7
+    #                             ....
+    #               q1          q2        q3  ....  q7+delta]
+    #     q_prev = [q1-delta      q2        q3  ....    q7
+    #               q1        q2-delta    q3  ....    q7
+    #                             ....
+    #               q1          q2        q3  ....  q7-delta]
     #     FOR i = 1,..,7:
-    #           i-th column of J = ( FK(i-th row of q_next) - FK(i-th row of q_prev) ) / (2*delta_q)
+    #          i-th column of J = ( FK(i-th row of q_next) - FK(i-th row of q_prev) ) / (2*delta_q)
     #     RETURN J
     #
     J = numpy.asarray([[0.0 for a in q] for i in range(6)])
-    
+
+    for i in range(len(q)):
+        q_next = numpy.copy(q)
+        q_prev = numpy.copy(q)
+        q_next[i] += delta_q
+        q_prev[i] -= delta_q
+
+        fk_next = forward_kinematics(q_next, T, W)
+        fk_prev = forward_kinematics(q_prev, T, W)
+
+        diff = fk_next - fk_prev
+        for j in range(3, 6):
+             diff[j] = (diff[j] + math.pi) % (2 * math.pi) - math.pi
+
+
+        J[:, i] = (diff) / (2 * delta_q)
+
     return J
 
 def inverse_kinematics(x, y, z, roll, pitch, yaw, T, W, init_guess=numpy.zeros(7), max_iter=20):
@@ -87,26 +113,54 @@ def inverse_kinematics(x, y, z, roll, pitch, yaw, T, W, init_guess=numpy.zeros(7
     # Use the Newton-Raphson method for root finding. (Find the roots of equation FK(q) - pd = 0)
     # You can do the following steps:
     #
-    #    Set an initial guess for joints 'q'
-    #    Calculate Forward Kinematics 'p' by calling the corresponding function
-    #    Calcualte error = p - pd
-    #    Ensure orientation angles of error are in [-pi,pi]
-    #    WHILE |error| > TOL and iterations < maximum iterations:
-    #        Calculate Jacobian
-    #        Update q estimation with q = q - pseudo_inverse(J)*error
-    #        Ensure all angles q are in [-pi,pi]
-    #        Recalculate forward kinematics p
-    #        Recalculate error and ensure angles are in [-pi,pi]
-    #        Increment iterations
-    #    Set success if maximum iterations were not exceeded and calculated angles are in valid range
-    #    Return calculated success and calculated q
+    #   Set an initial guess for joints 'q'
+    #   Calculate Forward Kinematics 'p' by calling the corresponding function
+    #   Calcualte error = p - pd
+    #   Ensure orientation angles of error are in [-pi,pi]
+    #   WHILE |error| > TOL and iterations < maximum iterations:
+    #      Calculate Jacobian
+    #      Update q estimation with q = q - pseudo_inverse(J)*error
+    #      Ensure all angles q are in [-pi,pi]
+    #      Recalculate forward kinematics p
+    #      Recalculate error and ensure angles are in [-pi,pi]
+    #      Increment iterations
+    #   Set success if maximum iterations were not exceeded and calculated angles are in valid range
+    #   Return calculated success and calculated q
     #
-    q = init_guess
+    q = numpy.copy(init_guess)
     iterations = 0
-    success = iterations < max_iter and angles_in_joint_limits(q)
-    
+    tolerance = 0.001
+
+    p = forward_kinematics(q, T, W)
+    error = pd - p
+
+    for j in range(3, 6):
+        error[j] = (error[j] + math.pi) % (2 * math.pi) - math.pi
+
+
+    while numpy.linalg.norm(error) > tolerance and iterations < max_iter:
+        J = jacobian(q, T, W)
+        J_pinv = numpy.linalg.pinv(J)
+
+        q = q + numpy.dot(J_pinv, error)
+
+        for i in range(len(q)):
+             q[i] = (q[i] + math.pi) % (2 * math.pi) - math.pi
+
+
+        p = forward_kinematics(q, T, W)
+
+        error = pd - p
+        for j in range(3, 6):
+            error[j] = (error[j] + math.pi) % (2 * math.pi) - math.pi
+
+
+        iterations += 1
+
+    success = numpy.linalg.norm(error) <= tolerance and angles_in_joint_limits(q)
+
     return success, q
-   
+
 def get_polynomial_trajectory_multi_dof(Q_start, Q_end, duration=1.0, time_step=0.05):
     clt = rospy.ServiceProxy("/manipulation/polynomial_trajectory", GetPolynomialTrajectory)
     req = GetPolynomialTrajectoryRequest()
@@ -138,7 +192,7 @@ def get_model_info(joint_names):
 
 def angles_in_joint_limits(q):
     for i in range(len(q)):
-        if q[i] < joints[i].limit.lower or q[i] > joints[i].limit.upper:
+        if joints[i].limit is not None and (q[i] < joints[i].limit.lower or q[i] > joints[i].limit.upper):
             print(prompt+"Articular position out of joint bounds")
             return False
     return True
@@ -148,14 +202,14 @@ def callback_forward_kinematics(req):
         print(prompt+"By the moment, only 7-DOF arm is supported")
         return False
     resp = ForwardKinematicsResponse()
-    W = [joints[i].axis for i in range(len(joints))]  
+    W = [joints[i].axis for i in range(len(joints))]
     resp.x,resp.y,resp.z,resp.roll,resp.pitch,resp.yaw = forward_kinematics(req.q, transforms, W)
     return resp
 
 def get_trajectory_time(p1, p2, speed_factor):
     p1 = numpy.asarray(p1)
     p2 = numpy.asarray(p2)
-    m = max(numpy.absolute(p1 - p2))
+    m = numpy.linalg.norm(p1[:3] - p2[:3])
     return m/speed_factor + 0.5
 
 def callback_ik_for_trajectory(req):
@@ -167,7 +221,7 @@ def callback_ik_for_trajectory(req):
         initial_guess = initial_guess.data
     else:
         initial_guess = req.initial_guess
-    W = [joints[i].axis for i in range(len(joints))]  
+    W = [joints[i].axis for i in range(len(joints))]
     p1 = forward_kinematics(initial_guess, transforms, W)
     p2 = [req.x, req.y, req.z, req.roll, req.pitch, req.yaw]
     t  = req.duration if req.duration > 0 else get_trajectory_time(p1, p2, 0.25)
@@ -182,14 +236,13 @@ def callback_ik_for_trajectory(req):
         if not success:
             return False
         p = JointTrajectoryPoint()
-        p.positions = q
+        p.positions = q.tolist()
         p.time_from_start = rospy.Duration.from_sec(T[i])
         trj.points.append(p)
     resp = InverseKinematicsPose2TrajResponse()
     resp.articular_trajectory = trj
     return resp
-    
-        
+
 def callback_ik_for_pose(req):
     global max_iterations
     [x,y,z,R,P,Y] = [req.x,req.y,req.z,req.roll,req.pitch,req.yaw]
@@ -203,9 +256,9 @@ def callback_ik_for_pose(req):
     success, q = inverse_kinematics(x, y, z, R, P, Y, init_guess, max_iterations)
     if not success:
         return False
-    resp.q = q
-    return resp        
-    
+    resp.q = q.tolist()
+    return resp
+
 
 def main():
     global joint_names, max_iterations, joints, transforms, prompt
@@ -217,14 +270,17 @@ def main():
     print(prompt+"Joint names: " + str(joint_names))
     print(prompt+"max_iterations: " + str(max_iterations))
 
-    joints, transforms = get_model_info(joint_names)
-    if not (len(joints) > 6 and len(transforms) > 6):
-        print("Inverse kinematics.->Cannot get model info from parameter server")
-        sys.exit(-1)
+    joints, transforms_from_joints = get_model_info(joint_names)
 
-    rospy.Service("/manipulation/forward_kinematics"   , ForwardKinematics, callback_forward_kinematics)    
-    rospy.Service("/manipulation/ik_trajectory"        , InverseKinematicsPose2Traj, callback_ik_for_trajectory)
-    rospy.Service("/manipulation/ik_pose"              , InverseKinematicsPose2Pose, callback_ik_for_pose)
+    transforms = transforms_from_joints
+
+    if not (len(joints) > 6 and len(transforms) > 6):
+           print("Inverse kinematics.->Cannot get model info from parameter server. Need info for at least 7 joints.")
+           sys.exit(-1)
+
+    rospy.Service("/manipulation/forward_kinematics"  , ForwardKinematics, callback_forward_kinematics)
+    rospy.Service("/manipulation/ik_trajectory"      , InverseKinematicsPose2Traj, callback_ik_for_trajectory)
+    rospy.Service("/manipulation/ik_pose"            , InverseKinematicsPose2Pose, callback_ik_for_pose)
     #loop = rospy.Rate(10)
     loop = rospy.Rate(40)
     while not rospy.is_shutdown():
@@ -232,5 +288,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-

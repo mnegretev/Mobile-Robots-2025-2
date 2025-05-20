@@ -19,7 +19,7 @@ from manip_msgs.srv import *
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 
 prompt = ""
-NAME = "FULL_NAME"
+NAME = "Germán Zaír Romero Hernández"
 
 def get_polynomial_trajectory(q0, q1, dq0=0, dq1=0, ddq0=0, ddq1=1, t=1.0, step=0.05):
     T = numpy.arange(0, t, step)
@@ -31,11 +31,39 @@ def get_polynomial_trajectory(q0, q1, dq0=0, dq1=0, ddq0=0, ddq1=1, t=1.0, step=
     # Initial and final positions, velocities and accelerations
     # are given by q, dq, and ddq.
     # Trajectory must have a duration 't' and a sampling time 'step'
-    # Return both the time T and position Q vectors 
+    # Return both the time T and position Q vectors
     #
-    
+
+    a0 = q0
+    a1 = dq0
+    a2 = ddq0 / 2.0
+
+    # Solve for a3, a4, a5
+    M = numpy.array([
+        [t**3, t**4, t**5],
+        [3*t**2, 4*t**3, 5*t**4],
+        [6*t, 12*t**2, 20*t**3]
+    ])
+
+    B = numpy.array([
+        q1 - a0 - a1*t - a2*t**2,
+        dq1 - a1 - 2*a2*t,
+        ddq1 - 2*a2
+    ])
+
+    try:
+        coeffs_a3_a4_a5 = numpy.linalg.solve(M, B)
+        a3, a4, a5 = coeffs_a3_a4_a5
+    except numpy.linalg.LinAlgError:
+        rospy.logerr("Could not solve for polynomial coefficients. Check trajectory time 't'.")
+        return T, Q # Return empty trajectory or handle error as appropriate
+
+    # Calculate trajectory points
+    for i, ti in enumerate(T):
+        Q[i] = a0 + a1*ti + a2*(ti**2) + a3*(ti**3) + a4*(ti**4) + a5*(ti**5)
+
     return T, Q
-    
+
 def get_polynomial_trajectory_multi_dof(Q_start, Q_end, Qp_start=[], Qp_end=[],
                                         Qpp_start=[], Qpp_end=[], duration=1.0, time_step=0.05):
     Q = []
@@ -50,7 +78,7 @@ def get_polynomial_trajectory_multi_dof(Q_start, Q_end, Qp_start=[], Qp_end=[],
         Qpp_end = numpy.zeros(len(Q_end))
     for i in range(len(Q_start)):
         T, Qi = get_polynomial_trajectory(Q_start[i], Q_end[i], Qp_start[i], Qp_end[i],
-                                          Qpp_start[i], Qpp_end[i], duration, time_step)
+                                         Qpp_start[i], Qpp_end[i], duration, time_step)
         Q.append(Qi)
     Q = numpy.asarray(Q)
     Q = Q.transpose()
@@ -77,7 +105,7 @@ def callback_polynomial_trajectory(req):
         trj.points.append(p)
     resp = GetPolynomialTrajectoryResponse()
     resp.trajectory = trj
-    return resp 
+    return resp
 
 def main():
     global joint_names, max_iterations, joints, transforms, prompt
@@ -91,5 +119,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
