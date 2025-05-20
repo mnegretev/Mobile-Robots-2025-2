@@ -20,12 +20,11 @@ from manip_msgs.srv import *
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 
 prompt = ""
-NAME = "FULL_NAME"
+NAME = "JORGE EITHAN TREVIÑO SELLES"
    
 def forward_kinematics(q, T, W):
     x,y,z,R,P,Y = 0,0,0,0,0,0
     #
-    # TODO:
     # Calculate the forward kinematics given the set of seven angles 'q'
     # You can use the following steps:
     #     H = I   # Assing to H a 4x4 identity matrix
@@ -45,13 +44,27 @@ def forward_kinematics(q, T, W):
     #     Check online documentation of these functions:
     #     http://docs.ros.org/en/jade/api/tf/html/python/transformations.html
     #
+    x = y = z = R = P = Y = 0
+    
+    # Get the homogeneous transformation from the URDF
+    # and the rotation matrix for each joint
+    H = tft.identity_matrix()
+    for i in range(len(q)):
+        H = tft.concatenate_matrices(H, T[i], tft.rotation_matrix(q[i], W[i]))
+    
+    # Get the homogeneous transformation from the gripper to joint 7
+    # and concatenate it to the previous transformation
+    H = tft.concatenate_matrices(H, T[7])
+    
+    # Get the translation and rotation from the homogeneous transformation
+    x, y, z = H[0][3], H[1][3], H[2][3]
+    R, P, Y = tft.euler_from_matrix(H)
     
     return numpy.asarray([x,y,z,R,P,Y])
 
 def jacobian(q, T, W):
     delta_q = 0.000001
     #
-    # TODO:
     # Calculate the Jacobian given a kinematic description Ti and Wi
     # where:
     # Ti are the Homogeneous Transformations from frame i to frame i-1 when joint i is at zero position
@@ -74,12 +87,21 @@ def jacobian(q, T, W):
     #
     J = numpy.asarray([[0.0 for a in q] for i in range(6)])
     
+    # Define the delta for the numeric approximation
+    e = 0.000001
+    
+    # Create the perturbed angles
+    qn = numpy.asarray([q,] * len(q)) + delta_q*numpy.identity(len(q))
+    qp = numpy.asarray([q,] * len(q)) - delta_q*numpy.identity(len(q))
+    for i in range(len(q)):
+        # Calculate the forward kinematics for the perturbed angles
+        J[:,i] = (forward_kinematics(qn[i], T, W) - forward_kinematics(qp[i], T, W)) / (2*delta_q)
+    
     return J
 
 def inverse_kinematics(x, y, z, roll, pitch, yaw, T, W, init_guess=numpy.zeros(7), max_iter=20):
     pd = numpy.asarray([x,y,z,roll,pitch,yaw])
     #
-    # TODO:
     # Solve the IK problem given a kinematic description (Ti, Wi) and a desired configuration.
     # where:
     # Ti are the Homogeneous Transformations from frame i to frame i-1 when joint i is at zero position
@@ -103,6 +125,30 @@ def inverse_kinematics(x, y, z, roll, pitch, yaw, T, W, init_guess=numpy.zeros(7
     #
     q = init_guess
     iterations = 0
+    
+    # Calculate the forward kinematics for the initial guess
+    p = forward_kinematics(q, T, W)
+    
+    # Calculate the error
+    error = p - pd
+    # Ensure the orientation angles of the error are in [-pi, pi]
+    error[3:6] = (error[3:6] + math.pi) % (2*math.pi) - math.pi
+    # Set a small tolerance for the error
+    tolerance = 0.0001
+    # Repeat until the error is small enough or the maximum number of iterations is reached
+    while numpy.linalg.norm(error) > tolerance and iterations < max_iter:
+        J = jacobian(q, T, W)
+        J_inv = numpy.linalg.pinv(J)
+        q = (q - numpy.dot(J_inv, error) + math.pi) % (2*math.pi) - math.pi
+        # Recalculate the forward kinematics
+        p = forward_kinematics(q, T, W)
+        # Recalculate the error
+        error = p - pd
+        error[3:6] = (error[3:6] + math.pi) % (2*math.pi) - math.pi
+        # Increment the number of iterations
+        iterations += 1
+    
+    # Check if the solution is valid
     success = iterations < max_iter and angles_in_joint_limits(q)
     
     return success, q

@@ -19,13 +19,10 @@ from manip_msgs.srv import *
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 
 prompt = ""
-NAME = "FULL_NAME"
+NAME = "JORGE EITHAN TREVIÑO SELLES"
 
 def get_polynomial_trajectory(q0, q1, dq0=0, dq1=0, ddq0=0, ddq1=1, t=1.0, step=0.05):
     T = numpy.arange(0, t, step)
-    Q = numpy.zeros(T.shape)
-    #
-    # TODO:
     # Calculate a trajectory Q as a set of N values q using a
     # fifth degree polynomial.
     # Initial and final positions, velocities and accelerations
@@ -33,7 +30,30 @@ def get_polynomial_trajectory(q0, q1, dq0=0, dq1=0, ddq0=0, ddq1=1, t=1.0, step=
     # Trajectory must have a duration 't' and a sampling time 'step'
     # Return both the time T and position Q vectors 
     #
+    # Define the polynomial coefficients
+    A = numpy.array([
+        [t**5,    t**4,    t**3,   t**2, t, 1],
+        [5*t**4,  4*t**3,  3*t**2, 2*t,  1, 0],
+        [20*t**3, 12*t**2, 6*t,    2,    0, 0],
+        [0,       0,       0,      0,    0, 1],
+        [0,       0,       0,      0,    1, 0],
+        [0,       0,       0,      2,    0, 0]
+    ])
     
+    # Define B (the right-hand side of the equation)
+    B = numpy.array([
+        q1,
+        dq1,
+        ddq1,
+        q0,
+        dq0,
+        ddq0
+    ])
+    # Solve the system of equations A * X = B
+    X = numpy.linalg.solve(A, B)
+    # X is a vector of coefficients for the polynomial
+    Q = X[0]*T**5 + X[1]*T**4 + X[2]*T**3 + X[3]*T**2 + X[4]*T + X[5]
+      
     return T, Q
     
 def get_polynomial_trajectory_multi_dof(Q_start, Q_end, Qp_start=[], Qp_end=[],
