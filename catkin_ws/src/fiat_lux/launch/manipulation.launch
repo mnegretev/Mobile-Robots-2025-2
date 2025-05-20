@@ -8,8 +8,12 @@
     <remap from="/manipulation/ik_pose"            to="/manipulation/la_ik_pose"           />
     <remap from="/hardware/arm/current_pose"       to="/hardware/left_arm/current_pose"/>
   </node>
+<<<<<<< HEAD
   
   
+=======
+    
+>>>>>>> ac3b73c67160bb299b65160a21ce6ebf59016958
   <node name="ra_inverse_kinematics" pkg="inverse_kinematics" type="ik_numeric.py" output="screen">
     <rosparam command="load" file="$(arg ra_ik_params)"/>
     <remap from="/manipulation/forward_kinematics" to="/manipulation/ra_forward_kinematics"/>
