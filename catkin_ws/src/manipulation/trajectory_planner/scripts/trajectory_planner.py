@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+#
+# MOBILE ROBOTS - FI-UNAM, 2025-2
+# INVERSE KINEMATICS USING NEWTON-RAPHSON
+#
+# Instructions:
+# Calculate the inverse kinematics using
+# the Newton-Raphson method for root finding.
+# Modify only sections marked with the 'TODO' comment
+#
 import math
 import sys
 import rospy
