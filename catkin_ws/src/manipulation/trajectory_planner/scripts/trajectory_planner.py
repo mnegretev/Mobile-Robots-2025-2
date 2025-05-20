@@ -12,22 +12,22 @@ prompt = ""
 NAME = "JOSÉ AUGUSTO ARENAS HERNÁNDEZ"
 def get_polynomial_trajectory(q0, q1, dq0=0, dq1=0, ddq0=0, ddq1=1, t=1.0, step=0.05):
     T = numpy.arange(0, t, step)
-    Q = numpy.zeros(T.shape)
-   
-    A = [[t**5, t**4, t**3, t**2, t, 1],
-         [5*t**4, 4*t**3, 3*t**2, 2*t, 1, 0],
-         [20*t**3, 12*t**2, 6*t, 2, 0, 0],
-         [0, 0, 0, 0, 0, 1],
-         [0, 0, 0, 0, 1, 0],
-         [0, 0, 0, 2, 0, 0]]
-    
-    A = numpy.asarray(A)
-    B = numpy.asarray([q1, dq1, ddq1, q0, dq0, ddq0]).T
-    X = numpy.dot(numpy.linalg.inv(A), B)
 
-    a5, a4, a3, a2, a1, a0 = X[0], X[1], X[2], X[3], X[4], X[5]
+    A = numpy.array([
+        [t**5, t**4, t**3, t**2, t, 1],
+        [5*t**4, 4*t**3, 3*t**2, 2*t, 1, 0],
+        [20*t**3, 12*t**2, 6*t, 2, 0, 0],
+        [0, 0, 0, 0, 0, 1],
+        [0, 0, 0, 0, 1, 0],
+        [0, 0, 0, 2, 0, 0]
+    ])
+    # B = [q1, dq1, ddq1, q0, dq0, ddq0]
+    B = numpy.array([q1, dq1, ddq1, q0, dq0, ddq0])
+
+    X = numpy.linalg.solve(A, B)
+    a5, a4, a3, a2, a1, a0 = X
+
     Q = a5*T**5 + a4*T**4 + a3*T**3 + a2*T**2 + a1*T + a0
-    
     return T, Q
 
 
