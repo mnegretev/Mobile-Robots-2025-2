@@ -24,113 +24,48 @@ NAME = "JOSÉ AUGUSTO ARENAS HERNÁNDEZ"
    
 def forward_kinematics(q, T, W):
     x,y,z,R,P,Y = 0,0,0,0,0,0
-    #
-    # TODO:
-    # Calculate the forward kinematics given the set of seven angles 'q'
-    # You can use the following steps:
-    #     H = I   # Assing to H a 4x4 identity matrix
-    #     for all qi in q:
-    #         H = H * Ti * Ri
-    #     H = H * Ti[7]
-    #     Get xyzRPY from the resulting Homogeneous Transformation 'H'
-    # Where:
-    #     Ti are the Homogeneous Transforms from frame i to frame i-1 when joint i is at zero position
-    #     Ri are the Homogeneous Transforms with zero-translation and rotation qi around axis Wi.
-    #     Ti[7] is the final Homogeneous Transformation from gripper center to joint 7.
-    # Hints:
-    #     Use the tft.identity_matrix() function to get the 4x4 I
-    #     Use the tft.concatenate_matrices() function for multiplying Homogeneous Transformations
-    #     Use the tft.rotation_matrix() matrices Ri.
-    #     Use the tft.euler_from_matrix() function to get RPY from matrix H
-    #     Check online documentation of these functions:
-    #     http://docs.ros.org/en/jade/api/tf/html/python/transformations.html
-    #
+   
     H = tft.identity_matrix()
-    for i in range(7):
-        Ri = tft.rotation_matrix(q[i], W[i])
-        H = tft.concatenate_matrices(H, T[i], Ri)
+    for i in range(len(q)):
+        H = tft.concatenate_matrices(H, T[i], tft.rotation_matrix(q[i], W[i]))
     H = tft.concatenate_matrices(H, T[7])
-
-    trans = tft.translation_from_matrix(H)
-    rot = tft.euler_from_matrix(H, axes='sxyz')
-
-    x, y, z = trans
-    R, P, Y = rot
-
+    x, y, z = H[0,3], H[1,3], H[2,3]
+    R, P, Y = list(tft.euler_from_matrix(H))    
+    
     return numpy.asarray([x,y,z,R,P,Y])
 
 
-def jacobian(q, T, W):
-    delta_q = 0.000000001
-    #
-    # TODO:
-    # Calculate the Jacobian given a kinematic description Ti and Wi
-    # where:
-    # Ti are the Homogeneous Transformations from frame i to frame i-1 when joint i is at zero position
-    # Wi are the axis of rotation of i-th joint
-    # Use the numeric approximation:   f'(x) = (f(x+delta) - f(x-delta))/(2*delta)
-    #
-    # You can do the following steps:
-    #     J = matrix of 6x7 full of zeros
-    #     q_next = [q1+delta       q2        q3   ....     q7
-    #                  q1       q2+delta     q3   ....     q7
-    #                              ....
-    #                  q1          q2        q3   ....   q7+delta]
-    #     q_prev = [q1-delta       q2        q3   ....     q7
-    #                  q1       q2-delta     q3   ....     q7
-    #                              ....
-    #                  q1          q2        q3   ....   q7-delta]
-    #     FOR i = 1,..,7:
-    #           i-th column of J = ( FK(i-th row of q_next) - FK(i-th row of q_prev) ) / (2*delta_q)
-    #     RETURN J
-    #
-    J = numpy.asarray([[0.0 for a in q] for i in range(6)])
-    q_up = numpy.asarray([q,]*len(q)) + delta_q*numpy.identity(len(q))
-    q_down = numpy.asarray([q,]*len(q)) - delta_q*numpy.identity(len(q))
-    for i in range(len(q)):
-    	J[:,i] = (forward_kinematics(q_up[i],T,W) - forward_kinematics(q_down[i],T,W))/(2*delta_q)
-    return J
 
-def inverse_kinematics(x, y, z, roll, pitch, yaw, T, W, initial_guess=numpy.zeros(7), max_iter=30):
+def jacobian(q, T, W):
+    
+    delta_q = 1e-6
+    J = numpy.asarray([[0.0 for _ in q] for _ in range(6)])
+    qn = numpy.asarray([q,]*len(q)) + delta_q*numpy.identity(len(q))
+    qp = numpy.asarray([q,]*len(q)) - delta_q*numpy.identity(len(q))
+    for i in range(len(q)):
+        J[:, i] = (forward_kinematics(qn[i], T, W) - forward_kinematics(qp[i], T, W)) / delta_q / 2.0
+    
+    return J
+   
+def inverse_kinematics(x, y, z, roll, pitch, yaw, T, W, init_guess=numpy.zeros(7), max_iter=20):
     pd = numpy.asarray([x,y,z,roll,pitch,yaw])
-    #
-    # TODO:
-    # Solve the IK problem given a kinematic description (Ti, Wi) and a desired configuration.
-    # where:
-    # Ti are the Homogeneous Transformations from frame i to frame i-1 when joint i is at zero position
-    # Wi are the axis of rotation of i-th joint
-    # Use the Newton-Raphson method for root finding. (Find the roots of equation FK(q) - pd = 0)
-    # You can do the following steps:
-    #
-    #    Set an initial guess for joints 'q'
-    #    Calculate Forward Kinematics 'p' by calling the corresponding function
-    #    Calcualte error = p - pd
-    #    Ensure orientation angles of error are in [-pi,pi]
-    #    WHILE |error| > TOL and iterations < maximum iterations:
-    #        Calculate Jacobian
-    #        Update q estimation with q = q - pseudo_inverse(J)*error
-    #        Ensure all angles q are in [-pi,pi]
-    #        Recalculate forward kinematics p
-    #        Recalculate error and ensure angles are in [-pi,pi]
-    #        Increment iterations
-    #    Set success if maximum iterations were not exceeded and calculated angles are in valid range
-    #    Return calculated success and calculated q
-    #
-    q = initial_guess
-    p = forward_kinematics(q,T,W)
+    
+    q = init_guess
+    p = forward_kinematics(q, T, W)
     iterations = 0
-    err = p - pd
-    err[3:6] = (err[3:6]+math.pi)%(2*math.pi) - math.pi
-    tol = 0.00001
-    while numpy.linalg.norm(err) > tol and iterations < max_iter:
-    	J = jacobian(q,T,W)
-    	q = (q - numpy.dot(numpy.linalg.pinv(J),err)+math.pi)%(2*math.pi)-math.pi
-    	p = forward_kinematics(q,T,W)
-    	err = p - pd
-    	err[3:6] = (err[3:6] + math.pi)%(2*math.pi) - math.pi
-    	iterations += 1
+    error = p - pd
+    error[3:6] = (error[3:6] + math.pi) % (2*math.pi) - math.pi
+    tolerance = 0.001
+    while numpy.linalg.norm(error) > tolerance and iterations < max_iter:
+        J = jacobian(q, T, W)
+        J_inv = numpy.linalg.pinv(J)
+        q = (q - numpy.dot(J_inv, error) + math.pi)% (2*math.pi) - math.pi #Nos aseguramos que los angulos esten en el rango [-pi, pi]
+        p = forward_kinematics(q, T, W)
+        error = p - pd
+        error[3:6] = (error[3:6] + math.pi) % (2*math.pi) - math.pi
+        iterations += 1
     success = iterations < max_iter and angles_in_joint_limits(q)
-#    print(iterations)
+    
     return success, q
    
 def get_polynomial_trajectory_multi_dof(Q_start, Q_end, duration=1.0, time_step=0.05):
