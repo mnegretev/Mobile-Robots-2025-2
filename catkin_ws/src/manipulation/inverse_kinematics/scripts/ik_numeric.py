@@ -26,11 +26,16 @@ def forward_kinematics(q, T, W):
     x,y,z,R,P,Y = 0,0,0,0,0,0
     
     H = tft.identity_matrix()
+   
     for i in range(len(q)):
         H = tft.concatenate_matrices(H, T[i], tft.rotation_matrix(q[i], W[i]))
+
+   
     H = tft.concatenate_matrices(H, T[7])
     x, y, z = H[0,3], H[1,3], H[2,3]
     R, P, Y = list(tft.euler_from_matrix(H)) 
+
+   
     return numpy.asarray([x,y,z,R,P,Y])
 
 
@@ -41,8 +46,12 @@ def jacobian(q, T, W):
     J = numpy.asarray([[0.0 for _ in q] for _ in range(6)])
     qn = numpy.asarray([q,]*len(q)) + delta_q*numpy.identity(len(q))
     qp = numpy.asarray([q,]*len(q)) - delta_q*numpy.identity(len(q))
+
+   
     for i in range(len(q)):
         J[:, i] = (forward_kinematics(qn[i], T, W) - forward_kinematics(qp[i], T, W)) / delta_q / 2.0
+
+   
     return J
 
 
@@ -50,11 +59,14 @@ def jacobian(q, T, W):
 def inverse_kinematics(x, y, z, roll, pitch, yaw, T, W, init_guess=numpy.zeros(7), max_iter=100):
     pd = numpy.asarray([x,y,z,roll,pitch,yaw])
     q = init_guess
+   
     p = forward_kinematics(q, T, W)
     iterations = 0
     error = p - pd
     error[3:6] = (error[3:6] + math.pi) % (2*math.pi) - math.pi
-    tolerance = 1e-4  # más preciso
+    tolerance = 1e-4  
+
+   
     while numpy.linalg.norm(error) > tolerance and iterations < max_iter:
         J = jacobian(q, T, W)
         J_inv = numpy.linalg.pinv(J)
@@ -63,7 +75,11 @@ def inverse_kinematics(x, y, z, roll, pitch, yaw, T, W, init_guess=numpy.zeros(7
         error = p - pd
         error[3:6] = (error[3:6] + math.pi) % (2*math.pi) - math.pi
         iterations += 1
+       
     success = numpy.linalg.norm(error) < tolerance
+
+
+   
     return success, q
 
 
