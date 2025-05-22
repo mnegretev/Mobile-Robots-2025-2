@@ -33,4 +33,59 @@
     <param name="laser_min_range" value="0.2"/>
     <param name="odom_model_type" value="omni"/>
   </node>
+
+  <arg name="la_ik_params"  default="$(find config_files)/justina/manipulation/la_inverse_kinematics.yaml"/>
+  <arg name="ra_ik_params"  default="$(find config_files)/justina/manipulation/ra_inverse_kinematics.yaml"/>
+  <node name="la_inverse_kinematics" pkg="inverse_kinematics" type="ik_numeric.py" output="screen">
+    <rosparam command="load" file="$(arg la_ik_params)"/>
+    <remap from="/manipulation/forward_kinematics" to="/manipulation/la_forward_kinematics"/>
+    <remap from="/manipulation/ik_trajectory"      to="/manipulation/la_ik_trajectory"     />
+    <remap from="/manipulation/ik_pose"            to="/manipulation/la_ik_pose"           />
+    <remap from="/hardware/arm/current_pose"       to="/hardware/left_arm/current_pose"/>
+  </node>
+  
+  
+  <node name="ra_inverse_kinematics" pkg="inverse_kinematics" type="ik_numeric.py" output="screen">
+    <rosparam command="load" file="$(arg ra_ik_params)"/>
+    <remap from="/manipulation/forward_kinematics" to="/manipulation/ra_forward_kinematics"/>
+    <remap from="/manipulation/ik_trajectory"      to="/manipulation/ra_ik_trajectory"     />
+    <remap from="/manipulation/ik_pose"            to="/manipulation/ra_ik_pose"           />
+    <remap from="/hardware/arm/current_pose"       to="/hardware/right_arm/current_pose"/>
+  </node>
+  <node name="trajectory_planner" pkg="trajectory_planner" type="trajectory_planner.py" output="screen"/>
+
+  <node name="sound_play" pkg="sound_play" type="soundplay_node.py" output="screen">
+    <remap from="/robotsound" to="/hri/speech_generator"/>
+  </node>
+
+  <node name="speech_recog" pkg="sprec_pocketsphinx" type="asr.py" output="screen">
+    <remap from="jsgf_audio" to="sphinx_audio" />
+    <param name="gram_file" value="$(find sprec_pocketsphinx)/vocab/voice_cmd.gram"/>
+    <param name="dict_file" value="$(find sprec_pocketsphinx)/vocab/voice_cmd.dic"/>
+    <param name="grammar_name" value="voice_cmd"/>
+    <param name="rule_name" value="move2"/>
+  </node>
+  <node name="audio_control" pkg="sprec_pocketsphinx" type="send_audio.py" output="screen">
+    <param name="input" value=":default"/>
+  </node>
+
+  <!-- COURSE ASSIGNMENTS AND PRACTICES -->
+  <node name="map_inflater" pkg="map_augmenter" type="map_inflater.py">
+    <param name="inflation_radius" value="0.2"/>
+  </node>
+  <node name="a_star" pkg="path_planner" type="a_star.py" output="screen"/>
+  <node name="cost_map" pkg="path_planner" type="cost_map.py">
+    <param name="cost_radius" value="0.5"/>
+  </node>
+  <node name="path_follower" pkg="simple_move" type="path_follower.py" output="screen">
+    <param name="v_max" value="0.5"/>
+    <param name="w_max" value="1.0"/>
+    <param name="alpha" value="1.0"/>
+    <param name="beta"  value="0.5"/>
+  </node>
+  <node name="path_smoother" pkg="path_planner" type="path_smoothing.py" output="screen">
+    <param name="alpha" value="0.9"/>
+    <param name="beta"  value="0.1"/>
+  </node>
+  <node name="hsv_segmentation" pkg="color_segmentation" type="hsv_segmentation.py" output="screen"/>
 </launch>
