@@ -1,0 +1,102 @@
+#JSGF V1.0;
+grammar gpsr;
+
+public <command> = <goToLoc> | <findPrsInRoom> | <meetPrsAtBeac> | <countPrsInRoom> | <tellPrsInfoInLoc> | <talkInfoToGestPrsInRoom> | <answerToGestPrsInRoom> | <followNameFromBeacToRoom> | <guideNameFromBeacToBeac> | <guidePrsFromBeacToBeac> | <guideClothPrsFromBeacToBeac> | <greetClothDscInRm> | <greetNameInRm> | <meetNameAtLocThenFindInRm> | <countClothPrsInRoom> | <tellPrsInfoAtLocToPrsAtLoc> | <followPrsAtLoc> | <takeObjFromPlcmt> | <findObjInRoom> | <countObjOnPlcmt> | <tellObjPropOnPlcmt> | <bringMeObjFromPlcmt> | <tellCatPropOnPlcmt> | <leaveArena> | <questions> | ROBOT YES | ROBOT NO | JUSTINA YES | JUSTINA NO | [ROBOT] STOP FOLLOWING ME;
+
+<leaveArena> = [ROBOT] LEAVE THE ARENA;
+<goToLoc> = <goVerb> <toLocPrep> THE <loc_room> THEN <followUpAtLoc>;
+<findPrsInRoom> = <findVerb> A <gestPers_posePers> <inLocPrep> THE <roomNames> AND <followUpFoundPers>;
+<meetPrsAtBeac> = <meetVerb> <personNames> <inLocPrep> THE <roomNames> AND <followUpFoundPers>;
+<countPrsInRoom> = <countVerb> <gestPersPlur_posePersPlur> ARE <inLocPrep> THE <roomNames>;
+<tellPrsInfoInLoc> = <tellVerb> ME THE <personInfoList> OF THE PERSON <inRoom_atLoc>;
+<talkInfoToGestPrsInRoom> = <talkVerb> <talkList> <talkPrep> THE <gesturePersonList> <inLocPrep> THE <roomNames>;
+<answerToGestPrsInRoom> = <answerVerb> THE <questionList> <ofPrsPrep> THE <gesturePersonList> <inLocPrep> THE <roomNames>;
+<followNameFromBeacToRoom> = <followVerb> <personNames> <fromLocPrep> THE <locationNames> <toLocPrep> THE <roomNames>;
+<guideNameFromBeacToBeac> = <guideVerb> <personNames> <fromLocPrep> THE <locationNames> <toLocPrep> THE <loc_room>;
+<guidePrsFromBeacToBeac> = <guideVerb> THE <gestPers_posePers> <fromLocPrep> THE <locationNames> <toLocPrep> THE <loc_room>;
+<guideClothPrsFromBeacToBeac> = <guideVerb> THE PERSON WEARING A <colorClotheList> <fromLocPrep> THE <locationNames> <toLocPrep> THE <loc_room>;
+<greetClothDscInRm> = <greetVerb> THE PERSON WEARING <art> <colorClotheList> <inLocPrep> THE <roomNames> AND <followUpFoundPers>;
+<greetNameInRm> = <greetVerb> <personNames> <inLocPrep> THE <roomNames> AND <followUpFoundPers>; 
+<meetNameAtLocThenFindInRm> = <meetVerb> <personNames> <atLocPrep> THE <locationNames> THEN <findVerb> THEM <inLocPrep> THE <roomNames>;
+<countClothPrsInRoom> = <countVerb> PEOPLE <inLocPrep> THE <roomNames> ARE WEARING <colorClothesList>;
+<tellPrsInfoAtLocToPrsAtLoc> = <tellVerb> THE <personInfoList> OF THE PERSON <atLocPrep> THE <locationNames> TO THE PERSON <atLocPrep> THE <locationNames>;
+<followPrsAtLoc> = <followVerb> THE <gestPers_posePers> <inRoom_atLoc>;
+
+<takeObjFromPlcmt> = <takeVerb> <art> <obj_singCat> <fromLocPrep> THE <placementLocNames> AND <hasObj>;
+<findObjInRoom> = <findVerb> <art> <obj_singCat> <inLocPrep> THE <roomNames> THEN <followUpFoundObj>;
+<countObjOnPlcmt> = <countVerb> <pluralCategories> THERE ARE <onLocPrep> THE <placementLocNames>;
+<tellObjPropOnPlcmt> = <tellVerb> ME WHAT IS THE <objCompList> OBJECT <onLocPrep> THE <placementLocNames>;
+<bringMeObjFromPlcmt> = <bringVerb> ME <art> <objNames> <fromLocPrep> THE <placementLocNames>;
+<tellCatPropOnPlcmt> = <tellVerb> ME WHAT IS THE <objCompList> <singCategories> <onLocPrep> THE <placementLocNames>;
+
+<followUpAtLoc> =  <findPrs> | <meetName> | <findObj>;
+<followUpFoundPers> = <foundPers>;
+<followUpFoundObj> = <takeVerb> IT AND <hasObj>;
+
+<findPrs> = <findVerb> THE <gestPers_posePers> AND <foundPers>; 
+<meetName> = <meetVerb> <personNames> AND <foundPers>;
+<findObj> = <findVerb> <art>  <obj_singCat> AND <takeVerb> IT AND <hasObj>;
+<foundPers> = <talkInfo> | <answerQuestion> | <followPrs> | <followPrsToRoom> | <guidePrsToBeacon>;
+<hasObj> = <placeObjOnPlcmt> | <deliverObjToMe> | <deliverObjToPrsInRoom> | <deliverObjToNameAtBeac>;
+<placeObjOnPlcmt> = <placeVerb> IT <onLocPrep> THE <placementLocNames>;
+<deliverObjToMe> = <deliverVerb> IT TO ME;
+<deliverObjToPrsInRoom> =  <deliverVerb> IT <deliverPrep> THE <gestPers_posePers> <inLocPrep> THE <roomNames>;
+<deliverObjToNameAtBeac> =  <deliverVerb> IT <deliverPrep> <personNames> <inLocPrep> THE <roomNames>;
+<talkInfo> = <talkVerb> <talkList>;
+<answerQuestion> = <answerVerb> A <questionList>;
+<followPrs> = <followVerb> THEM;
+<followPrsToRoom> = <followVerb> THEM <toLocPrep> THE <loc_room>;
+<guidePrsToBeacon> = <guideVerb> THEM <toLocPrep> THE <loc_room>;
+
+<gestPers_posePers> = <gesturePersonList> | <posePersonList>;
+<obj_singCat> = <objNames> | <singCategories>;
+<loc_room> = <locationNames> | <roomNames>;
+<gestPersPlur_posePersPlur> = <gesturePersonPluralList> | <posePersonPluralList>;
+<inRoom_atLoc> = <inRoom> | <atLoc>;
+<inRoom> = IN THE <roomNames>;
+<atLoc> = AT THE <locationNames>;
+
+<takeVerb> = TAKE | GET | GRASP | FETCH;
+<placeVerb> = PUT | PLACE;
+<deliverVerb> = BRING | GIVE | DELIVER;
+<bringVerb> = BRING | GIVE;
+<goVerb> = GO | NAVIGATE;
+<findVerb> = FIND | LOCATE | LOOK FOR;
+<talkVerb> = TELL | SAY;
+<answerVerb> = ANSWER;
+<meetVerb> = MEET;
+<tellVerb> = TELL;
+<greetVerb> = GREET | SALUTE | SAY HELLO TO | INTRODUCE YOURSELF TO;
+<countVerb> = TELL ME HOW MANY;
+<followVerb> = FOLLOW;
+<guideVerb> = GUIDE | ESCORT | TAKE | LEAD;
+
+<toLocPrep> = TO;
+<art> = A | AN;
+<onLocPrep> = ON;
+<inLocPrep> = IN;
+<deliverPrep> = TO;
+<talkPrep> = TO;
+<ofPrsPrep> = OF;
+<fromLocPrep> = FROM;
+<atLocPrep> = AT;
+
+<gesturePersonList> = WAVING PERSON | PERSON RAISING THEIR LEFT ARM | PERSON RAISING THEIR RIGHT ARM | PERSON POINTING TO THE LEFT | PERSON POINTING TO THE RIGHT;
+<posePersonList> = SITTING PERSON | STANDING PERSON | LYING PERSON;
+<gesturePersonPluralList> = WAVING PERSONS | PERSONS RAISING THEIR LEFT ARM | PERSONS RAISING THEIR RIGHT ARM | PERSONS POINTING TO THE LEFT | PERSONS POINTING TO THE RIGHT;
+<posePersonPluralList> = SITTING PERSONS | STANDING PERSONS | LYING PERSONS;
+<personInfoList> = NAME | POSE | GESTURE;
+<objCompList> = BIGGEST | LARGEST | SMALLEST | HEAVIEST | LIGHTEST | THINNEST;
+<talkList> = SOMETHING ABOUT YOURSELF | THE TIME | WHAT DAY IS TODAY | WHAT DAY IS TOMORROW | YOUR TEAMS NAME | YOUR TEAMS COUNTRY | YOUR TEAMS AFFILIATION | THE DAY OF THE WEEK | THE DAY OF THE MONTH;
+<questionList> = QUESTION | QUIZ;
+<colorClotheList> = BLUE T SHIRT | BLUE SHIRT | BLUE BLOUSE | BLUE SWEATER | BLUE COAT | BLUE JACKET | YELLOW T SHIRT | YELLOW SHIRT | YELLOW BLOUSE | YELLOW SWEATER | YELLOW COAT | YELLOW JACKET | BLACK T SHIRT | BLACK SHIRT | BLACK BLOUSE | BLACK SWEATER | BLACK COAT | BLACK JACKET | WHITE T SHIRT | WHITE SHIRT | WHITE BLOUSE | WHITE SWEATER | WHITE COAT | WHITE JACKET | RED T SHIRT | RED SHIRT | RED BLOUSE | RED SWEATER | RED COAT | RED JACKET | ORANGE T SHIRT | ORANGE SHIRT | ORANGE BLOUSE | ORANGE SWEATER | ORANGE COAT | ORANGE JACKET | GRAY T SHIRT | GRAY SHIRT | GRAY BLOUSE | GRAY SWEATER | GRAY COAT | GRAY JACKET;
+<colorClothesList> = BLUE T SHIRTS | BLUE SHIRTS | BLUE BLOUSES | BLUE SWEATERS | BLUE COATS | BLUE JACKETS | YELLOW T SHIRTS | YELLOW SHIRTS | YELLOW BLOUSES | YELLOW SWEATERS | YELLOW COATS | YELLOW JACKETS | BLACK T SHIRTS | BLACK SHIRTS | BLACK BLOUSES | BLACK SWEATERS | BLACK COATS | BLACK JACKETS | WHITE T SHIRTS | WHITE SHIRTS | WHITE BLOUSES | WHITE SWEATERS | WHITE COATS | WHITE JACKETS | RED T SHIRTS | RED SHIRTS | RED BLOUSES | RED SWEATERS | RED COATS | RED JACKETS | ORANGE T SHIRTS | ORANGE SHIRTS | ORANGE BLOUSES | ORANGE SWEATERS | ORANGE COATS | ORANGE JACKETS | GRAY T SHIRTS | GRAY SHIRTS | GRAY BLOUSES | GRAY SWEATERS | GRAY COATS | GRAY JACKETS;
+
+<locationNames> =  BED | BEDSIDE TABLE | SHELF | TRASHBIN | DISHWASHER | POTTED PLANT | KITCHEN TABLE | CHAIRS | PANTRY | REFRIGERATOR | SINK | CABINET | COATRACK | DESK | ARMCHAIR | DESK LAMP | WASTE BASKET | TV STAND | STORAGE RACK | LAMP | SIDE TABLES | SOFA | BOOKSHELF | ENTRANCE | EXIT;
+<roomNames> = BEDROOM | KITCHEN | OFFICE | LIVING ROOM | BATHROOM;
+<objNames> = PRINGLES | CHEEZIT | CORNFLAKES | SPONGE | CLEANSER | SUGAR | TOMATO SOUP | CHOCOLATE JELLO | STRAWBERRY JELLO | MUSTARD | TUNA | SPAM | COFFEE GROUNDS | ORANGE | BANANA | STRAWBERRY | PEACH | PEAR | APPLE | PLUM | LEMON | FORK | SPOON | BOWL | KNIFE | PLATE | CUP | MILK | TROPICAL JUICE | ICED TEA | ORANGE JUICE | JUICE PACK | RED WINE | COLA | BASEBALL | TENNIS BALL | DICE | RUBIKS CUBE | SOCCER BALL;
+<singCategories> = SNACK | CLEANING SUPPLY | FOOD | FRUIT | DISH | DRINK | TOY;
+<personNames> = ADEL | ANGEL | AXEL | CHARLIE | JANE | JULES | MORGAN | PARIS | ROBIN | SIMONE;
+<placementLocNames> = BED | BEDSIDE TABLE | SHELF | DISHWASHER | KITCHEN TABLE | PANTRY | REFRIGERATOR | SINK | CABINET | DESK | TV STAND | STORAGE RACK | SIDE TABLES | SOFA | BOOKSHELF;
+<pluralCategories> = SNACKS | CLEANING SUPPLIES | FOOD | FRUITS | DISHES | DRINKS | TOYS;
+<questions> = WHAT IS THE HIGHEST MOUNTAIN IN THE NETHERLANDS | WHICH PAINTER CREATED THE NIGHT WATCH | WHAT IS THE LARGEST LAKE IN THE NETHERLANDS | WHO IS THE CURRENT BARON OF EINDHOVEN | WHEN WAS EINDHOVEN FIRST CHARTERED | HOW MANY PEOPLE LIVE IN EINDHOVEN | WHAT IS THE MASCOT FOR THE TWENTY TWENTY FOUR ROBOCUP MASCOT CALLED | WHAT IS THE MASCOT FOR THE TWENTY THOUSAND AND TWENTY FOUR ROBOCUP MASCOT CALLED | HOW LOW IS THE LOWEST POINT IN THE NETHERLANDS | WHAT WAS THE DUTCH CURRENCY BEFORE THE EURO;
