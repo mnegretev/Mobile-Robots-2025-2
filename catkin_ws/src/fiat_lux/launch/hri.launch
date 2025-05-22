@@ -1,0 +1,16 @@
+<launch>
+  <node name="sound_play" pkg="sound_play" type="soundplay_node.py" output="screen">
+    <remap from="/robotsound" to="/hri/speech_generator"/>
+  </node>
+
+  <node name="speech_recog" pkg="sprec_pocketsphinx" type="asr.py" output="screen">
+    <remap from="jsgf_audio" to="sphinx_audio" />
+    <param name="gram_file" value="$(find sprec_pocketsphinx)/vocab/voice_cmd.gram"/>
+    <param name="dict_file" value="$(find sprec_pocketsphinx)/vocab/voice_cmd.dic"/>
+    <param name="grammar_name" value="voice_cmd"/>
+    <param name="rule_name" value="move2"/>
+  </node>
+  <node name="audio_control" pkg="sprec_pocketsphinx" type="send_audio.py" output="screen">
+    <param name="input" value=":default"/>
+  </node>
+</launch>
