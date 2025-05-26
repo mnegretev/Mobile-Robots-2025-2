@@ -94,40 +94,22 @@ def callback_global_goal(msg):
     req = GetPlanRequest(goal=PoseStamped(pose=msg.pose))
     req.start.pose.position = Point(x=robot_x, y=robot_y)
     path = rospy.ServiceProxy('/path_planning/plan_path', GetPlan)(req).plan
-    original_path = path
     if len(path.poses) < 2:
         print("Cannot calculate path")
         return
     try:
-        smooth_path = rospy.ServiceProxy('/path_planning/smooth_path',ProcessPath)(ProcessPathRequest(path=path)).processed_path
-        smoothed_path = smooth_path
+        smooth_path = rospy.ServiceProxy('/path_planning/smooth_path', ProcessPath)(ProcessPathRequest(path=path)).processed_path
         path = smooth_path
     except:
         pass
-    v_max = rospy.get_param("~v_max",0.8)
-    w_max = rospy.get_param("~w_max",1.0)
-    alpha = rospy.get_param("~alpha",0.125)
-    beta  = rospy.get_param("~beta", 0.5)
+    v_max = rospy.get_param("~v_max", 0.8)
+    w_max = rospy.get_param("~w_max", 1.0)
+    alpha = rospy.get_param("~alpha", 0.125)
+    beta = rospy.get_param("~beta", 0.5)
     print("Following path with [v_max, w_max, alpha, beta]=" + str([v_max, w_max, alpha, beta]))
     follow_path([numpy.asarray([p.pose.position.x, p.pose.position.y]) for p in path.poses], alpha, beta, v_max, w_max)
     pub_cmd_vel.publish(Twist())
     pub_goal_reached.publish(True)
-    s = ""
-    for d in nav_data:
-        s += str(d[0]) +","+ str(d[1]) +","+ str(d[2]) +","+ str(d[3]) +","+ str(d[4]) +","+ str(d[5]) +","+ str(d[6]) + "\n"
-    f = open(data_file, "w")
-    f.write(s)
-    f.close()
-
-    # Save original path
-    rp = rospkg.RosPack()
-    data_file_origin = rp.get_path('simple_move') + "/data/data_paths.txt"
-    # Join the original path and the smoothed path on the same line, diferent columns
-    original_path = numpy.asarray([[p.pose.position.x, p.pose.position.y] for p in original_path.poses])
-    smoothed_path = numpy.asarray([[p.pose.position.x, p.pose.position.y] for p in smoothed_path.poses])
-    smoothed_path = numpy.concatenate((original_path, smoothed_path), axis=1)
-    numpy.savetxt(data_file_origin, smoothed_path, delimiter=",")
-
     print("Global goal point reached")
     
 def get_robot_pose():
