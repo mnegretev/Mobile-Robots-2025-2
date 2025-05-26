@@ -15,6 +15,7 @@
 # vision, manipulation, speech synthesis and recognition) are already declared. 
 #
 
+import numpy
 import rospy
 import tf
 import math
@@ -31,6 +32,8 @@ from manip_msgs.srv import *
 from hri_msgs.msg import *
 
 NAME = "FULL NAME"
+listener = None
+ROTATION_TARGET = math.pi*3/2
 
 #
 # Global variable 'speech_recognized' contains the last recognized sentence
@@ -53,8 +56,9 @@ def callback_goal_reached(msg):
 
 def parse_command(cmd):
     obj = "pringles" if "PRINGLES" in cmd else "drink"
-    loc = [8.0,8.5] if "TABLE" in cmd else [3.22, 9.72]
-    return obj, loc
+    destiny = "table" if "TABLE" in cmd else "kitchen"
+    loc = [6.0, 6.0] if "TABLE" in cmd else [8.0, 0.0]
+    return obj, loc, destiny
 
 #
 # This function sends the goal articular position to the left arm and sleeps 2 seconds
@@ -163,6 +167,7 @@ def go_to_goal_pose(goal_x, goal_y):
     goal_pose.pose.position.x = goal_x
     goal_pose.pose.position.y = goal_y
     pubGoalPose.publish(goal_pose)
+    print(f"Goal: ({goal_x}, {goal_y}) published")
 
 #
 # This function sends a text to be synthetized.
@@ -235,7 +240,7 @@ def get_la_polynomial_trajectory(q, duration=2.0, time_step=0.05):
 #
 # Calls the service for calculating a polynomial trajectory for the right arm
 #
-def get_la_polynomial_trajectory(q, duration=5.0, time_step=0.05):
+def get_ra_polynomial_trajectory(q, duration=5.0, time_step=0.05):
     current_p = rospy.wait_for_message("/hardware/right_arm/current_pose", Float64MultiArray)
     current_p = current_p.data
     clt = rospy.ServiceProxy("/manipulation/polynomial_trajectory", GetPolynomialTrajectory)
@@ -264,8 +269,8 @@ def find_object(object_name):
 # Transforms a point xyz expressed w.r.t. source frame to the target frame
 #
 def transform_point(x,y,z, source_frame="realsense_link", target_frame="shoulders_left_link"):
-    listener = tf.TransformListener()
-    listener.waitForTransform(target_frame, source_frame, rospy.Time(), rospy.Duration(4.0))
+    global listener
+    listener.waitForTransform(target_frame, source_frame, rospy.Time(), rospy.Duration(10.0))
     obj_p = PointStamped()
     obj_p.header.frame_id = source_frame
     obj_p.header.stamp = rospy.Time(0)
@@ -273,10 +278,105 @@ def transform_point(x,y,z, source_frame="realsense_link", target_frame="shoulder
     obj_p = listener.transformPoint(target_frame, obj_p)
     return [obj_p.point.x, obj_p.point.y, obj_p.point.z]
 
+def get_robot_pose():
+    global listener
+    try:
+        ([x, y, z], [qx,qy,qz,qw]) = listener.lookupTransform('map', 'base_link', rospy.Time(0))
+        return numpy.asarray([x, y]), 2*math.atan2(qz, qw)
+    except Exception as e:
+        print(f"Error: {e}")
+        return numpy.asarray([0,0]),0
+    
+class State:
+    """
+    Represents a state in a finite state machine (FSM).
+    Attributes:
+        name (str): The name of the state.
+        say (str, optional): A message to be spoken or displayed when entering the state.
+        execute (callable, optional): A function to execute when the state is entered.
+        transition (callable, optional): A function that determines when to transition to the next state.
+        next (State or tuple of State, optional): The next state(s) to transition to.
+    Methods:
+        __say__(): Prints the state name and calls the say function if a message is provided.
+        __execute__(): Executes the associated function if provided.
+        __transition__(): Determines and returns the next state based on the transition function and next attribute.
+        run(): Executes the state's say, execute, and transition logic in order, and returns the next state.
+    """
+    def __init__(self, name, say=None, execute=None, transition = None, next = None):
+        self.name = name
+        self.say = say
+        self.execute = execute
+        self.transition = transition
+        self.next = next
+    
+    def __say__(self):
+        if self.say:
+            print(f"State: {self.name}")
+            if type(self.say) is str:
+                say(self.say)
+            else:
+                say(self.say())
+
+    
+    def __execute__(self):
+        if self.execute:
+            self.execute()
+
+    def __transition__(self):
+        if self.transition:
+            if type(self.next) is tuple:
+                if self.transition():
+                    return self.next[0]
+                else:
+                    return self.next[1]
+            else:
+                while not self.transition():
+                    time.sleep(0.5)
+                return self.next
+        else:
+            return self.next
+        
+    def run(self):
+        self.__say__()
+        self.__execute__()
+        return self.__transition__()
+    
+class FSM:
+    """
+    Finite State Machine (FSM) class for managing state transitions.
+    Attributes:
+        current_state (State): The current active state of the FSM.
+        states (dict): A dictionary mapping state names to State instances.
+    Args:
+        initial_state (State): The initial state to start the FSM.
+        states (dict, optional): A dictionary of all possible states. Defaults to None.
+    Methods:
+        run():
+            Executes the FSM loop, calling the `run` method of the current state.
+            Transitions to the next state as returned by the current state's `run` method.
+            Prints the name of the next state during each transition.
+            Stops execution if the next state is None or not found in the states dictionary.
+    """
+    def __init__(self, initial_state: State, states: dict= None):
+        self.current_state = initial_state
+        self.states = states if states else {}
+    
+    def run(self):
+        while True:
+            next_state = self.current_state.run()
+            print(f"Transitioning to: {next_state}")
+            if next_state is None:
+                break
+            self.current_state = self.states.get(next_state)
+            if self.current_state is None:
+                print(f"State '{next_state}' not found.")
+                break
+    
+
 def main():
     global new_task, recognized_speech, executing_task, goal_reached
     global pubLaGoalPose, pubRaGoalPose, pubHdGoalPose, pubLaGoalGrip, pubRaGoalGrip
-    global pubLaGoalTraj, pubRaGoalTraj, pubGoalPose, pubCmdVel, pubSay
+    global pubLaGoalTraj, pubRaGoalTraj, pubGoalPose, pubCmdVel, pubSay, listener
     print("FINAL PROJECT - " + NAME)
     rospy.init_node("final_project")
     rospy.Subscriber('/hri/sp_rec/recognized', RecognizedSpeech, callback_recognized_speech)
@@ -298,38 +398,191 @@ def main():
     rospy.wait_for_service('/vision/obj_reco/detect_and_recognize_object')
     print("Services are now available.")
     loop = rospy.Rate(10)
+
+    recognized_speech = ""
+    new_task = False
+    executing_task = False
+    target_adquired = False
+    destiny = ""
+
+    targets_coordinates = [3.2, 6.0]
+    goal_coordinates = [0.0, 0.0]  # Placeholder for goal coordinates
+    t_pos = None
+    left_arm = False
     
+    def idle_execute():
+        global recognized_speech, new_task, executing_task, goal_coordinates, target_object, target_adquired, destiny
+        while not new_task:
+            if recognized_speech:
+                new_task = True
+        target_object, goal_coordinates, destiny = parse_command(recognized_speech.upper())
+        print(f"Recognized speech: {recognized_speech}")
+        print(f"Target object: {target_object}, Goal coordinates: {goal_coordinates}")
+        executing_task = True
+        target_adquired = False
+
+    def navigate_execute():
+        global goal_reached, target_adquired
+        goal_reached = False
+        goal = []
+        if target_adquired:
+            goal = goal_coordinates
+        else:
+            goal = targets_coordinates
+        print(f"Navigating to {goal}")
+        go_to_goal_pose(goal[0], goal[1])
+
+    def end_execute():
+        global executing_task, new_task
+        executing_task = False
+        new_task = False
+        print("Task completed successfully")
+
+    def navigate_say():
+        global target_object, target_adquired, destiny
+        return f"Navigating to {target_object if not target_adquired else destiny}"
+    
+    def detect_execute():
+        global t_pos, left_arm
+        say(f"Rotating base to position")
+        _, rotation = get_robot_pose()
+        while abs(rotation - ROTATION_TARGET) > 0.1:
+            # Normalize angles to the range [-pi, pi]
+            rotation_normalized = (rotation + math.pi) % (2 * math.pi) - math.pi
+            target_normalized = (ROTATION_TARGET + math.pi) % (2 * math.pi) - math.pi
+            angle_diff = target_normalized - rotation_normalized
+
+            # Ensure the shortest rotation direction
+            if angle_diff > math.pi:
+                angle_diff -= 2 * math.pi
+            elif angle_diff < -math.pi:
+                angle_diff += 2 * math.pi
+
+            # Determine rotation direction and move base
+            angular_speed = 0.75 if angle_diff > 0 else -0.75
+            move_base(0.0, angular_speed, 0.1)
+
+            _, rotation = get_robot_pose()
+            print(f"Rotation: {rotation} (Normalized: {rotation_normalized}), Target: {ROTATION_TARGET} (Normalized: {target_normalized}), Angle Diff: {angle_diff}")
+        say("Turning head down")
+        move_head(0, -0.5)
+        say("Searching for target object")
+        global target_object
+        t_pos = find_object(target_object)
+        left_arm = True
+        if t_pos[1] > 0:
+            left_arm = False
+        say(f"Using {'left' if left_arm else 'right'} arm")
+        t_pos = transform_point(t_pos[0], t_pos[1], t_pos[2], target_frame="shoulders_left_link" if left_arm else "shoulders_right_link")
+        
+    def prepare_execute():
+        global t_pos, left_arm
+        say("Preparing arm")
+        if left_arm:
+            move_left_arm(-0.69, 0.2, 0.0, 1.55, 0.0, 1.16, 0.0)
+            q = calculate_inverse_kinematics_left(t_pos[0], t_pos[1], t_pos[2], 2.736, -1.221, -2.897)
+            q = get_la_polynomial_trajectory(q, 5, 0.025)
+            move_left_arm_with_trajectory(q)
+        else:
+            move_right_arm(-0.69, 0.2, 0.0, 1.55, 0.0, 1.16, 0.0)
+            q = calculate_inverse_kinematics_right(t_pos[0], t_pos[1], t_pos[2], 2.736, -1.221, -2.897)
+            q = get_ra_polynomial_trajectory(q, 5, 0.025)
+            move_right_arm_with_trajectory(q)
+        say("Arm is ready")
+
+    idle = State(
+        "Idle",
+        say="Waiting for commands",
+        execute=idle_execute,
+        next="Navigate"
+    )
+
+    navigate = State(
+        "Navigate",
+        say=navigate_say,
+        execute=navigate_execute,
+        transition=lambda: goal_reached,
+        next="SelectAction"
+    )
+
+    select_action = State(
+        "SelectAction",
+        say="",
+        execute=lambda: None,
+        transition=lambda: not target_adquired,
+        next = ("DetectTarget", "PrepareArm")
+    )
+
+    prepare_arm = State(
+        "PrepareArm",
+        say="Preparing for target adquisition",
+        execute=prepare_execute,
+        next="OpenGripper"
+    )
+
+    open_gripper = State(
+        "OpenGripper",
+        say="Opening gripper",
+        execute=lambda: print("Gripper is open"),
+        next="EndState"
+    )
+
+    end_state = State(
+        "EndState",
+        say="Task completed",
+        execute=end_execute,
+        next="Idle"
+    )
+
+    detect_target = State(
+        "DetectTarget",
+        say="Detecting target object",
+        execute=detect_execute,
+        next="PrepareRobot"
+    )
+
+    prepare_robot = State(
+        "PrepareRobot",
+        say="Preparing robot for target acquisition",
+        execute=lambda: print("Robot position is ready, arm is ready"),
+        next="GrabTarget"
+    )
+    
+    def grab_target_execute():
+        global target_adquired
+        print("Target object grabbed")
+        target_adquired = True
+
+    grab_target = State(
+        "GrabTarget",
+        say="Grabbing target object",
+        execute=grab_target_execute,
+        next="Navigate"
+    )
+
+    states = {
+        "Idle": idle,
+        "Navigate": navigate,
+        "SelectAction": select_action,
+        "PrepareArm": prepare_arm,
+        "OpenGripper": open_gripper,
+        "EndState": end_state,
+        "DetectTarget": detect_target,
+        "PrepareRobot": prepare_robot,
+        "GrabTarget": grab_target
+    }
+
+    fsm = FSM(initial_state=idle, states=states)
 
     #
     # FINAL PROJECT 
     #
-    executing_task = False
-    current_state = "SM_INIT"
-    new_task = False
-    goal_reached = False
-    recognized_speech = ""
     say("Ready")
     while not rospy.is_shutdown():
-        #
-        # Write here your AFSM
-        #
-        if current_state == "SM_INIT":
-            print("Iniciando máquina de estados")
-            say("Hello. I'm ready to execute a command.")
-            move_head(0, -0.5)
-            move_head(0, 0.5)
-            move_head(0, -0.5)
-            move_head(0, 0.5)
-            move_head(0, -0.5)
-            move_head(0, 0)
-            move_base(0.5, 0.0, 3.0)
-            move_left_arm(-1.0, 0.1 , 0.0, 1.5, 0.0, 1.0, 0.0)
-            move_left_gripper(1.0)
-            move_left_gripper(0.0)
-            move_left_arm(0,0,0,0,0,0,0)
-            current_state = "END"
+        fsm.run()
+        
         loop.sleep()
 
 if __name__ == '__main__':
     main()
-    
+
