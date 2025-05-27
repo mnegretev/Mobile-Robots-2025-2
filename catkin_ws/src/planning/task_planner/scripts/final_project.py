@@ -368,7 +368,7 @@ def main():
             	x,y,z = find_object(pringles)
             	say("Pringles found.")
             	x,y,z = transform_point(x,y,z,"realsense_link","shoulders_right_link")
-            elif(object == drink)
+            elif(object == drink):
             	x,y,z = find_object(drink)
             	say("Drink found.")
             	x,y,z = transform_point(x,y,z,"realsense_link","shoulders_left_link")
