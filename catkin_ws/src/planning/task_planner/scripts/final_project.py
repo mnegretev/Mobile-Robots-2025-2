@@ -357,7 +357,7 @@ def main():
                 say("I arrived at the destination.")
                 current_state = "SM_RotateInPlace"
 
-        elif current state = "SM_RotateInPlace":
+        elif current_state = "SM_RotateInPlace":
             print("Girando en direccion a la mesa")
             move_base(0, theta, 1)
             #Definir como obtener el giro: Calculo analitico o ciclo while
