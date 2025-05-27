@@ -117,9 +117,9 @@ def main():
     loop = rospy.Rate(10)
     while not rospy.is_shutdown():
         cv2.imshow("BGR", img_bgr)
-        cv2.imshow("HSV", img_hsv)
-        cv2.imshow("Binary", img_bin)
-        cv2.imshow("Filtered", img_filtered)
+        #cv2.imshow("HSV", img_hsv)
+        #cv2.imshow("Binary", img_bin)
+        #cv2.imshow("Filtered", img_filtered)
         cv2.waitKey(1)
         loop.sleep()
     

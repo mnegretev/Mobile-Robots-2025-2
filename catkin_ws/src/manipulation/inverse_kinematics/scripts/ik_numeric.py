@@ -147,11 +147,6 @@ def inverse_kinematics(x, y, z, roll, pitch, yaw, T, W, init_guess=numpy.zeros(7
 
     # Set success if maximum iterations were not exceeded and calculated angles are in valid range
     success = iterations < max_iter and angles_in_joint_limits(q)
-
-    with open("results.csv", "a") as file:
-        # Write the header only if the file is being created
-        file.write(f"{success}, {iterations}, {get_q_distance(q, init_guess)}\n")
-    
     return success, q
    
 def get_polynomial_trajectory_multi_dof(Q_start, Q_end, duration=1.0, time_step=0.05):

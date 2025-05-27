@@ -57,7 +57,7 @@ def callback_goal_reached(msg):
 def parse_command(cmd):
     obj = "pringles" if "PRINGLES" in cmd else "drink"
     destiny = "table" if "TABLE" in cmd else "kitchen"
-    loc = [6.0, 6.0] if "TABLE" in cmd else [8.0, 0.0]
+    loc = [3.2, 9.0] if "TABLE" in cmd else [8.0, 0.0]
     return obj, loc, destiny
 
 #
@@ -258,12 +258,13 @@ def get_ra_polynomial_trajectory(q, duration=5.0, time_step=0.05):
 # the xyz coordinates of the requested object w.r.t. "realsense_link"
 #
 def find_object(object_name):
+    global pub_point
     clt_find_object = rospy.ServiceProxy("/vision/obj_reco/detect_and_recognize_object", RecognizeObject)
     req_find_object = RecognizeObjectRequest()
     req_find_object.point_cloud = rospy.wait_for_message("/camera/depth_registered/points", PointCloud2)
     req_find_object.name  = object_name
     resp = clt_find_object(req_find_object)
-    return [resp.recog_object.pose.position.x, resp.recog_object.pose.position.y, resp.recog_object.pose.position.z]
+    return [resp.recog_object.pose.position.x, resp.recog_object.pose.position.y, resp.recog_object.pose.position.z], resp
 
 #
 # Transforms a point xyz expressed w.r.t. source frame to the target frame
@@ -277,6 +278,31 @@ def transform_point(x,y,z, source_frame="realsense_link", target_frame="shoulder
     obj_p.point.x, obj_p.point.y, obj_p.point.z = x,y,z
     obj_p = listener.transformPoint(target_frame, obj_p)
     return [obj_p.point.x, obj_p.point.y, obj_p.point.z]
+
+def get_transform(frame: str):
+    global listener
+    try:
+        ([x, y, z], _) = listener.lookupTransform('map', frame, rospy.Time(0))
+        return numpy.asarray([x, y, z])
+    except Exception as e:
+        print(f"Error: {e}")
+        return numpy.asarray([0,0,0])
+
+def transform_point_fix(pos: list, left_arm: bool):
+    x, y, z = pos
+    print(f"Transforming point: {pos}")
+    target_frame = "shoulders_left_link" if left_arm else "shoulders_right_link"
+    source_frame = "kinect_base"
+    source_pos = get_transform(source_frame)
+    target_pos = get_transform(target_frame)
+    point_no_transform = -numpy.asarray([x, y, z]) + source_pos
+    print("Point in global coordinates (no transform):", point_no_transform)
+    return target_pos - point_no_transform
+
+def ortho_distance(pos1, pos2):
+    x1, y1 = pos1
+    x2, y2 = pos2
+    return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
 
 def get_robot_pose():
     global listener
@@ -377,6 +403,7 @@ def main():
     global new_task, recognized_speech, executing_task, goal_reached
     global pubLaGoalPose, pubRaGoalPose, pubHdGoalPose, pubLaGoalGrip, pubRaGoalGrip
     global pubLaGoalTraj, pubRaGoalTraj, pubGoalPose, pubCmdVel, pubSay, listener
+    global pub_point
     print("FINAL PROJECT - " + NAME)
     rospy.init_node("final_project")
     rospy.Subscriber('/hri/sp_rec/recognized', RecognizedSpeech, callback_recognized_speech)
@@ -391,6 +418,7 @@ def main():
     pubRaGoalGrip = rospy.Publisher("/hardware/right_arm/goal_gripper", Float64, queue_size=10);
     pubLaGoalTraj = rospy.Publisher("/manipulation/la_q_trajectory", JointTrajectory, queue_size=10)
     pubRaGoalTraj = rospy.Publisher("/manipulation/ra_q_trajectory", JointTrajectory, queue_size=10)
+    pub_point = rospy.Publisher('/detected_object', PointStamped, queue_size=10)
     listener = tf.TransformListener()
     print("Waiting for services...")
     rospy.wait_for_service('/manipulation/la_ik_pose')
@@ -405,7 +433,7 @@ def main():
     target_adquired = False
     destiny = ""
 
-    targets_coordinates = [3.2, 6.0]
+    targets_coordinates = [3.4, 6.0]
     goal_coordinates = [0.0, 0.0]  # Placeholder for goal coordinates
     t_pos = None
     left_arm = False
@@ -420,6 +448,8 @@ def main():
         print(f"Target object: {target_object}, Goal coordinates: {goal_coordinates}")
         executing_task = True
         target_adquired = False
+        move_left_arm(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+        move_right_arm(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
 
     def navigate_execute():
         global goal_reached, target_adquired
@@ -443,51 +473,77 @@ def main():
         return f"Navigating to {target_object if not target_adquired else destiny}"
     
     def detect_execute():
-        global t_pos, left_arm
-        say(f"Rotating base to position")
-        _, rotation = get_robot_pose()
-        while abs(rotation - ROTATION_TARGET) > 0.1:
-            # Normalize angles to the range [-pi, pi]
-            rotation_normalized = (rotation + math.pi) % (2 * math.pi) - math.pi
-            target_normalized = (ROTATION_TARGET + math.pi) % (2 * math.pi) - math.pi
-            angle_diff = target_normalized - rotation_normalized
+        global t_pos, left_arm, target_object
 
-            # Ensure the shortest rotation direction
-            if angle_diff > math.pi:
-                angle_diff -= 2 * math.pi
-            elif angle_diff < -math.pi:
-                angle_diff += 2 * math.pi
-
-            # Determine rotation direction and move base
-            angular_speed = 0.75 if angle_diff > 0 else -0.75
-            move_base(0.0, angular_speed, 0.1)
-
+        def rotate_to_target(target_angle):
             _, rotation = get_robot_pose()
-            print(f"Rotation: {rotation} (Normalized: {rotation_normalized}), Target: {ROTATION_TARGET} (Normalized: {target_normalized}), Angle Diff: {angle_diff}")
+            while abs(rotation - target_angle) > 0.05:
+                rotation_normalized = (rotation + math.pi) % (2 * math.pi) - math.pi
+                target_normalized = (target_angle + math.pi) % (2 * math.pi) - math.pi
+                angle_diff = target_normalized - rotation_normalized
+
+                if angle_diff > math.pi:
+                    angle_diff -= 2 * math.pi
+                elif angle_diff < -math.pi:
+                    angle_diff += 2 * math.pi
+
+                angular_speed = 0.75 if angle_diff > 0 else -0.75
+                move_base(0.0, angular_speed, 0.05)
+                _, rotation = get_robot_pose()
+
+        def move_to_position(target_pos, threshold=0.4, speed=0.25):
+            pos, _ = get_robot_pose()
+            while ortho_distance(pos, target_pos) > threshold:
+                move_base(speed, 0.0, 0.05)
+                pos, _ = get_robot_pose()
+
+        def prepare_arm_for_detection():
+            arm_movement = move_left_arm if left_arm else move_right_arm
+            griper = move_left_gripper if left_arm else move_right_gripper
+            arm_movement(-0.49, 0.0, 0.0, 2.15, 0.0, 1.36, 0.0)
+            griper(0.3)
+
+        say("Rotating base to position")
+        rotate_to_target(ROTATION_TARGET)
+
         say("Turning head down")
-        move_head(0, -0.5)
-        say("Searching for target object")
-        global target_object
-        t_pos = find_object(target_object)
-        left_arm = True
-        if t_pos[1] > 0:
-            left_arm = False
-        say(f"Using {'left' if left_arm else 'right'} arm")
-        t_pos = transform_point(t_pos[0], t_pos[1], t_pos[2], target_frame="shoulders_left_link" if left_arm else "shoulders_right_link")
+        move_head(0, -1.0)
+
+        say("Detecting object and selecting arm")
+        t_pos, resp = find_object(target_object)
+        left_arm = t_pos[1] <= 0
+
+        say("Preparing arm")
+        prepare_arm_for_detection()
+
+        say("Getting closer to target")
+        move_to_position([3.4, 5.3])
+
+        say("Readjusting base rotation")
+        rotate_to_target(ROTATION_TARGET)
+
+        resp.recog_object.header.frame_id = 'shoulder_left_link' if left_arm else 'shoulder_right_link'
+        resp.recog_object.pose.position.x = t_pos[0]
+        resp.recog_object.pose.position.y = t_pos[1]
+        resp.recog_object.pose.position.z = t_pos[2]
+        resp.recog_object.header.stamp    = rospy.Time.now()
+        pub_point.publish(PointStamped(header=resp.recog_object.header, point=Point(x=resp.recog_object.pose.position.x, y=resp.recog_object.pose.position.y, z=resp.recog_object.pose.position.z)))
         
-    def prepare_execute():
+
+        say(f"Using {'left' if left_arm else 'right'} arm")
+        
+    def prepare_robot_execute():
         global t_pos, left_arm
         say("Preparing arm")
-        if left_arm:
-            move_left_arm(-0.69, 0.2, 0.0, 1.55, 0.0, 1.16, 0.0)
-            q = calculate_inverse_kinematics_left(t_pos[0], t_pos[1], t_pos[2], 2.736, -1.221, -2.897)
-            q = get_la_polynomial_trajectory(q, 5, 0.025)
-            move_left_arm_with_trajectory(q)
-        else:
-            move_right_arm(-0.69, 0.2, 0.0, 1.55, 0.0, 1.16, 0.0)
-            q = calculate_inverse_kinematics_right(t_pos[0], t_pos[1], t_pos[2], 2.736, -1.221, -2.897)
-            q = get_ra_polynomial_trajectory(q, 5, 0.025)
-            move_right_arm_with_trajectory(q)
+        arm_movement = move_left_arm if left_arm else move_right_arm
+        arm_movement(-0.59, 0.0, 0.0, 1.75, 0.0, 0.56, 0.0)
+        arm_movement(-0.1432, 0.0, 0.0, 1.8418, 0.0, 0.1695, 0.0)
+        t_pos = transform_point_fix(t_pos, left_arm)
+        print(f"Detected position: {t_pos}")
+        q = (calculate_inverse_kinematics_left if left_arm else calculate_inverse_kinematics_right)(
+            t_pos[0], t_pos[1], t_pos[2], 0.0, -1.373, 0.0)
+        q = (get_la_polynomial_trajectory if left_arm else get_ra_polynomial_trajectory)(q, 10, 0.025)
+        (move_left_arm_with_trajectory if left_arm else move_right_arm_with_trajectory)(q)
         say("Arm is ready")
 
     idle = State(
@@ -516,7 +572,7 @@ def main():
     prepare_arm = State(
         "PrepareArm",
         say="Preparing for target adquisition",
-        execute=prepare_execute,
+        execute=prepare_robot_execute,
         next="OpenGripper"
     )
 
@@ -544,7 +600,7 @@ def main():
     prepare_robot = State(
         "PrepareRobot",
         say="Preparing robot for target acquisition",
-        execute=lambda: print("Robot position is ready, arm is ready"),
+        execute=prepare_robot_execute,
         next="GrabTarget"
     )
     
