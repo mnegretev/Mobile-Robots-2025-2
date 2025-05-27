@@ -363,7 +363,7 @@ def main():
             #Definir como obtener el giro: Calculo analitico o ciclo while
             move_head(0, -0.5) #Bajar la cabeza hasta ver los objetos
             current_state:"SM_Localize"
-        elif current_state = "SM_Localize":
+        elif current_state == "SM_Localize":
             if(object==pringles):
             	x,y,z = find_object(pringles)
             	say("Pringles found.")
@@ -374,22 +374,22 @@ def main():
             	x,y,z = transform_point(x,y,z,"realsense_link","shoulders_left_link")
             #Encontrar el objeto a buscar en la mesa
             current_state:"SM_Prepare"
-        elif current_state = "SM_Prepare":
+        elif current_state == "SM_Prepare":
             say("Preparing arm.")
             #Generar el movimiento "prepare" en el brazo correspondiente
             current_state:"SM_Grab"
-        elif current_state = "SM_Grab":
+        elif current_state == "SM_Grab":
             q = calculate_inverse_kinematics_left(x,y,z,0,0,0)
             get_la_polynomial_trajectory(q,5,0.05)
             say("Grabbing object.")
             move_left_gripper(-1) 
             #Generar la trayectoria para mover el brazo correspondiente a la posicion deseada, y apretar la mano
             current_state:"SM_Lift"
-        elif current_state = "SM_Lift":
+        elif current_state == "SM_Lift":
             say("Preparing arm.")
             #Levantar el objeto
             current_state:"SM_GoToLoc"
-        elif current_state = "SM_GoToLoc":
+        elif current_state == "SM_GoToLoc":
             #Llevar el objeto al lugar indicado
             go_to_goal_pose(0.0,0.0)
             current_state:"END"
