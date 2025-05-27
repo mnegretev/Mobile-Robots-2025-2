@@ -1,4 +1,4 @@
- #!/usr/bin/env python3
+#!/usr/bin/env python3
 import rospy
 import speech_recognition as sr
 from hri_msgs.msg import RecognizedSpeech
