@@ -308,6 +308,9 @@ def main():
     new_task = False
     goal_reached = False
     recognized_speech = ""
+    object_name = ""
+    target_location = []
+
     say("Ready")
     x,y,z = 0,0,0
     while not rospy.is_shutdown():
@@ -330,15 +333,30 @@ def main():
             #move_left_arm(0,0,0,0,0,0,0)
             #current_state = "END"
             current_state = "SM_Waiting"        
-        elif current state = "SM_Waiting":
+        elif current_state == "SM_Waiting":
+            if new_task:
+                executing_task = True
+                say("I heard the command: " + recognized_speech)
+                object_name, target_location = parse_command(recognized_speech.upper())
+                current_state = "SM_ReachTable"
+
+
             #callback_recognized_speech(msg)
             #Espera a recibir el comando de voz necesario
             #current_state = "SM_ReachTable" hasta que se reconozca el comando
-        elif current state = "SM_ReachTable":
+
+        
+        elif current_state == "SM_ReachTable":
             print("Voy camino a la mesa")
             say("Reaching the table.")
-            go_to_goal_pose(0.0,0.0) #Obtener coordenadas de la mesa
-            current_state = "SM_RotateInPlace"
+            go_to_goal_pose(target_location[0], target_location[1])
+            current_state = "SM_WaitForArrival"
+            
+        elif current_state == "SM_WaitForArrival":
+            if goal_reached:
+                say("I arrived at the destination.")
+                current_state = "SM_RotateInPlace"
+
         elif current state = "SM_RotateInPlace":
             print("Girando en direccion a la mesa")
             move_base(0, theta, 1)
