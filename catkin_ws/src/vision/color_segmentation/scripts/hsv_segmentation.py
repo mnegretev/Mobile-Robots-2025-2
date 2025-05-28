@@ -72,7 +72,7 @@ def segment_by_color(img_bgr, points, obj_name):
         y += points[r,c][1]
         z += points[r,c][2]
     
-    if len(non_zero_pixels) > 0:
+    if len(nz) > 0:
         x = x/len(nz)
         y = y/len(nz)
         z = z/len(nz)
