@@ -30,7 +30,7 @@ from vision_msgs.srv import *
 from manip_msgs.srv import *
 from hri_msgs.msg import *
 
-NAME = "FULL NAME"
+NAME = "ARENAS HERNÁNDEZ JOSÉ AUGUSTO - FRAUSTO MARTINEZ CARLOS - PACHECO JARILLO JUAN - ROMERO HERNÁNDEZ GERMÁN ZAIR"
 
 #
 # Global variable 'speech_recognized' contains the last recognized sentence
