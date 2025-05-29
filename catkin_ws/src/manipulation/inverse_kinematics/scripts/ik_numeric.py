@@ -43,7 +43,7 @@ def inverse_kinematics(x, y, z, roll, pitch, yaw, T, W, init_guess=numpy.zeros(7
     error = p - pd
     error[3:6] = (error[3:6] + math.pi) % (2*math.pi) - math.pi
     tolerance = 1e-4
-    λ = 0.01  # Factor de amortiguación
+    λ = 0.01
 
     while numpy.linalg.norm(error) > tolerance and iterations < max_iter:
         J = jacobian(q, T, W)
@@ -51,7 +51,7 @@ def inverse_kinematics(x, y, z, roll, pitch, yaw, T, W, init_guess=numpy.zeros(7
         JJt = J @ JT
         damped_inv = JT @ numpy.linalg.inv(JJt + (λ**2) * numpy.identity(6))
         dq = -damped_inv @ error
-        q = (q + dq + math.pi) % (2*math.pi) - math.pi  # Mantener ángulos en [-π, π]
+        q = (q + dq + math.pi) % (2*math.pi) - math.pi
         p = forward_kinematics(q, T, W)
         error = p - pd
         error[3:6] = (error[3:6] + math.pi) % (2*math.pi) - math.pi
@@ -80,40 +80,23 @@ def get_model_info(joint_names):
     joints = []
     transforms = []
     for name in joint_names:
-        found = False
         for joint in robot_model.joints:
             if joint.name == name:
-                if joint.axis is None:
-                    rospy.logerr(f"[Model] Joint {name} has no axis defined!")
                 joints.append(joint)
-                found = True
                 break
-        if not found:
-            rospy.logerr(f"[Model] Joint {name} not found in URDF!")
     for joint in joints:
         T = tft.translation_matrix(joint.origin.xyz)
         R = tft.euler_matrix(*joint.origin.rpy)
         transforms.append(tft.concatenate_matrices(T, R))
-    if len(joints) != 7 or len(transforms) != 7:
-        rospy.logwarn(f"[Model] Warning: Expected 7 joints, got {len(joints)}")
-    transforms.append(tft.identity_matrix())  # dummy final link
+    transforms.append(tft.identity_matrix())  # Final dummy
     return joints, transforms
-
-def angles_in_joint_limits(q):
-    for i in range(len(q)):
-        if q[i] < joints[i].limit.lower or q[i] > joints[i].limit.upper:
-            rospy.logwarn(f"{prompt}Joint {i} value {q[i]:.2f} out of bounds ({joints[i].limit.lower:.2f}, {joints[i].limit.upper:.2f})")
-            return False
-    return True
 
 def callback_forward_kinematics(req):
     resp = ForwardKinematicsResponse()
     if len(req.q) != 7:
         rospy.logwarn(f"{prompt}Expected 7 DOF, got {len(req.q)}.")
-        resp.x = resp.y = resp.z = 0.0
-        resp.roll = resp.pitch = resp.yaw = 0.0
         return resp
-    W = [j.axis for j in joints]
+    W = [numpy.array(j.axis) for j in joints]
     resp.x, resp.y, resp.z, resp.roll, resp.pitch, resp.yaw = forward_kinematics(req.q, transforms, W)
     return resp
 
@@ -123,22 +106,17 @@ def get_trajectory_time(p1, p2, speed_factor):
 
 def callback_ik_for_trajectory(req):
     global max_iterations
-    rospy.loginfo(f"{prompt}IK trajectory requested to: {[req.x, req.y, req.z, req.roll, req.pitch, req.yaw]}")
-    initial_guess = req.initial_guess or rospy.wait_for_message("/hardware/arm/current_pose", Float64MultiArray).data
-    W = [j.axis for j in joints]
+    initial_guess = req.initial_guess if len(req.initial_guess) == 7 else rospy.wait_for_message("/hardware/arm/current_pose", Float64MultiArray).data
+    W = [numpy.array(j.axis) for j in joints]
     p1 = forward_kinematics(initial_guess, transforms, W)
     p2 = [req.x, req.y, req.z, req.roll, req.pitch, req.yaw]
     t = req.duration if req.duration > 0 else get_trajectory_time(p1, p2, 0.25)
     dt = req.time_step if req.time_step > 0 else 0.05
 
     try:
-        X, T = get_polynomial_trajectory_multi_dof(p1, p2, duration=t, time_step=dt)
+        X, T = get_polynomial_trajectory_multi_dof(p1, p2, t, dt)
     except Exception as e:
-        rospy.logerr("Error in polynomial trajectory: %s", str(e))
-        return InverseKinematicsPose2TrajResponse(articular_trajectory=JointTrajectory())
-
-    if len(X) == 0:
-        rospy.logwarn("Generated polynomial trajectory is empty.")
+        rospy.logerr("Trajectory service error: %s", e)
         return InverseKinematicsPose2TrajResponse(articular_trajectory=JointTrajectory())
 
     trj = JointTrajectory()
@@ -148,25 +126,24 @@ def callback_ik_for_trajectory(req):
     for i, pose in enumerate(X):
         success, q = inverse_kinematics(*pose, transforms, W, q, max_iterations)
         if not success:
-            rospy.logwarn(f"IK failed at point {i}")
+            rospy.logwarn(f"{prompt}IK failed at step {i}")
             return InverseKinematicsPose2TrajResponse(articular_trajectory=JointTrajectory())
-        p = JointTrajectoryPoint()
-        p.positions = q
-        p.time_from_start = rospy.Duration.from_sec(T[i])
-        trj.points.append(p)
+        pt = JointTrajectoryPoint()
+        pt.positions = q
+        pt.time_from_start = rospy.Duration.from_sec(T[i])
+        trj.points.append(pt)
 
     return InverseKinematicsPose2TrajResponse(articular_trajectory=trj)
 
 def callback_ik_for_pose(req):
     global max_iterations
-    rospy.loginfo(f"{prompt}IK pose requested: {[req.x, req.y, req.z, req.roll, req.pitch, req.yaw]}")
-    initial_guess = req.initial_guess or rospy.wait_for_message("/hardware/arm/current_pose", Float64MultiArray).data
-    W = [j.axis for j in joints]
+    initial_guess = req.initial_guess if len(req.initial_guess) == 7 else rospy.wait_for_message("/hardware/arm/current_pose", Float64MultiArray).data
+    W = [numpy.array(j.axis) for j in joints]
     success, q = inverse_kinematics(req.x, req.y, req.z, req.roll, req.pitch, req.yaw, transforms, W, initial_guess, max_iterations)
     resp = InverseKinematicsPose2PoseResponse()
     resp.q = q if success else []
     if not success:
-        rospy.logwarn(f"{prompt}IK failed for pose.")
+        rospy.logwarn(f"{prompt}IK for pose failed.")
     return resp
 
 def main():
@@ -175,19 +152,18 @@ def main():
     prompt = rospy.get_name().upper() + ".->"
     joint_names = rospy.get_param("~joint_names", [])
     max_iterations = rospy.get_param("~max_iterations", 100)
-    rospy.loginfo(f"{prompt}Joint names: {joint_names}")
-    rospy.loginfo(f"{prompt}Max iterations: {max_iterations}")
 
     joints, transforms = get_model_info(joint_names)
-    if len(joints) < 7 or len(transforms) < 8:
-        rospy.logerr("URDF parsing failed. Not enough joints or transforms.")
+    if len(joints) != 7 or len(transforms) != 8:
+        rospy.logerr("URDF error: expected 7 joints and 8 transforms.")
         sys.exit(-1)
 
     rospy.Service("/manipulation/forward_kinematics", ForwardKinematics, callback_forward_kinematics)
     rospy.Service("/manipulation/ik_trajectory", InverseKinematicsPose2Traj, callback_ik_for_trajectory)
     rospy.Service("/manipulation/ik_pose", InverseKinematicsPose2Pose, callback_ik_for_pose)
-    rospy.loginfo(f"{prompt}IK node initialized and services ready.")
+    rospy.loginfo(f"{prompt}Inverse kinematics service ready.")
     rospy.spin()
 
 if __name__ == "__main__":
     main()
+
