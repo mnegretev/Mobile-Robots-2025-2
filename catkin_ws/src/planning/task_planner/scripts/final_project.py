@@ -78,7 +78,8 @@ def move_left_arm(q1,q2,q3,q4,q5,q6,q7):
 # to allow the arm to reach the goal position. 
 #
 def move_left_arm_with_trajectory(Q):
-    global pubLaGoalTraj          elif(object_name == "drink")
+    global pubLaGoalTraj          
+        elif(object_name == drink)
             	x,y,z = find_object(drink)			#Si el objeto es el chesco
             	say("Drink found.")
             	print("Se encontro la soda")
