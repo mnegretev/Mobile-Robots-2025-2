@@ -9,6 +9,7 @@
 # Modify only sections marked with the 'TODO' comment
 #
 import math
+import os
 import sys
 import rospy
 import numpy
@@ -18,17 +19,17 @@ import urdf_parser_py.urdf
 from std_msgs.msg import Float64MultiArray
 from manip_msgs.srv import *
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
+import csv
 
 prompt = ""
-NAME = "Alfredo Guadalupe Alcántara Guerrero"
+NAME = "ALFREDO GUADALUPE ALCÁNTARA GUERRERO"
    
 def forward_kinematics(q, T, W):
-    x,y,z,R,P,Y = 0,0,0,0,0,0
+    x, y, z, R, P, Y = 0, 0, 0, 0, 0, 0
     #
-    # TODO:
     # Calculate the forward kinematics given the set of seven angles 'q'
     # You can use the following steps:
-    #     H = I   # Assing to H a 4x4 identity matrix
+    #     H = I   # Assign to H a 4x4 identity matrix
     #     for all qi in q:
     #         H = H * Ti * Ri
     #     H = H * Ti[7]
@@ -45,18 +46,29 @@ def forward_kinematics(q, T, W):
     #     Check online documentation of these functions:
     #     http://docs.ros.org/en/jade/api/tf/html/python/transformations.html
     #
+    
+    # Initialize H as a 4x4 identity matrix
     H = tft.identity_matrix()
+    
+    # Iterate through each joint angle qi
     for i in range(len(q)):
-        H = tft.concatenate_matrices(H, T[i], tft.rotation_matrix(q[i], W[i]))
-    H = tft.concatenate_matrices(H, T[i])
-    x, y, z = H[0][3], H[1][3], H[2][3]
+        # Compute the rotation matrix Ri for qi around axis Wi
+        Ri = tft.rotation_matrix(q[i], W[i])
+        # Update H by multiplying it with Ti and Ri
+        H = tft.concatenate_matrices(H, T[i], Ri)
+    
+    # Multiply H with the final transformation Ti[7]
+    H = tft.concatenate_matrices(H, T[7])
+    
+    # Extract x, y, z and RPY from the resulting Homogeneous Transformation H
+    x, y, z = H[0:3, 3]
     R, P, Y = tft.euler_from_matrix(H)
-    return numpy.asarray([x,y,z,R,P,Y])
+    
+    return numpy.asarray([x, y, z, R, P, Y])
 
 def jacobian(q, T, W):
     delta_q = 0.000001
     #
-    # TODO:
     # Calculate the Jacobian given a kinematic description Ti and Wi
     # where:
     # Ti are the Homogeneous Transformations from frame i to frame i-1 when joint i is at zero position
@@ -78,53 +90,63 @@ def jacobian(q, T, W):
     #     RETURN J
     #
     J = numpy.asarray([[0.0 for a in q] for i in range(6)])
-    q_n = numpy.asarray([q for i in range(len(q))]) + delta_q * numpy.identity(len(q))
-    q_p = numpy.asarray([q for i in range(len(q))]) - delta_q * numpy.identity(len(q))
+    
     for i in range(len(q)):
-        J[:,i] = (forward_kinematics(q_n[i], T, W) - forward_kinematics(q_p[i], T, W)) / (2*delta_q)
+        # Create q_next and q_prev by adding and subtracting delta_q to the i-th joint
+        q_next = numpy.copy(q)
+        q_prev = numpy.copy(q)
+        q_next[i] += delta_q
+        q_prev[i] -= delta_q
+        
+        # Calculate forward kinematics for q_next and q_prev
+        fk_next = forward_kinematics(q_next, T, W)
+        fk_prev = forward_kinematics(q_prev, T, W)
+        
+        # Compute the i-th column of the Jacobian
+        J[:, i] = (fk_next - fk_prev) / (2 * delta_q)
+    
     return J
 
+def get_q_distance(q, init_guess):
+    # Calculate the distance between two joint configurations
+    # q is the current configuration
+    # init_guess is the initial configuration
+    return numpy.linalg.norm(numpy.array(q) - numpy.array(init_guess))
+
 def inverse_kinematics(x, y, z, roll, pitch, yaw, T, W, init_guess=numpy.zeros(7), max_iter=20):
-    pd = numpy.asarray([x,y,z,roll,pitch,yaw])
-    #
-    # TODO:
-    # Solve the IK problem given a kinematic description (Ti, Wi) and a desired configuration.
-    # where:
-    # Ti are the Homogeneous Transformations from frame i to frame i-1 when joint i is at zero position
-    # Wi are the axis of rotation of i-th joint
-    # Use the Newton-Raphson method for root finding. (Find the roots of equation FK(q) - pd = 0)
-    # You can do the following steps:
-    #
-    #    Set an initial guess for joints 'q'
-    #    Calculate Forward Kinematics 'p' by calling the corresponding function
-    #    Calcualte error = p - pd
-    #    Ensure orientation angles of error are in [-pi,pi]
-    #    WHILE |error| > TOL and iterations < maximum iterations:
-    #        Calculate Jacobian
-    #        Update q estimation with q = q - pseudo_inverse(J)*error
-    #        Ensure all angles q are in [-pi,pi]
-    #        Recalculate forward kinematics p
-    #        Recalculate error and ensure angles are in [-pi,pi]
-    #        Increment iterations
-    #    Set success if maximum iterations were not exceeded and calculated angles are in valid range
-    #    Return calculated success and calculated q
-    #
+    pd = numpy.asarray([x, y, z, roll, pitch, yaw])
+    TOL = 1e-6  # Tolerance for error
     q = init_guess
     iterations = 0
-    tol = 0.001
-    p = forward_kinematics(q, T, W)
-    err = p - pd
-    err[3:6] = (err[3:6] + math.pi) % (2*math.pi) - math.pi
-    success = False
-    while numpy.linalg.norm(err) > tol and iterations < max_iter:
-        J = jacobian(q, T, W)
-        q = (q - numpy.dot(numpy.linalg.pinv(J), err) + math.pi) % (2*math.pi) - math.pi
+
+    while iterations < max_iter:
+        # Calculate Forward Kinematics 'p'
         p = forward_kinematics(q, T, W)
-        err = p - pd
-        err[3:6] = (err[3:6] + math.pi) % (2*math.pi) - math.pi
+        
+        # Calculate error = p - pd
+        error = p - pd
+        
+        # Ensure orientation angles of error are in [-pi, pi]
+        error[3:] = numpy.mod(error[3:] + numpy.pi, 2 * numpy.pi) - numpy.pi
+        
+        # Check if the error is within tolerance
+        if numpy.linalg.norm(error) < TOL:
+            break
+        
+        # Calculate Jacobian
+        J = jacobian(q, T, W)
+        
+        # Update q estimation with q = q - pseudo_inverse(J) * error
+        q = q - numpy.dot(numpy.linalg.pinv(J), error)
+        
+        # Ensure all angles q are in [-pi, pi]
+        q = numpy.mod(q + numpy.pi, 2 * numpy.pi) - numpy.pi
+        
+        # Increment iterations
         iterations += 1
+
+    # Set success if maximum iterations were not exceeded and calculated angles are in valid range
     success = iterations < max_iter and angles_in_joint_limits(q)
-    
     return success, q
    
 def get_polynomial_trajectory_multi_dof(Q_start, Q_end, duration=1.0, time_step=0.05):
@@ -216,7 +238,7 @@ def callback_ik_for_pose(req):
     print(prompt+"Calculating inverse kinematics for pose: " + str([x,y,z,R,P,Y]))
     if len(req.initial_guess) <= 0 or req.initial_guess == None:
         init_guess = rospy.wait_for_message("/hardware/arm/current_pose", Float64MultiArray, 5.0)
-        init_guess = initial_guess.data
+        init_guess = req.initial_guess.data
     else:
         init_guess = req.initial_guess
     resp = InverseKinematicsPose2PoseResponse()
@@ -230,6 +252,7 @@ def callback_ik_for_pose(req):
 def main():
     global joint_names, max_iterations, joints, transforms, prompt
     print("INITIALIZING INVERSE KINEMATIC NODE - " + NAME)
+
     rospy.init_node("ik_geometric")
     prompt = rospy.get_name().upper() + ".->"
     joint_names    = rospy.get_param("~joint_names", [])
@@ -252,5 +275,4 @@ def main():
 
 if __name__ == '__main__':
     main()
-
 
