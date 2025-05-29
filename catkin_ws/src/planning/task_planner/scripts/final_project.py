@@ -408,13 +408,13 @@ def main():
                 print(f"[DEBUG] Using transform to: {transform_target}")
         
                 x, y, z = transform_point(x, y, z, source_frame="kinect_link", target_frame=transform_target)
-        if None in (x, y, z):
-            say("Object transform failed.")
-            rospy.logerr("Object transform returned None coordinates.")
-            executing_task = False
-            new_task = False
-            current_state = "SM_Waiting"
-            continue
+            if None in (x, y, z):
+                say("Object transform failed.")
+                rospy.logerr("Object transform returned None coordinates.")
+                executing_task = False
+                new_task = False
+                current_state = "SM_Waiting"
+                continue
 
             print(f"[DEBUG] Target IK position: x={x:.2f}, y={y:.2f}, z={z:.2f}")
             current_state = "SM_Prepare"
