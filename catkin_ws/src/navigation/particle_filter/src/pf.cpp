@@ -387,3 +387,6 @@ int main(int argc, char** argv)
         }
         broadcaster.sendTransform(tf::StampedTransform(map_to_odom, ros::Time::now(), "map", "odom"));
         ros::spinOnce();
+}
+}
+
