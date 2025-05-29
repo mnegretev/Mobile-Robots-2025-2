@@ -2,8 +2,12 @@
 #
 # MOBILE ROBOTS - FI-UNAM, 2025-2
 # INVERSE KINEMATICS USING NEWTON-RAPHSON
-# Autor: Lujan Perez Carlos Eduardo
-
+#
+# Instructions:
+# Calculate the inverse kinematics using
+# the Newton-Raphson method for root finding.
+# Modify only sections marked with the 'TODO' comment
+#
 import math
 import sys
 import rospy
@@ -15,208 +19,247 @@ from std_msgs.msg import Float64MultiArray
 from manip_msgs.srv import *
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 
-# Variables globales
 prompt = ""
 NAME = "Lujan Perez Carlos Eduardo"
-
-# ----------------------------------------------------------------------------------------
-# FUNCIONES PRINCIPALES DE CINEMÁTICA
-# ----------------------------------------------------------------------------------------
-
-# Cinemática directa: calcula pose del efector final dada una configuración articular q
+   
 def forward_kinematics(q, T, W):
+    x,y,z,R,P,Y = 0,0,0,0,0,0
+    #
+    # TODO:
+    # Calculate the forward kinematics given the set of seven angles 'q'
+    # You can use the following steps:
+    #     H = I   # Assing to H a 4x4 identity matrix
+    #     for all qi in q:
+    #         H = H * Ti * Ri
+    #     H = H * Ti[7]
+    #     Get xyzRPY from the resulting Homogeneous Transformation 'H'
+    # Where:
+    #     Ti are the Homogeneous Transforms from frame i to frame i-1 when joint i is at zero position
+    #     Ri are the Homogeneous Transforms with zero-translation and rotation qi around axis Wi.
+    #     Ti[7] is the final Homogeneous Transformation from gripper center to joint 7.
+    # Hints:
+    #     Use the tft.identity_matrix() function to get the 4x4 I
+    #     Use the tft.concatenate_matrices() function for multiplying Homogeneous Transformations
+    #     Use the tft.rotation_matrix() matrices Ri.
+    #     Use the tft.euler_from_matrix() function to get RPY from matrix H
+    #     Check online documentation of these functions:
+    #     http://docs.ros.org/en/jade/api/tf/html/python/transformations.html
+    #
     H = tft.identity_matrix()
     for i in range(len(q)):
         H = tft.concatenate_matrices(H, T[i], tft.rotation_matrix(q[i], W[i]))
     H = tft.concatenate_matrices(H, T[7])
-    
-    x, y, z = H[0, 3], H[1, 3], H[2, 3]
-    R, P, Y = list(tft.euler_from_matrix(H))
-    return numpy.asarray([x, y, z, R, P, Y])
+    x, y, z = H[0,3], H[1,3], H[2,3]
+    R, P, Y = list(tft.euler_from_matrix(H)) 
+    return numpy.asarray([x,y,z,R,P,Y])
 
-# Cálculo del Jacobiano por diferencias finitas
 def jacobian(q, T, W):
-    delta_q = 1e-6
-    J = numpy.zeros((6, len(q)))
-    qn = numpy.asarray([q] * len(q)) + delta_q * numpy.identity(len(q))
-    qp = numpy.asarray([q] * len(q)) - delta_q * numpy.identity(len(q))
-
+    #
+    # TODO:
+    # Calculate the Jacobian given a kinematic description Ti and Wi
+    # where:
+    # Ti are the Homogeneous Transformations from frame i to frame i-1 when joint i is at zero position
+    # Wi are the axis of rotation of i-th joint
+    # Use the numeric approximation:   f'(x) = (f(x+delta) - f(x-delta))/(2*delta)
+    #
+    # You can do the following steps:
+    #     J = matrix of 6x7 full of zeros
+    #     q_next = [q1+delta       q2        q3   ....     q7
+    #                  q1       q2+delta     q3   ....     q7
+    #                              ....
+    #                  q1          q2        q3   ....   q7+delta]
+    #     q_prev = [q1-delta       q2        q3   ....     q7
+    #                  q1       q2-delta     q3   ....     q7
+    #                              ....
+    #                  q1          q2        q3   ....   q7-delta]
+    #     FOR i = 1,..,7:
+    #           i-th column of J = ( FK(i-th row of q_next) - FK(i-th row of q_prev) ) / (2*delta_q)
+    #     RETURN J
+    #
+    delta_q = 0.000001
+    J = numpy.asarray([[0.0 for a in q] for i in range(6)])
+    qn = numpy.asarray([q,]*len(q)) + delta_q*numpy.identity(len(q))
+    qp = numpy.asarray([q,]*len(q)) - delta_q*numpy.identity(len(q))
     for i in range(len(q)):
-        J[:, i] = (forward_kinematics(qn[i], T, W) - forward_kinematics(qp[i], T, W)) / (2.0 * delta_q)
-
+        J[:, i] = (forward_kinematics(qn[i], T, W) - forward_kinematics(qp[i], T, W)) / delta_q / 2.0
     return J
 
-# Cinemática inversa con Newton-Raphson y pseudoinversa con amortiguamiento
-def inverse_kinematics(x, y, z, roll, pitch, yaw, T, W, init_guess=numpy.zeros(7), max_iter=250):
-    pd = numpy.asarray([x, y, z, roll, pitch, yaw])
-    q = init_guess.copy()
+def inverse_kinematics(x, y, z, roll, pitch, yaw, T, W, init_guess=numpy.zeros(7), max_iter=20):
+    pd = numpy.asarray([x,y,z,roll,pitch,yaw])
+    #
+    # TODO:
+    # Solve the IK problem given a kinematic description (Ti, Wi) and a desired configuration.
+    # where:
+    # Ti are the Homogeneous Transformations from frame i to frame i-1 when joint i is at zero position
+    # Wi are the axis of rotation of i-th joint
+    # Use the Newton-Raphson method for root finding. (Find the roots of equation FK(q) - pd = 0)
+    # You can do the following steps:
+    #
+    #    Set an initial guess for joints 'q'
+    #    Calculate Forward Kinematics 'p' by calling the corresponding function
+    #    Calcualte error = p - pd
+    #    Ensure orientation angles of error are in [-pi,pi]
+    #    WHILE |error| > TOL and iterations < maximum iterations:
+    #        Calculate Jacobian
+    #        Update q estimation with q = q - pseudo_inverse(J)*error
+    #        Ensure all angles q are in [-pi,pi]
+    #        Recalculate forward kinematics p
+    #        Recalculate error and ensure angles are in [-pi,pi]
+    #        Increment iterations
+    #    Set success if maximum iterations were not exceeded and calculated angles are in valid range
+    #    Return calculated success and calculated q
+    #
+    q = init_guess
     p = forward_kinematics(q, T, W)
     iterations = 0
-
     error = p - pd
-    error[3:6] = (error[3:6] + math.pi) % (2 * math.pi) - math.pi
-
-    tolerance = 1e-4
-    λ = 0.01  # Parámetro de amortiguamiento
-
+    error[3:6] = (error[3:6] + math.pi) % (2*math.pi) - math.pi
+    tolerance = 0.0001
     while numpy.linalg.norm(error) > tolerance and iterations < max_iter:
         J = jacobian(q, T, W)
-        JT = J.T
-        JJt = J @ JT
-        damped_inv = JT @ numpy.linalg.inv(JJt + (λ**2) * numpy.identity(6))
-
-        dq = -damped_inv @ error
-        q = (q + dq + math.pi) % (2 * math.pi) - math.pi
-
+        J_inv = numpy.linalg.pinv(J)
+        q = (q - numpy.dot(J_inv, error) + math.pi)% (2*math.pi) - math.pi #Nos aseguramos que los angulos esten en el rango [-pi, pi]
         p = forward_kinematics(q, T, W)
         error = p - pd
-        error[3:6] = (error[3:6] + math.pi) % (2 * math.pi) - math.pi
-
+        error[3:6] = (error[3:6] + math.pi) % (2*math.pi) - math.pi
         iterations += 1
-
-    success = numpy.linalg.norm(error) < tolerance
-    return success, q
-
-# ----------------------------------------------------------------------------------------
-# UTILIDADES
-# ----------------------------------------------------------------------------------------
-
-# Obtiene trayectoria polinomial interpolada en espacio cartesiano
+    success = iterations < max_iter and angles_in_joint_limits(q)
+    if success:
+        print("IK solution found in: " + str(iterations) + " iterations")
+    else:
+        print("No IK solution found")
+    
+    return success, q, iterations
+   
 def get_polynomial_trajectory_multi_dof(Q_start, Q_end, duration=1.0, time_step=0.05):
     clt = rospy.ServiceProxy("/manipulation/polynomial_trajectory", GetPolynomialTrajectory)
     req = GetPolynomialTrajectoryRequest()
     req.p1 = Q_start
     req.p2 = Q_end
     req.duration = duration
-    req.time_step = time_step
-
+    req.time_step = 0.05
     resp = clt(req)
     Q = []
     T = []
     for p in resp.trajectory.points:
         Q.append(p.positions)
         T.append(p.time_from_start.to_sec())
-
     return numpy.asarray(Q), numpy.asarray(T)
 
-# Extrae información del modelo URDF
 def get_model_info(joint_names):
     robot_model = urdf_parser_py.urdf.URDF.from_parameter_server()
     joints = []
     transforms = []
-
     for name in joint_names:
         for joint in robot_model.joints:
             if joint.name == name:
                 joints.append(joint)
-                break
-
     for joint in joints:
         T = tft.translation_matrix(joint.origin.xyz)
-        R = tft.euler_matrix(*joint.origin.rpy)
-        transforms.append(tft.concatenate_matrices(T, R))
-
-    transforms.append(tft.identity_matrix())  # Transformación final dummy
+        R = tft.euler_matrix(joint.origin.rpy[0], joint.origin.rpy[1], joint.origin.rpy[2])
+        transforms.append(tft.concatenate_matrices(T,R))
     return joints, transforms
 
-# ----------------------------------------------------------------------------------------
-# CALLBACKS DE SERVICIOS
-# ----------------------------------------------------------------------------------------
+def angles_in_joint_limits(q):
+    for i in range(len(q)):
+        if q[i] < joints[i].limit.lower or q[i] > joints[i].limit.upper:
+            print(prompt+"Articular position out of joint bounds")
+            return False
+    return True
 
-# Servicio: Cinemática directa
 def callback_forward_kinematics(req):
-    resp = ForwardKinematicsResponse()
     if len(req.q) != 7:
-        rospy.logwarn(f"{prompt}Expected 7 DOF, got {len(req.q)}.")
-        return resp
-
-    W = [numpy.array(j.axis) for j in joints]
-    resp.x, resp.y, resp.z, resp.roll, resp.pitch, resp.yaw = forward_kinematics(req.q, transforms, W)
+        print(prompt+"By the moment, only 7-DOF arm is supported")
+        return False
+    resp = ForwardKinematicsResponse()
+    W = [joints[i].axis for i in range(len(joints))]  
+    resp.x,resp.y,resp.z,resp.roll,resp.pitch,resp.yaw = forward_kinematics(req.q, transforms, W)
     return resp
 
-# Estimación de duración de trayectoria basada en desplazamiento
 def get_trajectory_time(p1, p2, speed_factor):
-    m = max(numpy.abs(numpy.asarray(p1) - numpy.asarray(p2)))
-    return m / speed_factor + 0.5
+    p1 = numpy.asarray(p1)
+    p2 = numpy.asarray(p2)
+    m = max(numpy.absolute(p1 - p2))
+    return m/speed_factor + 0.5
 
-# Servicio: IK para trayectoria cartesiana
 def callback_ik_for_trajectory(req):
     global max_iterations
-
-    initial_guess = req.initial_guess if len(req.initial_guess) == 7 else rospy.wait_for_message("/hardware/arm/current_pose", Float64MultiArray).data
-
-    W = [numpy.array(j.axis) for j in joints]
+    total_iterations = 0
+    Pd = [req.x, req.y, req.z, req.roll, req.pitch, req.yaw]
+    print(prompt+"Calculating IK and trajectory for " + str(Pd))
+    if len(req.initial_guess) <= 0 or req.initial_guess == None:
+        initial_guess = rospy.wait_for_message("/hardware/arm/current_pose", Float64MultiArray)
+        initial_guess = initial_guess.data
+    else:
+        initial_guess = req.initial_guess
+    W = [joints[i].axis for i in range(len(joints))]  
     p1 = forward_kinematics(initial_guess, transforms, W)
     p2 = [req.x, req.y, req.z, req.roll, req.pitch, req.yaw]
-
-    t = req.duration if req.duration > 0 else get_trajectory_time(p1, p2, 0.25)
+    t  = req.duration if req.duration > 0 else get_trajectory_time(p1, p2, 0.25)
     dt = req.time_step if req.time_step > 0 else 0.05
-
-    try:
-        X, T = get_polynomial_trajectory_multi_dof(p1, p2, t, dt)
-    except Exception as e:
-        rospy.logerr("Trajectory service error: %s", e)
-        return InverseKinematicsPose2TrajResponse(articular_trajectory=JointTrajectory())
-
+    X,T = get_polynomial_trajectory_multi_dof(p1, p2, duration=t, time_step=dt)
     trj = JointTrajectory()
     trj.header.stamp = rospy.Time.now()
     q = initial_guess
-
-    for i, pose in enumerate(X):
-        success, q = inverse_kinematics(*pose, transforms, W, q, max_iterations)
+    for i in range(len(X)):
+        x, y, z, roll, pitch, yaw = X[i]
+        success, q, iterations = inverse_kinematics(x, y, z, roll, pitch, yaw, transforms, W, q, max_iterations)
+        total_iterations += iterations
         if not success:
-            rospy.logwarn(f"{prompt}IK failed at step {i}")
-            return InverseKinematicsPose2TrajResponse(articular_trajectory=JointTrajectory())
-
-        pt = JointTrajectoryPoint()
-        pt.positions = q
-        pt.time_from_start = rospy.Duration.from_sec(T[i])
-        trj.points.append(pt)
-
-    return InverseKinematicsPose2TrajResponse(articular_trajectory=trj)
-
-# Servicio: IK para una sola pose
+            return False
+        p = JointTrajectoryPoint()
+        p.positions = q
+        p.time_from_start = rospy.Duration.from_sec(T[i])
+        trj.points.append(p)
+    print(prompt+"Total iterations: " + str(total_iterations))
+    resp = InverseKinematicsPose2TrajResponse()
+    resp.articular_trajectory = trj
+    return resp
+    
+        
 def callback_ik_for_pose(req):
     global max_iterations
-
-    initial_guess = req.initial_guess if len(req.initial_guess) == 7 else rospy.wait_for_message("/hardware/arm/current_pose", Float64MultiArray).data
-    W = [numpy.array(j.axis) for j in joints]
-
-    success, q = inverse_kinematics(req.x, req.y, req.z, req.roll, req.pitch, req.yaw, transforms, W, initial_guess, max_iterations)
-
+    [x,y,z,R,P,Y] = [req.x,req.y,req.z,req.roll,req.pitch,req.yaw]
+    print(prompt+"Calculating inverse kinematics for pose: " + str([x,y,z,R,P,Y]))
+    if len(req.initial_guess) <= 0 or req.initial_guess == None:
+        init_guess = rospy.wait_for_message("/hardware/arm/current_pose", Float64MultiArray, 5.0)
+        init_guess = initial_guess.data
+    else:
+        init_guess = req.initial_guess
     resp = InverseKinematicsPose2PoseResponse()
-    resp.q = q if success else []
-
+    success, q = inverse_kinematics(x, y, z, R, P, Y, init_guess, max_iterations)
     if not success:
-        rospy.logwarn(f"{prompt}IK for pose failed.")
-
-    return resp
-
-# ----------------------------------------------------------------------------------------
-# INICIALIZACIÓN DEL NODO
-# ----------------------------------------------------------------------------------------
+        return False
+    resp.q = q
+    return resp        
+    
 
 def main():
     global joint_names, max_iterations, joints, transforms, prompt
-
+    print("INITIALIZING INVERSE KINEMATIC NODE - " + NAME)
     rospy.init_node("ik_geometric")
     prompt = rospy.get_name().upper() + ".->"
-
-    joint_names = rospy.get_param("~joint_names", [])
-    max_iterations = rospy.get_param("~max_iterations", 100)
+    joint_names    = rospy.get_param("~joint_names", [])
+    max_iterations = rospy.get_param("~max_iterations", 20)
+    print(prompt+"Joint names: " + str(joint_names))
+    print(prompt+"max_iterations: " + str(max_iterations))
 
     joints, transforms = get_model_info(joint_names)
-    if len(joints) != 7 or len(transforms) != 8:
-        rospy.logerr("URDF error: expected 7 joints and 8 transforms.")
+    if not (len(joints) > 6 and len(transforms) > 6):
+        print("Inverse kinematics.->Cannot get model info from parameter server")
         sys.exit(-1)
 
-    # Advertencia: Asegúrate de remapear estos servicios si tienes múltiples brazos
-    rospy.Service("/manipulation/forward_kinematics", ForwardKinematics, callback_forward_kinematics)
-    rospy.Service("/manipulation/ik_trajectory", InverseKinematicsPose2Traj, callback_ik_for_trajectory)
-    rospy.Service("/manipulation/ik_pose", InverseKinematicsPose2Pose, callback_ik_for_pose)
+    rospy.Service("/manipulation/forward_kinematics"   , ForwardKinematics, callback_forward_kinematics)    
+    rospy.Service("/manipulation/ik_trajectory"        , InverseKinematicsPose2Traj, callback_ik_for_trajectory)
+    rospy.Service("/manipulation/ik_pose"              , InverseKinematicsPose2Pose, callback_ik_for_pose)
+    #loop = rospy.Rate(10)
+    loop = rospy.Rate(40)
+    while not rospy.is_shutdown():
+        loop.sleep()
 
-    rospy.loginfo(f"{prompt}Inverse kinematics service ready.")
-    rospy.spin()
+if __name__ == '__main__':
+    main()
+
 
 if __name__ == "__main__":
     main()
