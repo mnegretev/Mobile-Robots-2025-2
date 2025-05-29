@@ -1,0 +1,18 @@
+RESULTADOS DE EXPERIMENTOS RED NEURONAL
+==================================================
+
+Configuración:
+Tasa de aprendizaje: 0.5
+Épocas: 3
+Tamaño de lote: 5
+Tiempo promedio de entrenamiento: 1.74 segundos
+Tasa promedio de éxito: 66.55%
+--------------------------------------------------
+
+Configuración:
+Tasa de aprendizaje: 0.5
+Épocas: 3
+Tamaño de lote: 10
+Tiempo promedio de entrenamiento: 0.25 segundos
+Tasa promedio de éxito: 17.45%
+--------------------------------------------------
