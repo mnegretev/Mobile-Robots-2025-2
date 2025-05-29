@@ -86,17 +86,22 @@ def get_model_info(joint_names):
 def angles_in_joint_limits(q):
     for i in range(len(q)):
         if q[i] < joints[i].limit.lower or q[i] > joints[i].limit.upper:
-            print(prompt+"Articular position out of joint bounds")
+            rospy.logwarn(f"{prompt}Joint {i} value {q[i]:.2f} out of bounds ({joints[i].limit.lower:.2f}, {joints[i].limit.upper:.2f})")
             return False
     return True
 
 def callback_forward_kinematics(req):
-    if len(req.q) != 7:
-        print(prompt+"By the moment, only 7-DOF arm is supported")
-        return False
     resp = ForwardKinematicsResponse()
-    W = [joints[i].axis for i in range(len(joints))]  
-    resp.x,resp.y,resp.z,resp.roll,resp.pitch,resp.yaw = forward_kinematics(req.q, transforms, W)
+
+    if len(req.q) != 7:
+        rospy.logwarn(f"{prompt}Expected 7 DOF, got {len(req.q)}.")
+        # Valores por defecto si el input es inválido
+        resp.x = resp.y = resp.z = 0.0
+        resp.roll = resp.pitch = resp.yaw = 0.0
+        return resp
+
+    W = [joints[i].axis for i in range(len(joints))]
+    resp.x, resp.y, resp.z, resp.roll, resp.pitch, resp.yaw = forward_kinematics(req.q, transforms, W)
     return resp
 
 def get_trajectory_time(p1, p2, speed_factor):
@@ -160,21 +165,21 @@ def callback_ik_for_pose(req):
     global max_iterations
     [x,y,z,R,P,Y] = [req.x,req.y,req.z,req.roll,req.pitch,req.yaw]
     print(prompt+"Calculating inverse kinematics for pose: " + str([x,y,z,R,P,Y]))
+
     if len(req.initial_guess) <= 0 or req.initial_guess == None:
         init_guess = rospy.wait_for_message("/hardware/arm/current_pose", Float64MultiArray, 5.0)
         init_guess = init_guess.data
     else:
         init_guess = req.initial_guess
-    resp = InverseKinematicsPose2PoseResponse()
+
     success, q = inverse_kinematics(x, y, z, R, P, Y, transforms, [j.axis for j in joints], init_guess, max_iterations)
     resp = InverseKinematicsPose2PoseResponse()
-   if not success:
-      rospy.logwarn("IK failed for pose.")
-      resp = InverseKinematicsPose2PoseResponse()
-      resp.q = []  # trayectoria vacía
-   else:
-      resp.q = q
-   return resp     
+    if success:
+        resp.q = q
+    else:
+        rospy.logwarn("IK failed for pose.")
+        resp.q = []
+    return resp  
     
 def main():
     global joint_names, max_iterations, joints, transforms, prompt
