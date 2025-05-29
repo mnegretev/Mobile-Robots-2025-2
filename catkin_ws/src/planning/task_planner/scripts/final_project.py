@@ -359,7 +359,7 @@ def main():
         elif current_state == "SM_ReachTable":
             print("Voy camino a la mesa")
             say("Reaching the table.")
-            go_to_goal_pose(3.25,7)
+            go_to_goal_pose(3.35,7)
             current_state = "SM_WaitForArrival"
           
 
@@ -375,7 +375,7 @@ def main():
             goal_reached = False
             print("Acercandose a la mesa")
             say("Approaching to the table.")
-            go_to_goal_pose(3.25,5.9)				#Llega directamente a la mesa
+            go_to_goal_pose(3.2,5.6)				#Llega directamente a la mesa
             move_base(0,0,1)
             move_head(0, -0.8) 				#Bajar la cabeza hasta ver los objetos
             if goal_reached:
