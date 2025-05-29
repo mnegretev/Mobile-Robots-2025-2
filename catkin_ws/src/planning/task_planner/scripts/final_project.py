@@ -418,24 +418,23 @@ def main():
             current_state = "SM_Grab"
             #####################################
         elif current_state == "SM_Grab":
-            say("taking the object")
             if object_name == "pringles":
             	move_left_gripper(1)				#Abre la mano
             	q = calculate_inverse_kinematics_left(x,y,z,0,0,0)   #Calcula la cinematica inversa
-            	get_la_polynomial_trajectory(q, 4.0, 0.05)         #Genera la cinematica
+            	move_left_arm_with_trajectory(q)         #Genera la cinematica
             	move_left_gripper(-1) 				#Cierra la mano
             elif object_name == "drink":
             	move_right_gripper(1)
             	q = calculate_inverse_kinematics_right(x,y,z,0,0,0)
-            	get_ra_polynomial_trajectory(q, 4.0, 0.05)
+            	move_right_arm_with_trajectory(q)
             	move_right_gripper(-1) 
             say("Grabbing object.")            
-            current_state = "SM_Lift"
+            current_state:"SM_Lift"
         elif current_state == "SM_Lift":
             say("Preparing arm.")
             move_right_arm(-0.7,0.2,0,1.55,0,1.16,0)		#Regresa los brazos a la posicion default
             move_left_arm(-0.7,0.2,0,1.55,0,1.16,0)
-            current_state="SM_GoToLoc"
+            current_state = "SM_GoToLoc"
         elif current_state == "SM_GoToLoc":
             go_to_goal_pose(target_location[1],target_location[2])            #Lleva el objeto al lugar indicado
             current_state="SM_INIT"
