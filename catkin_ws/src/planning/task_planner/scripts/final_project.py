@@ -456,18 +456,20 @@ def main():
 
         elif current_state == "SM_Grab":
             try:
+                if any(val is None for val in [x, y, z]):
+                    rospy.logerr("Object transform returned None coordinates.")
+                    say("Object transform failed.")
+                    executing_task = False
+                    new_task = False
+                    current_state = "SM_Waiting"
+                    continue
+
+                print(f"[DEBUG] Target IK position: x={x:.3f}, y={y:.3f}, z={z:.3f}")
+
                 if object_name == "pringles":
                     move_left_gripper(1)  # Abre la mano
                     say("Moving left arm.")
-                    if any(val is None for val in [x, y, z]):
-                        rospy.logerr("Object transform returned None coordinates.")
-                        say("Object transform failed.")
-                        current_state = "SM_Waiting"
-                    continue
-                    print(f"[DEBUG] Target IK position: x={x:.3f}, y={y:.3f}, z={z:.3f}")
-
                     q = calculate_inverse_kinematics_left(x, y, z, -2.24, -1.123, 2)
-        
                     if q and hasattr(q, 'points') and len(q.points) > 0:
                         move_left_arm_with_trajectory(q)
                         move_left_gripper(-1)  # Cierra la mano
@@ -483,7 +485,6 @@ def main():
                     move_right_gripper(1)
                     say("Moving right arm.")
                     q = calculate_inverse_kinematics_right(x, y, z, 1.359, 1.496, -1.756)
-        
                     if q and hasattr(q, 'points') and len(q.points) > 0:
                         move_right_arm_with_trajectory(q)
                         move_right_gripper(-1)
@@ -504,7 +505,7 @@ def main():
                 executing_task = False
                 new_task = False
                 current_state = "SM_Waiting"
-        
+                
 #######################################################################################################################################################################################################
 
         elif current_state == "SM_Lift":
