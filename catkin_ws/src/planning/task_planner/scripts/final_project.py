@@ -177,8 +177,8 @@ def main():
 
     # Wait for services
     rospy.loginfo("Waiting for services...")
-    rospy.wait_for_service('/manipulation/la_ik_pose')
-    rospy.wait_for_service('/manipulation/ra_ik_pose')
+    rospy.wait_for_service('/manipulation/la_ik_trayectory')
+    rospy.wait_for_service('/manipulation/ra_ik_trayectory')
     rospy.wait_for_service('/vision/obj_reco/detect_and_recognize_object')
     rospy.loginfo("Services ready.")
 
