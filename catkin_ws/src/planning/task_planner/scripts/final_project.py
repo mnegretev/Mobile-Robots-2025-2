@@ -135,7 +135,18 @@ def move_head(pan, tilt):
     msg = Float64MultiArray()
     msg.data.append(pan)
     msg.data.append(tilt)
-    pubHdGoalPose.publish(msg)
+    pubHdGoalPose.publish(msg)        elif current_state == "SM_Localize":
+            try:
+                x, y, z = find_object(object_name)
+                say(f"{object_name.capitalize()} found.")
+    
+                if object_name == "pringles":
+                    x, y, z = transform_point(x, y, z, "realsense_link", "shoulders_right_link")
+                else:  # drink
+                    x, y, z = transform_point(x, y, z, "realsense_link", "shoulders_left_link")
+
+                current_state = "SM_Prepare"
+
     time.sleep(1.0)
 
 #
@@ -369,7 +380,7 @@ def main():
             move_head(0, -0.7)  # Bajar la cabeza para localizar objetos
             current_state = "SM_Localize"
     #ya hace la rotacion
-        elif current_state = "SM_Localize":
+        elif current_state == "SM_Localize":
             if(object_name==pringles):
             	x,y,z = find_object(pringles)
             	say("Pringles found.")				#Si el objeto es pringles
