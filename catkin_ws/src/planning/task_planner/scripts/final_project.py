@@ -331,12 +331,15 @@ def main():
         #
         TABLE = [3.3, 5.7]
         WP_TABLE = [8.5,  8.3]
+        
         obj = "pringles"
         goal_reached = False
+        
         
         if current_state == "SM_INIT":
             print("Iniciando máquina de estados")
             say("Hello")
+            #time.sleep(1)
             #current_state = "SM_DETECT_OBJECT"
             #current_state = "SM_GRAB_OBJECT"
             #current_state = "SM_APPROACH_TABLE"
@@ -349,11 +352,12 @@ def main():
             goal_reached = False 
 
             current_state = "SM_GO_TO_WAIT"
-        
+            
+            
         
         elif current_state == "SM_GO_TO_WAIT":
             
-            if goal_reached:
+            if goal_reached == True:
                 say("Arrived at table")               
 
                 #current_state = "SM_DETECT_OBJECT"
@@ -363,11 +367,11 @@ def main():
         #current_state == SM_APPROACH_TABLE
         
         elif current_state == "SM_APPROACH_TABLE": 
-            say("Approaching the table.")
+            say("Looking for object in the table.")
             #move_base(0.0, 1.2, 2.5)
             #move_base(0.1, 0.0, 1)
-            move_head(0, -0.8)   
-    
+            #move_head(0, -0.8)   
+            move_head(0, -0.8)  
     
             #current_state = "SM_END"
             current_state = "SM_DETECT_OBJECT"        
@@ -376,39 +380,61 @@ def main():
         elif current_state == "SM_DETECT_OBJECT":
             
             say("Locating object")
+            #time.sleep(1)
+            
             
             x,y,z = find_object(obj)
-            print("Object ", obj, "found at ", [x,y,z],"wtr camera")
-            
-            #time.sleep(2)
+            #print("Object ", obj, "found at ", [x,y,z],"wtr camera")
             
             xt, yt, zt = transform_point(x, y, z)       
 
-            print("Transformed position: " + str([xt, yt, zt]))  
+            #print("Transformed position: " + str([xt, yt, zt]))  
           
             #say("Inverse Cinematics")
             grab = [-1.2, -.2, 0, 2.0, 0, .5, 0]
             
             move_left_arm(grab[0], grab[1], grab[2], grab[3], grab[4], grab[5], grab[6])  
             
+            move_left_gripper(.6)
             
+            say("Calculating Inverse kinematics")
             traj = calculate_inverse_kinematics_left(xt, yt, zt, 0, -math.pi/2, 0)
             
             #print("Transformed position: " + str([traj]))
+            say("Grabing Object")
+            #time.sleep(1)
             
-            move_left_gripper(.6)
+            
+            move_base(0.5, 0.0, 1)
+            
             
             move_left_arm_with_trajectory(traj)
             
             move_left_gripper(-3)
             
-            grab = [2.0144, 0, 0, .0224, 0, .6131, 0]
             
-            move_left_arm(grab[0], grab[1], grab[2], grab[3], grab[4], grab[5], grab[6])
+            xt_g, yt_g, zt_g = transform_point(x+.4, y+.4, z+.4) 
+            traj_g = calculate_inverse_kinematics_left(xt, yt, zt, 0, -math.pi/2, 0)
+            move_left_arm_with_trajectory(traj_g)
+            
+            
+            #grab = [2.0144, 0, 0, .0224, 0, .6131, 0]
+            
+            #move_left_arm(grab[0], grab[1], grab[2], grab[3], grab[4], grab[5], grab[6])
             
             current_state = "SM_GO_DROP" 
             #current_state = "SM_GRAB_OBJECT"
-            
+        
+        
+        
+        
+        
+        
+        #DROP
+        
+        
+        
+        
         elif current_state == "SM_GO_DROP":
             go_to_goal_pose(WP_TABLE[0], WP_TABLE[1])
             goal_reached = False 
@@ -429,36 +455,19 @@ def main():
             say("Approaching the table kitchen")
             
             move_left_gripper(.6)
-            
-            
-            
+
             #move_base(0.0, 1.2, 2.5)
             #move_base(0.1, 0.0, 1)
             move_head(0, 0.8)   
+            
+            say("Dropping object")
     
-    
-            #current_state = "SM_END"
-            current_state = "SM_DETECT_OBJECT" 
-        
-        
-        
-        
-        
-        
-        
-        #current_state == SM_GRAB_OBJECT
-        
-        elif current_state == "SM_GRAB_OBJECT":
-    
-            grab = [-.8856, -.1016, 0, 2.0, 0, .5, 0]
-            
-            move_left_arm(grab[0], grab[1], grab[2], grab[3], grab[4], grab[5], grab[6])  
-            
-            
-            
-            
             current_state = "SM_END"
+            #current_state = "SM_DETECT_OBJECT" 
+       
         
+            #current_state == SM_GRAB_OBJECT
+
 
         
         
