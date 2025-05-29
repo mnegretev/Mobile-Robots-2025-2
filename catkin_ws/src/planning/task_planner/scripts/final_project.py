@@ -384,7 +384,7 @@ def main():
             goal_reached = False
             print("Acercandose a la mesa")
             say("Approaching to the table.")
-            go_to_goal_pose(3.1,5.8)				#Llega directamente a la mesa
+            go_to_goal_pose(3.1,5.75)				#Llega directamente a la mesa
             move_base(0,0,1)
             move_head(0, -0.8) 				#Bajar la cabeza hasta ver los objetos
             if goal_reached:
@@ -439,7 +439,7 @@ def main():
                     say("Transforming object coordinates.")
                     print(f"[DEBUG] Object name: {object_name}")
                     print(f"[DEBUG] Using transform to: {'shoulders_left_link' if object_name == 'drink' else 'shoulders_right_link'}")
-                    q = calculate_inverse_kinematics_left(x, y, z, 0, 0, 0)
+                    q = calculate_inverse_kinematics_left(x, y, z, 2.24, -1.123, 1)
                     if q and hasattr(q, 'points') and len(q.points) > 0:
                         move_left_arm_with_trajectory(q)
                         move_left_gripper(-1)  # Cierra la mano
@@ -456,7 +456,7 @@ def main():
                     say("Transforming object coordinates.")
                     print(f"[DEBUG] Object name: {object_name}")
                     print(f"[DEBUG] Using transform to: {'shoulders_left_link' if object_name == 'drink' else 'shoulders_right_link'}")
-                    q = calculate_inverse_kinematics_right(x, y, z, 0, 0, 0)
+                    q = calculate_inverse_kinematics_right(x, y, z, 2.24, -1.123, 1)
                     if q and hasattr(q, 'points') and len(q.points) > 0:
                         move_right_arm_with_trajectory(q)
                         move_right_gripper(-1)
