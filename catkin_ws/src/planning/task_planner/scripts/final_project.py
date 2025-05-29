@@ -265,15 +265,20 @@ def find_object(object_name):
 #
 # Transforms a point xyz expressed w.r.t. source frame to the target frame
 #
-def transform_point(x,y,z, source_frame="realsense_link", target_frame="shoulders_left_link"):
-    listener = tf.TransformListener()
-    listener.waitForTransform(target_frame, source_frame, rospy.Time(), rospy.Duration(4.0))
-    obj_p = PointStamped()
-    obj_p.header.frame_id = source_frame
-    obj_p.header.stamp = rospy.Time(0)
-    obj_p.point.x, obj_p.point.y, obj_p.point.z = x,y,z
-    obj_p = listener.transformPoint(target_frame, obj_p)
-    return [obj_p.point.x, obj_p.point.y, obj_p.point.z]
+def transform_point(listener, x,y,z, source_frame="realsense_link", target_frame="shoulders_left_link"):
+    try:
+        # Usar el tiempo actual para evitar problemas con datos desactualizados
+        now = rospy.Time.now()
+        listener.waitForTransform(target_frame, source_frame, now, rospy.Duration(4.0))
+        obj_p = PointStamped()
+        obj_p.header.frame_id = source_frame
+        obj_p.header.stamp = now
+        obj_p.point.x, obj_p.point.y, obj_p.point.z = x,y,z
+        obj_p = listener.transformPoint(target_frame, obj_p)
+        return [obj_p.point.x, obj_p.point.y, obj_p.point.z]
+    except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
+        rospy.logerr(f"TF error: {str(e)}")
+        raise
 
 # ===================================================================
 # TERMINAL COMMAND INTERFACE
@@ -353,6 +358,10 @@ def main():
     
     say("System ready. Waiting for voice or terminal commands.")
 
+    max_tries = 0  # Número máximo de intentos para encontrar el objeto
+
+    listener = tf.TransformListener()
+
     loop = rospy.Rate(10)
     while not rospy.is_shutdown():
         # --- MÁQUINA DE ESTADOS PRINCIPAL ---
@@ -368,7 +377,7 @@ def main():
                 executing_task = True
                 new_task = False
                 
-                # Parsear comando de voz
+                # Pasamos el comando
                 target_object, location_name = parse_command(recognized_speech)
                 target_location = table_position if location_name == "table" else kitchen_position
                 
@@ -384,7 +393,9 @@ def main():
             if goal_reached:
                 goal_reached = False
                 say("I arrived near the desk")
+                move_base(0.0, 0, 2.0)
                 current_state = "SM_FIND_OBJECT"
+                time.sleep(1.0)  # Esperar un momento antes de buscar el objeto
 
         elif current_state == "SM_FIND_OBJECT":
             say(f"Looking for the {target_object}")
@@ -400,15 +411,15 @@ def main():
                     obj_cam_coords[2]
                 )
                 say(f"{target_object} detected")
-                current_state = "SM_APPROACH_OBJECT"
+                current_state = "SM_GRAB_OBJECT"
             except:
+                max_tries += 1
                 say("Object not found. Trying again")
                 time.sleep(1.0)
-
-        elif current_state == "SM_APPROACH_OBJECT":
-            say("Approaching the desk for manipulation")
-            move_base(0.2, 0, 2.0)  # Avanzar 40 cm
-            current_state = "SM_GRAB_OBJECT"
+                if max_tries >= 3:
+                    say("Failed to find the object after several attempts. Resetting.")
+                    current_state = "SM_RESET"
+                    max_tries = 0
 
         elif current_state == "SM_GRAB_OBJECT":
             say(f"Grabbing the {target_object}")
@@ -466,9 +477,16 @@ def main():
             current_state = "SM_RESET"
 
         elif current_state == "SM_RESET":
-            executing_task = False
-            say("Ready for next command")
-            current_state = "SM_WAIT_FOR_COMMAND"
+            move_head(0, 0)
+            go_to_goal_pose(0, 0)  # Regresar al origen
+            goal_reached = False
+            if goal_reached:
+                goal_reached = False
+                say(f"Arrived at the {location_name}")
+                current_state = "SM_PLACE_OBJECT"
+                executing_task = False
+                say("Ready for next command")
+                current_state = "SM_WAIT_FOR_COMMAND"
 
         loop.sleep()
 
