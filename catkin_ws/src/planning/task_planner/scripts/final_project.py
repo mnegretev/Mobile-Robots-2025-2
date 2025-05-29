@@ -358,16 +358,20 @@ def main():
         elif current_state == "SM_WaitForArrival":
             if goal_reached:
                 say("I arrived at the destination.")
-
                 current_state = "SM_Approach"
-                #estado de         
+                
+                #estado de   espera      
         elif current_state == "SM_Approach":
             print("Acercandose a la mesa")
             say("Approaching to the table.")
             go_to_goal_pose(3.25,6)				#Llega directamente a la mesa
             move_base(0,0,1)
             move_head(0, -0.8) 				#Bajar la cabeza hasta ver los objetos
-            current_state = "SM_Localize"        
+            if goal_reached:
+                say("I arrived at the destination.")
+
+                current_state = "SM_Localize"
+    
 
         
     #ya xd
