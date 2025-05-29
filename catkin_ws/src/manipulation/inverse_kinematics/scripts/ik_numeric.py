@@ -127,7 +127,10 @@ def callback_ik_for_trajectory(req):
         x, y, z, roll, pitch, yaw = X[i]
         success, q = inverse_kinematics(x, y, z, roll, pitch, yaw, transforms, W, q, max_iterations)
         if not success:
-            return False
+           rospy.logwarn("IK failed for pose.")
+           resp = InverseKinematicsPose2PoseResponse()
+           resp.q = []  # trayectoria vacía
+           return resp
         p = JointTrajectoryPoint()
         p.positions = q
         p.time_from_start = rospy.Duration.from_sec(T[i])
@@ -147,10 +150,11 @@ def callback_ik_for_pose(req):
         init_guess = req.initial_guess
     resp = InverseKinematicsPose2PoseResponse()
     success, q = inverse_kinematics(x, y, z, R, P, Y, transforms, [j.axis for j in joints], init_guess, max_iterations)
-    if not success:
-        return False
-    resp.q = q
-    return resp        
+   if not success:
+      rospy.logwarn("IK failed for pose.")
+      resp = InverseKinematicsPose2PoseResponse()
+      resp.q = []  # trayectoria vacía
+      return resp     
     
 def main():
     global joint_names, max_iterations, joints, transforms, prompt
