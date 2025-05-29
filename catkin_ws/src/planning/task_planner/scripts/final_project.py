@@ -49,14 +49,16 @@ class RobotState:
         self.pub_point = None
         self.targets_coordinates = {
             'drink': [3.1, 6.0],
-            'pringles': [3.3, 6.0]
+            'pringles': [3.3, 6.0],
+            'table': [3.2, 9.0],
+            'kitchen': [6.6, -1.0]
         }
         self.rotation_target = {
             'initial': math.pi*3/2,
             'drink': math.pi*3/2 - 0.3,
             'pringles': math.pi*3/2 + 0.3,
             'table': math.pi*3/2,
-            'kitchen': math.pi
+            'kitchen': math.pi*3/2
         }
         self.goal_coordinates = [0.0, 0.0]
         self.t_pos = None
@@ -78,7 +80,7 @@ def callback_goal_reached(msg):
 def parse_command(cmd):
     obj = "pringles" if "PRINGLES" in cmd else "drink"
     destiny = "table" if "TABLE" in cmd else "kitchen"
-    loc = [3.2, 9.0] if "TABLE" in cmd else [8.0, 0.0]
+    loc = state.targets_coordinates[destiny]
     return obj, loc, destiny
 
 def move_arm(*q):
@@ -189,6 +191,30 @@ def get_robot_pose():
         print(f"Error: {e}")
         return numpy.asarray([0,0]),0
 
+def rotate_to_target(target_angle):
+    _, rotation = get_robot_pose()
+    while abs(rotation - target_angle) > 0.05:
+        rotation_normalized = (rotation + math.pi) % (2 * math.pi) - math.pi
+        target_normalized = (target_angle + math.pi) % (2 * math.pi) - math.pi
+        angle_diff = target_normalized - rotation_normalized
+        if angle_diff > math.pi:
+            angle_diff -= 2 * math.pi
+        elif angle_diff < -math.pi:
+            angle_diff += 2 * math.pi
+        angular_speed = 0.75 if angle_diff > 0 else -0.75
+        move_base(0.0, angular_speed, 0.05)
+        _, rotation = get_robot_pose()
+
+def move_to_position(target_pos, threshold=0.4, speed=0.25):
+    pos, _ = get_robot_pose()
+    while ortho_distance(pos, target_pos) > threshold:
+        move_base(speed, 0.0, 0.05)
+        pos, _ = get_robot_pose()
+
+def prepare_arm_for_detection():
+    move_arm(-0.49, 0.0, 0.0, 2.15, 0.0, 1.36, 0.0)
+    move_gripper(0.3)
+
 def main():
     global state
     state = RobotState()
@@ -244,30 +270,6 @@ def main():
         return f"Navigating to {state.target_object if not state.target_adquired else state.destiny}"
 
     def detect_execute():
-        def rotate_to_target(target_angle):
-            _, rotation = get_robot_pose()
-            while abs(rotation - target_angle) > 0.05:
-                rotation_normalized = (rotation + math.pi) % (2 * math.pi) - math.pi
-                target_normalized = (target_angle + math.pi) % (2 * math.pi) - math.pi
-                angle_diff = target_normalized - rotation_normalized
-                if angle_diff > math.pi:
-                    angle_diff -= 2 * math.pi
-                elif angle_diff < -math.pi:
-                    angle_diff += 2 * math.pi
-                angular_speed = 0.75 if angle_diff > 0 else -0.75
-                move_base(0.0, angular_speed, 0.05)
-                _, rotation = get_robot_pose()
-
-        def move_to_position(target_pos, threshold=0.4, speed=0.25):
-            pos, _ = get_robot_pose()
-            while ortho_distance(pos, target_pos) > threshold:
-                move_base(speed, 0.0, 0.05)
-                pos, _ = get_robot_pose()
-
-        def prepare_arm_for_detection():
-            move_arm(-0.49, 0.0, 0.0, 2.15, 0.0, 1.36, 0.0)
-            move_gripper(0.3)
-
         say("Rotating base to position")
         rotate_to_target(state.rotation_target["initial"])
 
@@ -301,6 +303,21 @@ def main():
         move_arm_with_trajectory(q)
         say("Arm is ready")
 
+    def prepare_arm_execute():
+        say("Rotating robot")
+        rotate_to_target(state.rotation_target[state.destiny])
+        say("Moving arm")
+        move_arm(1.0, 0.0, 0.0, 1.35, 0.0, 0.0, 0.0)
+
+    def end_execute():
+        say("Task completed successfully")
+        state.goal_reached = False
+        state.target_adquired = False
+        state.destiny = ""
+        state.target_object = ""
+        move_arm(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+        move_gripper(0.0)
+
     idle = State(
         "Idle",
         say="Waiting for commands",
@@ -326,15 +343,15 @@ def main():
 
     prepare_arm_state = State(
         "PrepareArm",
-        say="Preparing for target adquisition",
-        execute=prepare_robot_execute,
+        say="Preparing for target deposition",
+        execute=prepare_arm_execute,
         next="OpenGripper"
     )
 
     open_gripper = State(
         "OpenGripper",
         say="Opening gripper",
-        execute=lambda: print("Gripper is open"),
+        execute=lambda: (say("Opening gripper"), move_gripper(0.6)),
         next="EndState"
     )
 
@@ -363,6 +380,7 @@ def main():
         print("Target object grabbed")
         move_gripper(-0.2)  # Close gripper
         move_arm(-0.59, 0.0, 0.0, 1.75, 0.0, 0.56, 0.0)
+        move_arm(-0.49, 0.0, 0.0, 2.15, 0.0, 1.36, 0.0)
         state.target_adquired = True
 
     grab_target = State(
