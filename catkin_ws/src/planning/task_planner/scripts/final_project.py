@@ -30,7 +30,7 @@ from vision_msgs.srv import *
 from manip_msgs.srv import *
 from hri_msgs.msg import *
 
-NAME = "Efren Rivera, Xavier Suastegui, Carlos Lujan y Alan Camacho"
+NAME = "Efren Rivera, Xavier Suastegui, Carlos Lujan y Alan Camarena"
 
 #
 # Global variable 'speech_recognized' contains the last recognized sentence
@@ -362,12 +362,12 @@ def main():
             if object_name == "pringles":
             	move_left_gripper(1)				#Abre la mano
             	q = calculate_inverse_kinematics_left(x,y,z,0,0,0)   #Calcula la cinematica inversa
-            	get_la_polynomial_trajectory(q, 4.0, 0.05)         #Genera la cinematica
+            	move_left_arm_with_trajectory(q)         #Genera la cinematica
             	move_left_gripper(-1) 				#Cierra la mano
             elif object_name == "drink":
             	move_right_gripper(1)
             	q = calculate_inverse_kinematics_right(x,y,z,0,0,0)
-            	get_ra_polynomial_trajectory(q, 4.0, 0.05)
+            	move_right_arm_with_trajectory(q)
             	move_right_gripper(-1) 
             say("Grabbing object.")            
             current_state:"SM_Lift"
