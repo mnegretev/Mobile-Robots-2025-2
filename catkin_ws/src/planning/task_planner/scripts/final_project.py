@@ -421,14 +421,14 @@ def main():
             if object_name == "pringles":
             	move_left_gripper(1)				#Abre la mano
             	q = calculate_inverse_kinematics_left(x, y, z, 0, 0, 0)
-                if q and len(q.points) > 0:
+            if q and len(q.points) > 0:
                     move_left_arm_with_trajectory(q)
                     move_left_gripper(-1)
-                else:
-                    say("IK failed.")
-                    executing_task = False
-                    new_task = False
-                    current_state = "SM_Waiting"
+            else:
+                say("IK failed.")
+                executing_task = False
+                new_task = False
+                current_state = "SM_Waiting"
 
 
             elif object_name == "drink":
