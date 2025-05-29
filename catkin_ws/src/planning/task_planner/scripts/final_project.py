@@ -420,9 +420,17 @@ def main():
         elif current_state == "SM_Grab":
             if object_name == "pringles":
             	move_left_gripper(1)				#Abre la mano
-            	q = calculate_inverse_kinematics_left(x,y,z,0,0,0)   #Calcula la cinematica inversa
-            	move_left_arm_with_trajectory(q)         #Genera la cinematica
-            	move_left_gripper(-1) 				#Cierra la mano
+            	q = calculate_inverse_kinematics_left(x, y, z, 0, 0, 0)
+                if q and len(q.points) > 0:
+                    move_left_arm_with_trajectory(q)
+                    move_left_gripper(-1)
+                else:
+                    say("IK failed.")
+                    executing_task = False
+                    new_task = False
+                    current_state = "SM_Waiting"
+
+
             elif object_name == "drink":
             	move_right_gripper(1)
             	q = calculate_inverse_kinematics_right(x,y,z,0,0,0)
@@ -430,6 +438,8 @@ def main():
             	move_right_gripper(-1) 
             say("Grabbing object.")            
             current_state:"SM_Lift"
+#######################################################################################################################################################################################################
+
         elif current_state == "SM_Lift":
             say("Preparing arm.")
             move_right_arm(-0.7,0.2,0,1.55,0,1.16,0)		#Regresa los brazos a la posicion default
