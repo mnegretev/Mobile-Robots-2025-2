@@ -30,7 +30,7 @@ from vision_msgs.srv import *
 from manip_msgs.srv import *
 from hri_msgs.msg import *
 
-NAME = "FULL NAME"
+NAME = "Frausto Martinez Juan Carlos"
 
 #
 # Global variable 'speech_recognized' contains the last recognized sentence
@@ -277,6 +277,7 @@ def main():
     global new_task, recognized_speech, executing_task, goal_reached
     global pubLaGoalPose, pubRaGoalPose, pubHdGoalPose, pubLaGoalGrip, pubRaGoalGrip
     global pubLaGoalTraj, pubRaGoalTraj, pubGoalPose, pubCmdVel, pubSay
+
     print("FINAL PROJECT - " + NAME)
     rospy.init_node("final_project")
     rospy.Subscriber('/hri/sp_rec/recognized', RecognizedSpeech, callback_recognized_speech)
@@ -284,35 +285,35 @@ def main():
     pubGoalPose   = rospy.Publisher('/move_base_simple/goal', PoseStamped, queue_size=10)
     pubCmdVel     = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
     pubSay        = rospy.Publisher('/hri/speech_generator', SoundRequest, queue_size=1)
-    pubLaGoalPose = rospy.Publisher("/hardware/left_arm/goal_pose" , Float64MultiArray, queue_size=10);
-    pubRaGoalPose = rospy.Publisher("/hardware/right_arm/goal_pose", Float64MultiArray, queue_size=10);
-    pubHdGoalPose = rospy.Publisher("/hardware/head/goal_pose"     , Float64MultiArray, queue_size=10);
-    pubLaGoalGrip = rospy.Publisher("/hardware/left_arm/goal_gripper" , Float64, queue_size=10);
-    pubRaGoalGrip = rospy.Publisher("/hardware/right_arm/goal_gripper", Float64, queue_size=10);
+    pubLaGoalPose = rospy.Publisher("/hardware/left_arm/goal_pose" , Float64MultiArray, queue_size=10)
+    pubRaGoalPose = rospy.Publisher("/hardware/right_arm/goal_pose", Float64MultiArray, queue_size=10)
+    pubHdGoalPose = rospy.Publisher("/hardware/head/goal_pose"     , Float64MultiArray, queue_size=10)
+    pubLaGoalGrip = rospy.Publisher("/hardware/left_arm/goal_gripper" , Float64, queue_size=10)
+    pubRaGoalGrip = rospy.Publisher("/hardware/right_arm/goal_gripper", Float64, queue_size=10)
     pubLaGoalTraj = rospy.Publisher("/manipulation/la_q_trajectory", JointTrajectory, queue_size=10)
     pubRaGoalTraj = rospy.Publisher("/manipulation/ra_q_trajectory", JointTrajectory, queue_size=10)
     listener = tf.TransformListener()
+
     print("Waiting for services...")
     rospy.wait_for_service('/manipulation/la_ik_pose')
     rospy.wait_for_service('/manipulation/ra_ik_pose')
     rospy.wait_for_service('/vision/obj_reco/detect_and_recognize_object')
     print("Services are now available.")
-    loop = rospy.Rate(10)
-    
 
-    #
-    # FINAL PROJECT 
-    #
+    loop = rospy.Rate(10)
+
     executing_task = False
-    current_state = "SM_INIT"
     new_task = False
     goal_reached = False
     recognized_speech = ""
+    # variables de tarea
+    target_obj = ""
+    target_loc = [0.0, 0.0]
+    target_loc_name = ""
+
     say("Ready")
+    current_state = "SM_INIT"
     while not rospy.is_shutdown():
-        #
-        # Write here your AFSM
-        #
         if current_state == "SM_INIT":
             print("Iniciando máquina de estados")
             say("Hello. I'm ready to execute a command.")
@@ -327,9 +328,57 @@ def main():
             move_left_gripper(1.0)
             move_left_gripper(0.0)
             move_left_arm(0,0,0,0,0,0,0)
-            current_state = "END"
+            current_state = "SM_WAIT_CMD"
+
+        elif current_state == "SM_WAIT_CMD":
+            # Espera hasta que callback_recognized_speech ponga new_task = True
+            if new_task:
+                new_task = False
+                executing_task = True
+                current_state = "SM_PARSE"
+
+        elif current_state == "SM_PARSE":
+            cmd = recognized_speech.upper()
+            target_obj, target_loc = parse_command(cmd)
+            if target_loc == [8.0,8.5]:
+                target_loc_name = "table"
+            else:
+                target_loc_name = "kitchen"
+            say(f"I will take the {target_obj} to the {target_loc_name}")
+            current_state = "SM_GRASP"
+
+        elif current_state == "SM_GRASP":
+            say("Going to grab " + target_obj)
+            # Detectar y agarrar
+            xyz = find_object(target_obj)
+            xyz_tf = transform_point(xyz[0], xyz[1], xyz[2])
+            traj = calculate_inverse_kinematics_left(xyz_tf[0], xyz_tf[1], xyz_tf[2], 0, math.pi/2, 0)
+            move_left_arm_with_trajectory(traj)
+            move_left_gripper(1.0)
+            time.sleep(1.0)
+            say("Object grasped")
+            current_state = "SM_NAV_OBJ"
+
+        elif current_state == "SM_NAV_OBJ":
+            say("Navigating to " + target_loc_name)
+            go_to_goal_pose(target_loc[0], target_loc[1])
+            goal_reached = False
+            current_state = "SM_WAIT_ARRIVAL"
+
+        elif current_state == "SM_WAIT_ARRIVAL":
+            if goal_reached:
+                say("Arrived at " + target_loc_name)
+                current_state = "SM_RELEASE"
+
+        elif current_state == "SM_RELEASE":
+            say("Releasing " + target_obj)
+            move_left_gripper(0.0)
+            time.sleep(1.0)
+            say("Task completed")
+            executing_task = False
+            current_state = "SM_WAIT_CMD"
+
         loop.sleep()
 
 if __name__ == '__main__':
     main()
-    
