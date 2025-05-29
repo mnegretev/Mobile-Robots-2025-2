@@ -266,20 +266,18 @@ def find_object(object_name):
 # Transforms a point xyz expressed w.r.t. source frame to the target frame
 #
 def transform_point(x, y, z, source_frame="kinect_link", target_frame="shoulders_left_link"):
+    listener = tf.TransformListener()
     try:
-        listener = tf.TransformListener()
         listener.waitForTransform(target_frame, source_frame, rospy.Time(0), rospy.Duration(4.0))
-
         obj_p = PointStamped()
         obj_p.header.frame_id = source_frame
-        obj_p.header.stamp = rospy.Time.now()  # ← ¡MUY IMPORTANTE!
-        obj_p.point.x = x
-        obj_p.point.y = y
-        obj_p.point.z = z
-
-        obj_p = listener.transformPoint(target_frame, obj_p)
-        return [obj_p.point.x, obj_p.point.y, obj_p.point.z]
-
+        obj_p.header.stamp = rospy.Time(0)  # Tiempo "más reciente disponible"
+        obj_p.point.x, obj_p.point.y, obj_p.point.z = x, y, z
+        obj_p_out = listener.transformPoint(target_frame, obj_p)
+        return [obj_p_out.point.x, obj_p_out.point.y, obj_p_out.point.z]
+    except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
+        rospy.logerr("TF transform failed: %s", str(e))
+        return [None, None, None]
     except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
         rospy.logerr("TF transform failed: %s", str(e))
         return [None, None, None]
