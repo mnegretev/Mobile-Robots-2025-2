@@ -193,7 +193,7 @@ def calculate_inverse_kinematics_left(x,y,z,roll, pitch, yaw):
     req_ik.yaw   = yaw
     req_ik.duration = 0;
     req_ik.time_step = 0.05
-    #req_ik.initial_guess = []
+    req_ik.initial_guess = [0.84,-0.1,-0.1,-0.68,0,0.41,0]
     clt = rospy.ServiceProxy("/manipulation/la_ik_trajectory", InverseKinematicsPose2Traj)
     resp = clt(req_ik)
     return resp.articular_trajectory
@@ -212,7 +212,7 @@ def calculate_inverse_kinematics_right(x,y,z,roll, pitch, yaw):
     req_ik.yaw   = yaw
     req_ik.duration = 0;
     req_ik.time_step = 0.05
-    #req_ik.initial_guess = []
+    req_ik.initial_guess = [0.7,0.4,0-0.1,1.2,1.2,-0.1,-0.8]
     clt = rospy.ServiceProxy("/manipulation/ra_ik_trajectory", InverseKinematicsPose2Traj)
     resp = clt(req_ik)
     return resp.articular_trajectory
@@ -373,7 +373,7 @@ def main():
             goal_reached = False
             print("Acercandose a la mesa")
             say("Approaching to the table.")
-            go_to_goal_pose(3.25,5.8)				#Llega directamente a la mesa
+            go_to_goal_pose(3.41,5.9)				#Llega directamente a la mesa
             move_base(0,0,1)
             move_head(0, -0.8) 				#Bajar la cabeza hasta ver los objetos
             if goal_reached:
