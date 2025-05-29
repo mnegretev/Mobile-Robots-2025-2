@@ -409,12 +409,16 @@ def main():
         ##############
         
         elif current_state == "SM_Prepare":
+            move_right_arm(0,0,0,0,0,0,0)
+            move_left_arm(0,0,0,0,0,0,0)	
             say("Preparing arms.")
             print("Moviendo brazos")
             move_right_arm(-0.7,0.2,0,1.55,0,1.16,0)
             move_left_arm(-0.7,0.2,0,1.55,0,1.16,0)		#Generar el movimiento "prepare" en ambos brazos
             current_state = "SM_Grab"
+            #####################################
         elif current_state == "SM_Grab":
+            say("taking the object")
             if object_name == "pringles":
             	move_left_gripper(1)				#Abre la mano
             	q = calculate_inverse_kinematics_left(x,y,z,0,0,0)   #Calcula la cinematica inversa
