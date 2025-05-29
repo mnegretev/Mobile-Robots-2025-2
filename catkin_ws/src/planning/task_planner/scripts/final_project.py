@@ -20,6 +20,9 @@ import tf
 import math
 import time
 import threading
+
+import numpy as np
+
 from std_msgs.msg import String, Float64MultiArray, Float64, Bool
 from nav_msgs.msg import Path
 from nav_msgs.srv import GetPlan, GetPlanRequest
@@ -185,20 +188,35 @@ def say(text):
 # This function calls the service for calculating inverse kinematics for left arm
 # and returns the calculated articular position.
 #
-def calculate_inverse_kinematics_left(x,y,z,roll, pitch, yaw):
-    req_ik = InverseKinematicsPose2TrajRequest()
-    req_ik.x = x
-    req_ik.y = y
-    req_ik.z = z
-    req_ik.roll  = roll
-    req_ik.pitch = pitch
-    req_ik.yaw   = yaw
-    req_ik.duration = 0;
-    req_ik.time_step = 0.05
-    req_ik.initial_guess = []
-    clt = rospy.ServiceProxy("/manipulation/la_ik_trajectory", InverseKinematicsPose2Traj)
-    resp = clt(req_ik)
-    return resp.articular_trajectory
+def calculate_inverse_kinematics_left(x, y, z, roll, pitch, yaw):
+    try:
+        # Esperar servicio con timeout
+        rospy.wait_for_service("/manipulation/la_ik_trajectory", timeout=2.0)
+        
+        req_ik = InverseKinematicsPose2TrajRequest()
+        req_ik.x = x
+        req_ik.y = y
+        req_ik.z = z
+        req_ik.roll = roll
+        req_ik.pitch = pitch
+        req_ik.yaw = yaw
+        req_ik.duration = 0
+        req_ik.time_step = 0.05
+        req_ik.initial_guess = []
+        
+        clt = rospy.ServiceProxy("/manipulation/la_ik_trajectory", InverseKinematicsPose2Traj)
+        resp = clt(req_ik)
+        
+        # Verificar si el servicio retornó una trayectoria válida
+        if not resp or not resp.articular_trajectory.points:
+            rospy.logerr("[IK] Servicio retornó trayectoria vacía o inválida")
+            return None
+            
+        return resp.articular_trajectory
+        
+    except (rospy.ServiceException, rospy.ROSException) as e:
+        rospy.logerr(f"[IK] Error en servicio de cinemática inversa: {str(e)}")
+        return None
 
 #
 # This function calls the service for calculating inverse kinematics for right arm
@@ -292,6 +310,57 @@ def transform_point(x, y, z, source_frame="realsense_link", target_frame="should
         print(f"[ERROR] Error transforming point: {e}")
         return None
 
+
+#
+# Get robot pose
+#
+def get_robot_pose():
+    global listener
+    try:
+        # Wait for the transform to be available
+        ([x, y, z], [qx,qy,qz,qw]) = listener.lookupTransform('map', 'base_link', rospy.Time(0))
+        # Convert quaternion to Euler angles
+        return np.asarray([x, y]), 2*math.atan2(qz, qw)
+    except Exception as e:
+        print(f"Error: {e}")
+        return np.asarray([0,0]),0
+
+#
+# Rotate to target angle
+#
+def rotate_to_target(target_angle):
+        # Get the current robot pose
+        _, rotation = get_robot_pose()
+        # Rotate until the robot's is close enough to the target angle
+        while abs(rotation - target_angle) > 0.05:
+            # Get the current robot pose again
+            rotation_normalized = (rotation + math.pi) % (2 * math.pi) - math.pi
+            target_normalized = (target_angle + math.pi) % (2 * math.pi) - math.pi
+            angle_diff = target_normalized - rotation_normalized
+
+            # Normalize the angle difference to the range [-pi, pi]
+            if angle_diff > math.pi:
+                angle_diff -= 2 * math.pi
+            elif angle_diff < -math.pi:
+                angle_diff += 2 * math.pi
+
+            # Calculate the angular speed based on the angle difference
+            angular_speed = 0.75 if angle_diff > 0 else -0.75
+            # Move the base with the calculated angular speed
+            move_base(0.0, angular_speed, 0.05)
+            # Update the robot pose
+            _, rotation = get_robot_pose()
+
+
+# Prepara el brazo para manipular
+def prepare_arm(arm):
+    if arm == "left":
+        move_left_arm(-0.85, 0.0, 0, 2.5418, 0.0, 0.1695, 0.0)
+        move_left_gripper(0.4)
+    elif arm == "right":
+        move_right_arm(-0.85, 0.0, 0, 2.5418, 0.0, 0.1695, 0.0)
+        move_right_gripper(0.4)
+
 # ===================================================================
 # TERMINAL COMMAND INTERFACE
 # ===================================================================
@@ -372,6 +441,8 @@ def main():
 
     max_tries = 0  # Número máximo de intentos para encontrar el objeto
 
+    arm = ""
+
     loop = rospy.Rate(10)
     while not rospy.is_shutdown():
         # --- MÁQUINA DE ESTADOS PRINCIPAL ---
@@ -391,7 +462,14 @@ def main():
                 # Pasamos el comando
                 target_object, location_name = parse_command(recognized_speech)
                 target_location = table_position if location_name == "table" else kitchen_position
-                
+
+                if target_object.lower() == "pringles":
+                    arm = "left"
+                elif target_object.lower() == "drink":
+                    arm = "right"
+                else:
+                    arm = ""
+   
                 say(f"Command received. I will take the {target_object} to the {location_name}")
                 current_state = "SM_NAVIGATE_TO_DESK"
 
@@ -444,33 +522,31 @@ def main():
                     max_tries = 0
 
         elif current_state == "SM_GRAB_OBJECT":
-            say(f"Grabbing the {target_object}")
-            print(f"[INFO] Starting grasp sequence for: {target_object}")
-
             try:
-                print("[INFO] Moving arm to pre-grasp position...")
-                move_left_arm_with_trajectory(pre_grasp_traj)
-
-                print("[INFO] Calculating grasp trajectory...")
-                grasp_traj = calculate_inverse_kinematics_left(
-                    obj_position[0], 
-                    obj_position[1], 
-                    obj_position[2],
-                    0, math.pi/2, 0
-                )
-                print("[INFO] Moving arm to grasp position...")
-                move_left_arm_with_trajectory(grasp_traj)
-
-                print("[INFO] Closing gripper...")
-                move_left_gripper(0.0)
-                time.sleep(1.0)
-
-                print("[INFO] Lifting object back to pre-grasp position...")
-                move_left_arm_with_trajectory(pre_grasp_traj)
-
-                say("Object successfully grabbed")
-                print("[INFO] Object successfully grabbed.")
-                current_state = "SM_NAVIGATE_TO_LOCATION"
+                if arm == "left":
+                    # Grasp
+                    prepare_arm("left")
+                    grasp_traj = calculate_inverse_kinematics_left(
+                        obj_position[0], obj_position[1], obj_position[2], 0, math.pi/2, 0
+                    )
+                    if grasp_traj is None:
+                        raise Exception("IK falló para grasp")
+                        
+                    move_left_arm_with_trajectory(grasp_traj)
+                    time.sleep(1.0)  # Esperar a que el agarre se complete
+                    move_left_gripper(0.0)  # Cerrar pinza
+                elif arm == "right":
+                    # Grasp
+                    prepare_arm("right")
+                    grasp_traj = calculate_inverse_kinematics_right(
+                        obj_position[0], obj_position[1], obj_position[2], 0, math.pi/2, 0
+                    )
+                    if grasp_traj is None:
+                        raise Exception("IK falló para grasp")
+                        
+                    move_right_arm_with_trajectory(grasp_traj)
+                    time.sleep(1.0)  # Esperar a que el agarre se complete
+                    move_right_gripper(0.0)  # Cerrar pinza
 
             except Exception as e:
                 print(f"[ERROR] Exception during grasping: {e}")
@@ -503,6 +579,8 @@ def main():
             current_state = "SM_RESET"
 
         elif current_state == "SM_RESET":
+            move_left_arm(0, 0, 0, 0, 0, 0, 0)  # Posición inicial del brazo
+            move_right_arm(0, 0, 0, 0, 0, 0, 0)
             move_head(0, 0)
             go_to_goal_pose(0, 0)  # Regresar al origen
             if goal_reached:
