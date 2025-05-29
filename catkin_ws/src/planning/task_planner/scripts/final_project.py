@@ -341,25 +341,25 @@ def main():
             go_to_goal_pose(3.5,6)				#Llega directamente a la mesa
             move_head(0, -0.8) 				#Bajar la cabeza hasta ver los objetos
             current_state:"SM_Localize"
-        elif current_state = "SM_Localize":
-            if(object_name==pringles):
+        elif current_state == "SM_Localize":
+            if(object_name=="pringles"):
             	x,y,z = find_object(pringles)
             	say("Pringles found.")				#Si el objeto es pringles
             	print("Se encontraron las pringles")
             	x,y,z = transform_point(x,y,z,"kinect_link","shoulders_left_link")
-            elif(object_name == drink)
+            elif(object_name == "drink")
             	x,y,z = find_object(drink)			#Si el objeto es el chesco
             	say("Drink found.")
             	print("Se encontro la soda")
             	x,y,z = transform_point(x,y,z,"kinect_link","shoulders_right_link")
             current_state:"SM_Prepare"
-        elif current_state = "SM_Prepare":
+        elif current_state == "SM_Prepare":
             say("Preparing arms.")
             print("Moviendo brazos")
             move_right_arm(-0.7,0.2,0,1.55,0,1.16,0)
             move_left_arm(-0.7,0.2,0,1.55,0,1.16,0)		#Generar el movimiento "prepare" en ambos brazos
             current_state:"SM_Grab"
-        elif current_state = "SM_Grab":
+        elif current_state == "SM_Grab":
             if object_name == "pringles":
             	move_left_gripper(1)				#Abre la mano
             	q = calculate_inverse_kinematics_left(x,y,z,0,0,0)   #Calcula la cinematica inversa
@@ -372,12 +372,12 @@ def main():
             	move_right_gripper(-1) 
             say("Grabbing object.")            
             current_state:"SM_Lift"
-        elif current_state = "SM_Lift":
+        elif current_state == "SM_Lift":
             say("Preparing arm.")
             move_right_arm(-0.7,0.2,0,1.55,0,1.16,0)		#Regresa los brazos a la posicion default
             move_left_arm(-0.7,0.2,0,1.55,0,1.16,0)
             current_state:"SM_GoToLoc"
-        elif current_state = "SM_GoToLoc":
+        elif current_state == "SM_GoToLoc":
             go_to_goal_pose(target_location[1],target_location[2])            #Lleva el objeto al lugar indicado
             current_state:"SM_INIT"
         loop.sleep()
