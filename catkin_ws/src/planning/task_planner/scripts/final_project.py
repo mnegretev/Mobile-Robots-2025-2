@@ -360,6 +360,7 @@ def main():
             print("Initializing state machine")
             move_head(0, 0)  # Posición neutral de la cabeza
             move_left_arm(0, 0, 0, 0, 0, 0, 0)  # Posición inicial del brazo
+            move_right_arm(0, 0, 0, 0, 0, 0, 0)
             current_state = "SM_WAIT_FOR_COMMAND"
 
         elif current_state == "SM_WAIT_FOR_COMMAND":
