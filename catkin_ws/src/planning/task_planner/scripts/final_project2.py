@@ -194,8 +194,8 @@ def calculate_inverse_kinematics_left(x,y,z,roll, pitch, yaw):
     req_ik.roll  = roll
     req_ik.pitch = pitch
     req_ik.yaw   = yaw
-    req_ik.duration = 0;
-    req_ik.time_step = 0.05
+    req_ik.duration = 2
+    req_ik.time_step = 0.025
     req_ik.initial_guess = []
     clt = rospy.ServiceProxy("/manipulation/la_ik_trajectory", InverseKinematicsPose2Traj)
     resp = clt(req_ik)
@@ -213,8 +213,8 @@ def calculate_inverse_kinematics_right(x,y,z,roll, pitch, yaw):
     req_ik.roll  = roll
     req_ik.pitch = pitch
     req_ik.yaw   = yaw
-    req_ik.duration = 0;
-    req_ik.time_step = 0.05
+    req_ik.duration = 2
+    req_ik.time_step = 0.025
     req_ik.initial_guess = []
     clt = rospy.ServiceProxy("/manipulation/ra_ik_trajectory", InverseKinematicsPose2Traj)
     resp = clt(req_ik)
@@ -292,23 +292,6 @@ def get_transform(frame):
         return np.asarray([x, y, z])
     except Exception as e:
         return np.asarray([0,0,0])
-
-#
-# This function retrieves the current position of a frame in global coordinates
-#
-def transform_point_mod(loc, is_left_arm):
-    # loc is a list or tuple with x, y, z coordinates
-    x, y, z = loc
-    # Get the position of the target frame and source frame
-    target_frame = "shoulders_left_link" if is_left_arm else "shoulders_right_link"
-    source_frame = "kinect_base"
-    # Get the transformation from the source frame to the target frame
-    source_pos = get_transform(source_frame)
-    target_pos = get_transform(target_frame)
-    # Calculate the point in global coordinates
-    point_no_transform = -np.asarray([x, y, z]) + source_pos
-    # Return the transformed point in global coordinates
-    return target_pos - point_no_transform
 
 #
 # Get robot pose
@@ -389,8 +372,8 @@ def main():
     goal_reached = False
     object_is_close = False
     recognized_speech = ""
-    
-    
+
+
     print("Moving near table")
     say("Moving near the table")
     go_to_goal_pose(3.4, 6.0)
@@ -426,6 +409,7 @@ def main():
     move_head(0, -1.0)
     time.sleep(1.0)  # Allow time for the head to move
     
+
     say("Ready")
     
     
@@ -504,20 +488,30 @@ def main():
             print("Finding object")
             say("Finding the object")
             pos = find_object(requested_object)
+            print("Position found: (" + str(pos) + ")")
             arm = "LEFT" if requested_object == "pringles" else "RIGHT"
-            current_state = "SM_CALCULATE_INVERSE_KINEMATICS"
+            current_state = "SM_PREPARE_ARM"
         
         # SM_PREPARE_ARM
         elif current_state == "SM_PREPARE_ARM":
             print("Preparing arm")
             say("Preparing my " + arm + " arm to grab the object")
             if arm == "LEFT":
-                move_left_arm(-0.1432, 0.0, -0.1, 1.8418, 0.0, 0.1695, 0.0)
+                move_left_arm(-0.49, 0, 0, 2.15, 0, 1.36, 0)
                 move_left_gripper(0.4)
             elif arm == "RIGHT":
-                move_right_arm(-0.1432, -0.1, -0.1, 1.8418, 0.0, 0.1695, 0.0)
+                move_right_arm(-0.49, 0, 0, 2.15, 0, 1.36, 0)
                 move_right_gripper(0.4)
-            current_state = "SM_CALCULATE_INVERSE_KINEMATICS"
+            current_state = "SM_RAISE_ARM"
+
+        # SM_RAISE_ARM
+        elif current_state=="SM_RAISE_ARM":
+            say("Raising arm")
+            time.sleep(2.0)
+            move_arm = move_left_arm if arm=="LEFT" else move_right_arm
+            move_arm(-0.59, 0, 0, 1.75, 0, 0.56, 0)
+            move_arm(-0.14322, 0, 0, 1.8418, 0, 0.1695, 0)
+            current_state="SM_CALCULATE_INVERSE_KINEMATICS"
         
         
         # SM_CALCULATE_INVERSE_KINEMATICS"
@@ -527,19 +521,23 @@ def main():
             try:
                 # Find object position in global coordinates
                 say("Transforming the position of the object")
-                pos = transform_point_mod(pos, arm == "LEFT")
+                pos = transform_point(pos[0], pos[1], pos[2], target_frame="shoulders_left_link" if arm == "LEFT" else "shoulders_right_link")
                 print("Transformed position:", pos)
-                say("Calculating the trajectory to the object")
+                say("Calculating inverse kinematics for my arm")
+
                 if arm == "LEFT":
-                    q = calculate_inverse_kinematics_left(pos[0], pos[1], pos[2], 0.0, 0.0, 0.0)
+                    q = calculate_inverse_kinematics_left(pos[0] + 0.2, pos[1], pos[2], 0.0, -1.473, 0.0)
+                    say("Calculating polynomial trajectory")
                     q = get_la_polynomial_trajectory(q, duration=2.0, time_step=0.05)
                 elif arm == "RIGHT":
-                    q = calculate_inverse_kinematics_right(pos[0], pos[1], pos[2], 0.0, 0.0, 0.0)
+                    q = calculate_inverse_kinematics_right(pos[0] + 0.2, pos[1], pos[2], 0.0, -1.473, 0.0)
+                    say("Calculating polynomial trajectory")
                     q = get_la_polynomial_trajectory(q, duration=2.0, time_step=0.05)
                 current_state = "SM_MOVE_ARM_TO_OBJECT_TRAJ"
             except Exception as e:
                 say("I couldn't calculate the trajectory to the object")
                 print("Error calculating inverse kinematics:", e)
+                executing_task = False
                 current_state = "SM_INIT"
                 
         # SM_MOVE_ARM_TO_OBJECT_TRAJ
@@ -573,7 +571,7 @@ def main():
 
         # SM_FIND_OBJECTrequested_object, requested_location = parse_command(recognized_speech)
                             
-            
+        
         loop.sleep()
 
 if __name__ == '__main__':
