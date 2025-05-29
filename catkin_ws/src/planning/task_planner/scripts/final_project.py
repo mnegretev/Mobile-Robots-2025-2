@@ -383,7 +383,7 @@ def main():
 
                 current_state = "SM_Prepare"
 
-              except Exception as e:
+            except Exception as e:
                   print("Error while trying to find object:", e)
                   say("I couldn't find the object.")
                   executing_task = False
@@ -392,8 +392,7 @@ def main():
 
             
             #Encontrar el objeto a buscar en la mesa estamos aqui
-        
-            current_state:"SM_Prepare"
+
         elif current_state = "SM_Prepare":
             say("Preparing arms.")
             print("Moviendo brazos")
