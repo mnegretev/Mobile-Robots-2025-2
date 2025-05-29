@@ -104,41 +104,58 @@ def get_trajectory_time(p1, p2, speed_factor):
     p2 = numpy.asarray(p2)
     m = max(numpy.absolute(p1 - p2))
     return m/speed_factor + 0.5
-
+##########################################################################################################
+##########################################################################################################
+##########################################################################################################
 def callback_ik_for_trajectory(req):
     global max_iterations
     Pd = [req.x, req.y, req.z, req.roll, req.pitch, req.yaw]
-    print(prompt+"Calculating IK and trajectory for " + str(Pd))
-    if len(req.initial_guess) <= 0 or req.initial_guess == None:
+    print(prompt + "Calculating IK and trajectory for " + str(Pd))
+
+    if not req.initial_guess:
         initial_guess = rospy.wait_for_message("/hardware/arm/current_pose", Float64MultiArray)
         initial_guess = initial_guess.data
     else:
         initial_guess = req.initial_guess
+
     W = [joints[i].axis for i in range(len(joints))]  
     p1 = forward_kinematics(initial_guess, transforms, W)
     p2 = [req.x, req.y, req.z, req.roll, req.pitch, req.yaw]
     t  = req.duration if req.duration > 0 else get_trajectory_time(p1, p2, 0.25)
     dt = req.time_step if req.time_step > 0 else 0.05
-    X,T = get_polynomial_trajectory_multi_dof(p1, p2, duration=t, time_step=dt)
+
+    try:
+        X, T = get_polynomial_trajectory_multi_dof(p1, p2, duration=t, time_step=dt)
+    except Exception as e:
+        rospy.logerr("Error in polynomial trajectory service: %s", str(e))
+        resp = InverseKinematicsPose2TrajResponse()
+        resp.articular_trajectory = JointTrajectory()
+        return resp
+
     trj = JointTrajectory()
     trj.header.stamp = rospy.Time.now()
     q = initial_guess
+
     for i in range(len(X)):
         x, y, z, roll, pitch, yaw = X[i]
         success, q = inverse_kinematics(x, y, z, roll, pitch, yaw, transforms, W, q, max_iterations)
         if not success:
-           rospy.logwarn("IK failed for pose.")
-           resp = InverseKinematicsPose2PoseResponse()
-           resp.q = []  # trayectoria vacía
-           return resp
+            rospy.logwarn("IK failed at trajectory point %d", i)
+            resp = InverseKinematicsPose2TrajResponse()
+            resp.articular_trajectory = JointTrajectory()
+            return resp
+
         p = JointTrajectoryPoint()
         p.positions = q
         p.time_from_start = rospy.Duration.from_sec(T[i])
         trj.points.append(p)
+
     resp = InverseKinematicsPose2TrajResponse()
     resp.articular_trajectory = trj
     return resp
-        
+   ###############################################################################################################################################################
+####################################################################################################################################################################################################################
+##########################################################################################################
 def callback_ik_for_pose(req):
     global max_iterations
     [x,y,z,R,P,Y] = [req.x,req.y,req.z,req.roll,req.pitch,req.yaw]
