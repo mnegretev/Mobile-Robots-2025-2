@@ -384,12 +384,12 @@ def main():
             	x,y,z = transform_point(x,y,z,"kinect_link","shoulders_right_link")
             current_state:"SM_Prepare"
 
-            except Exception as e:
-                print("Error while trying to find object:", e)
-                say("I couldn't find the object.")
-                executing_task = False
-                new_task = False
-                current_state = "SM_Waiting"
+           # except Exception as e:
+           #     print("Error while trying to find object:", e)
+            #    say("I couldn't find the object.")
+             #   executing_task = False
+              #  new_task = False
+               # current_state = "SM_Waiting" 
 
             
             #Encontrar el objeto a buscar en la mesa estamos aqui
