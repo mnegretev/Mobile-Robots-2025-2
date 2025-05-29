@@ -385,10 +385,10 @@ def main():
 
               except Exception as e:
                   print("Error while trying to find object:", e)
-                   say("I couldn't find the object.")
-                    executing_task = False
-                    new_task = False
-                    current_state = "SM_Waiting"
+                  say("I couldn't find the object.")
+                  executing_task = False
+                  new_task = False
+                  current_state = "SM_Waiting"
 
             
             #Encontrar el objeto a buscar en la mesa estamos aqui
