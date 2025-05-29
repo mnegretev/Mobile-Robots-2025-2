@@ -117,9 +117,9 @@ def callback_global_goal(msg):
     s = ""
     for d in nav_data:
         s += str(d[0]) +","+ str(d[1]) +","+ str(d[2]) +","+ str(d[3]) +","+ str(d[4]) +","+ str(d[5]) +","+ str(d[6]) + "\n"
-    f = open(data_file, "w")
-    f.write(s)
-    f.close()
+    # f = open(data_file, "w")
+    # f.write(s)
+    # f.close()
     print("Global goal point reached")
     
 def get_robot_pose():
