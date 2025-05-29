@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+##!/usr/bin/env python3
 #
 # MOBILE ROBOTS - FI-UNAM, 2025-2
 # FINAL PROJECT - SIMPLE SERVICE ROBOT
@@ -135,18 +135,7 @@ def move_head(pan, tilt):
     msg = Float64MultiArray()
     msg.data.append(pan)
     msg.data.append(tilt)
-    pubHdGoalPose.publish(msg)        elif current_state == "SM_Localize":
-            try:
-                x, y, z = find_object(object_name)
-                say(f"{object_name.capitalize()} found.")
-    
-                if object_name == "pringles":
-                    x, y, z = transform_point(x, y, z, "realsense_link", "shoulders_right_link")
-                else:  # drink
-                    x, y, z = transform_point(x, y, z, "realsense_link", "shoulders_left_link")
-
-                current_state = "SM_Prepare"
-
+    pubHdGoalPose.publish(msg)
     time.sleep(1.0)
 
 #
@@ -274,7 +263,7 @@ def find_object(object_name):
 #
 # Transforms a point xyz expressed w.r.t. source frame to the target frame
 #
-def transform_point(x,y,z, source_frame="realsense_link", target_frame="shoulders_left_link"):
+def transform_point(x,y,z, source_frame="kinect_link", target_frame="shoulders_left_link"):
     listener = tf.TransformListener()
     listener.waitForTransform(target_frame, source_frame, rospy.Time(), rospy.Duration(4.0))
     obj_p = PointStamped()
@@ -309,6 +298,8 @@ def main():
     rospy.wait_for_service('/vision/obj_reco/detect_and_recognize_object')
     print("Services are now available.")
     loop = rospy.Rate(10)
+    
+
     
 
     #
