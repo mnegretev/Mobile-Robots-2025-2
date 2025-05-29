@@ -387,6 +387,7 @@ def main():
     current_state = "SM_INIT"
     new_task = False
     goal_reached = False
+    object_is_close = False
     recognized_speech = ""
     say("Ready")
     while not rospy.is_shutdown():
@@ -424,10 +425,29 @@ def main():
             go_to_goal_pose(3.4, 6.0)
             current_state = "SM_ROTATE"
             
+            
         elif current_state == "SM_ROTATE":
             if goal_reached:
                 print("Rotating to face the table")
                 say("Rotating to face the table")
+                rotate_to_target(math.pi*3/2)
+                current_state = "SM_APPROACH_OBJECT"
+        
+        # SM_APPROACH_OBJECT
+        elif current_state == "SM_APPROACH_OBJECT":
+            if goal_reached:
+                goal_reached = False
+                print("Approaching object")
+                say("Approaching the object")
+                go_to_goal_pose(3.4, 5.68)
+                current_state = "SM_REFORM_ROTATE"
+            
+        # SM_REFORM_ROTATE
+        elif current_state == "SM_REFORM_ROTATE":
+            if goal_reached:
+                goal_reached = False
+                print("Rotating to face the object")
+                say("Rotating to face the object")
                 rotate_to_target(math.pi*3/2)
                 current_state = "SM_MOVE_HEAD_DOWN"
         
@@ -440,6 +460,7 @@ def main():
         
         # SM_FIND_OBJECT
         elif current_state == "SM_FIND_OBJECT":
+            time.sleep(1.0)  # Allow time for the head to move
             print("Finding object")
             say("Finding the object")
             pos = find_object(requested_object)
@@ -451,57 +472,70 @@ def main():
             print("Preparing arm")
             say("Preparing my " + arm + " arm to grab the object")
             if arm == "LEFT":
-                move_left_arm(-0.1432, 0.0, 0.0, 1.8418, 0.0, 0.1695, 0.0)
+                move_left_arm(-0.1432, 0.0, -0.1, 1.8418, 0.0, 0.1695, 0.0)
                 move_left_gripper(0.4)
             elif arm == "RIGHT":
-                move_right_arm(-0.1432, 0.0, 0.0, 1.8418, 0.0, 0.1695, 0.0)
+                move_right_arm(-0.1432, -0.1, -0.1, 1.8418, 0.0, 0.1695, 0.0)
                 move_right_gripper(0.4)
-            
-            current_state = "SM_APPROACH_OBJECT"
-            
-        # SM_APPROACH_OBJECT
-        elif current_state == "SM_APPROACH_OBJECT":
-            if goal_reached:
-                goal_reached = False
-                print("Approaching object")
-                say("Approaching the object")
-                go_to_goal_pose(3.4, 5.6)
-                goal_reached = True
-                current_state = "SM_REFORM_ROTATE"
-            
-        # SM_REFORM_ROTATE
-        elif current_state == "SM_REFORM_ROTATE":
-            if goal_reached:
-                goal_reached = False
-                print("Rotating to face the object")
-                say("Rotating to face the object")
-                rotate_to_target(math.pi*3/2)
-                goal_reached = True
-                current_state = "SM_MOVE_ARM_TO_OBJECT"
+            current_state = "SM_CALCULATE_INVERSE_KINEMATICS"
         
-        # SM_MOVE_ARM_TO_OBJECT"
-        elif current_state == "SM_MOVE_ARM_TO_OBJECT":
-            if goal_reached:
+        
+        # SM_CALCULATE_INVERSE_KINEMATICS"
+        elif current_state == "SM_CALCULATE_INVERSE_KINEMATICS":
+            # Wait for 3 seconds to allow the robot to stabilize
+            time.sleep(3.0)
+            try:
+                # Find object position in global coordinates
+                say("Transforming the position of the object")
                 pos = transform_point_mod(pos, arm == "LEFT")
                 print("Transformed position:", pos)
+                say("Calculating the trajectory to the object")
                 if arm == "LEFT":
-                    q = calculate_inverse_kinematics_left(pos[0], pos[1], pos[2], 0, -1.373, 0)
-                    q = get_la_polynomial_trajectory(q, 10, 0.025)
-                    move_left_arm_with_trajectory(q)
+                    q = calculate_inverse_kinematics_left(pos[0], pos[1], pos[2], 0.0, 0.0, 0.0)
+                    q = get_la_polynomial_trajectory(q, duration=2.0, time_step=0.05)
                 elif arm == "RIGHT":
-                    q = calculate_inverse_kinematics_right(pos[0], pos[1], pos[2], 0, -1.373, 0)
-                    q = get_la_polynomial_trajectory(q, 10, 0.025)
-                    move_right_arm_with_trajectory(q)
-                current_state = "SM_GRAB_OBJECT"
+                    q = calculate_inverse_kinematics_right(pos[0], pos[1], pos[2], 0.0, 0.0, 0.0)
+                    q = get_la_polynomial_trajectory(q, duration=2.0, time_step=0.05)
+                current_state = "SM_MOVE_ARM_TO_OBJECT_TRAJ"
+            except Exception as e:
+                say("I couldn't calculate the trajectory to the object")
+                print("Error calculating inverse kinematics:", e)
+                current_state = "SM_REPOSITION"
+                
+        # SM_REPOSITION
+        elif current_state == "SM_REPOSITION":
+            print("Repositioning to find the object")
+            say("Repositioning to find the object")
+            if arm == "LEFT":
+                move_left_arm(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+                move_left_gripper(0.4)
+            elif arm == "RIGHT":
+                move_right_arm(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+                move_right_gripper(0.4)
+            # Move back and forth to find the object
+            move_base(-0.2, 0.0, 1.0)
+            move_base(0.2, 0.0, 1.0)
+            time.sleep(1.0)  # Allow time for the head to move
+            current_state = "SM_FIND_OBJECT"
+                
+        # SM_MOVE_ARM_TO_OBJECT_TRAJ
+        elif current_state == "SM_MOVE_ARM_TO_OBJECT_TRAJ":
+            print("Moving arm to object")
+            say("Moving my " + arm + " arm to the object")
+            if arm == "LEFT":
+                move_left_arm_with_trajectory(q)
+            elif arm == "RIGHT":
+                move_right_arm_with_trajectory(q)
+            current_state = "SM_GRAB_OBJECT"
                 
         # SM_GRAB_OBJECT
         elif current_state == "SM_GRAB_OBJECT":
             print("Grabbing object")
             say("Grabbing the object")
             if arm == "LEFT":
-                move_left_gripper(0.0)
+                move_left_gripper(-0.2)
             elif arm == "RIGHT":
-                move_right_gripper(0.0)
+                move_right_gripper(-0.2)
             current_state = "SM_MOVE_HEAD_UP"
             
             
