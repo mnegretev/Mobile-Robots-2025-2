@@ -358,17 +358,15 @@ def main():
         elif current_state == "SM_WaitForArrival":
             if goal_reached:
                 say("I arrived at the destination.")
-        #estado de 
 
-                
                 current_state = "SM_Approach"
-                
+                #estado de         
         elif current_state == "SM_Approach":
             print("Acercandose a la mesa")
             say("Approaching to the table.")
             go_to_goal_pose(3.25,6)				#Llega directamente a la mesa
             move_head(0, -0.8) 				#Bajar la cabeza hasta ver los objetos
-            current_state:"SM_Localize"        
+            current_state = "SM_Localize"        
 
         
     #ya xd
@@ -383,7 +381,7 @@ def main():
             	say(f"{object_name.capitalize()} found.")
             	print("Se encontro la soda")
             	x,y,z = transform_point(x,y,z,"kinect_link","shoulders_right_link")
-            current_state:"SM_Prepare"
+            current_state = "SM_Prepare"
 
            # except Exception as e:
            #     print("Error while trying to find object:", e)
@@ -400,7 +398,7 @@ def main():
             print("Moviendo brazos")
             move_right_arm(-0.7,0.2,0,1.55,0,1.16,0)
             move_left_arm(-0.7,0.2,0,1.55,0,1.16,0)		#Generar el movimiento "prepare" en ambos brazos
-            current_state:"SM_Grab"
+            current_state = "SM_Grab"
         elif current_state == "SM_Grab":
             if object_name == "pringles":
             	move_left_gripper(1)				#Abre la mano
@@ -413,15 +411,15 @@ def main():
             	get_ra_polynomial_trajectory(q, 4.0, 0.05)
             	move_right_gripper(-1) 
             say("Grabbing object.")            
-            current_state:"SM_Lift"
+            current_state = "SM_Lift"
         elif current_state == "SM_Lift":
             say("Preparing arm.")
             move_right_arm(-0.7,0.2,0,1.55,0,1.16,0)		#Regresa los brazos a la posicion default
             move_left_arm(-0.7,0.2,0,1.55,0,1.16,0)
-            current_state:"SM_GoToLoc"
+            current_state="SM_GoToLoc"
         elif current_state == "SM_GoToLoc":
             go_to_goal_pose(target_location[1],target_location[2])            #Lleva el objeto al lugar indicado
-            current_state:"SM_INIT"
+            current_state="SM_INIT"
         loop.sleep()
 
 if __name__ == '__main__':
