@@ -372,12 +372,12 @@ def main():
             current_state = "SM_Localize"
     #ya hace la rotacion
         elif current_state == "SM_Localize":
-            if(object_name==pringles):
+            if(object_name== "pringles"):
             	x,y,z = find_object(pringles)
             	say("Pringles found.")				#Si el objeto es pringles
             	print("Se encontraron las pringles")
             	x,y,z = transform_point(x,y,z,"kinect_link","shoulders_left_link")
-            elif(object_name == drink):
+            elif(object_name == "drink"):
             	x,y,z = find_object(drink)			#Si el objeto es el chesco
             	say("Drink found.")
             	print("Se encontro la soda")
