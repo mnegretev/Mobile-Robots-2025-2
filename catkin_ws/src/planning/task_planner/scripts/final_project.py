@@ -30,7 +30,7 @@ from vision_msgs.srv import *
 from manip_msgs.srv import *
 from hri_msgs.msg import *
 
-NAME = "Efren Rivera, Xavier Suastegui, Carlos Lujan y Alan "
+NAME = "Efren Rivera, Xavier Suastegui, Carlos Lujan y Alan Camacho"
 
 #
 # Global variable 'speech_recognized' contains the last recognized sentence
@@ -263,7 +263,7 @@ def find_object(object_name):
 #
 # Transforms a point xyz expressed w.r.t. source frame to the target frame
 #
-def transform_point(x,y,z, source_frame="realsense_link", target_frame="shoulders_left_link"):
+def transform_point(x,y,z, source_frame="kinect_link", target_frame="shoulders_left_link"):
     listener = tf.TransformListener()
     listener.waitForTransform(target_frame, source_frame, rospy.Time(), rospy.Duration(4.0))
     obj_p = PointStamped()
@@ -310,6 +310,8 @@ def main():
     recognized_speech = ""
     say("Ready")
     x,y,z = 0,0,0
+    object_name = ""
+    target_location = ""
     while not rospy.is_shutdown():
         #
         # Write here your AFSM
@@ -317,64 +319,67 @@ def main():
         if current_state == "SM_INIT":
             print("Iniciando máquina de estados")
             say("Hello. I'm ready to execute a command.")
-            #move_head(0, -0.5)
-            #move_head(0, 0.5)
-            #move_head(0, -0.5)
-            #move_head(0, 0.5)
-            #move_head(0, -0.5)
-            #move_head(0, 0)
-            #move_base(0.5, 0.0, 3.0)
-            #move_left_arm(-1.0, 0.1 , 0.0, 1.5, 0.0, 1.0, 0.0)
-            #move_left_gripper(1.0)
-            #move_left_gripper(0.0)
-            #move_left_arm(0,0,0,0,0,0,0)
-            #current_state = "END"
             current_state = "SM_Waiting"        
-        elif current state = "SM_Waiting":
-            #callback_recognized_speech(msg)
-            #Espera a recibir el comando de voz necesario
-            #current_state = "SM_ReachTable" hasta que se reconozca el comando
-        elif current state = "SM_ReachTable":
+        elif current_state == "SM_Waiting":
+            if recognized_speech!= "":		#Reconoce el comando
+                executing_task = True
+                say("I heard the command: " + recognized_speech)	
+                object_name, target_location = parse_command(recognized_speech.upper())	#Determina el objeto y el lugar objetivo
+                current_state = "SM_ReachTable"    
+        elif current state == "SM_ReachTable":
             print("Voy camino a la mesa")
             say("Reaching the table.")
-            go_to_goal_pose(0.0,0.0) #Obtener coordenadas de la mesa
-            current_state = "SM_RotateInPlace"
-        elif current state = "SM_RotateInPlace":
-            print("Girando en direccion a la mesa")
-            move_base(0, theta, 1)
-            #Definir como obtener el giro: Calculo analitico o ciclo while
-            move_head(0, -0.5) #Bajar la cabeza hasta ver los objetos
+            go_to_goal_pose(3.5,7) 				#Llegar cerca de la mesa
+            current_state = "SM_WaitForArrival"
+        elif current_state == "SM_WaitForArrival":
+            if goal_reached:
+                say("I arrived at the destination.")
+                current_state = "SM_Approach"
+        elif current state == "SM_Approach":
+            print("Acercandose a la mesa")
+            say("Approaching to the table.")
+            go_to_goal_pose(3.5,6)				#Llega directamente a la mesa
+            move_head(0, -0.8) 				#Bajar la cabeza hasta ver los objetos
             current_state:"SM_Localize"
         elif current_state = "SM_Localize":
-            if(object==pringles):
+            if(object_name==pringles):
             	x,y,z = find_object(pringles)
-            	say("Pringles found.")
-            	x,y,z = transform_point(x,y,z,"realsense_link","shoulders_right_link")
-            elif(object == drink)
-            	x,y,z = find_object(drink)
+            	say("Pringles found.")				#Si el objeto es pringles
+            	print("Se encontraron las pringles")
+            	x,y,z = transform_point(x,y,z,"kinect_link","shoulders_left_link")
+            elif(object_name == drink)
+            	x,y,z = find_object(drink)			#Si el objeto es el chesco
             	say("Drink found.")
-            	x,y,z = transform_point(x,y,z,"realsense_link","shoulders_left_link")
-            #Encontrar el objeto a buscar en la mesa
+            	print("Se encontro la soda")
+            	x,y,z = transform_point(x,y,z,"kinect_link","shoulders_right_link")
             current_state:"SM_Prepare"
         elif current_state = "SM_Prepare":
-            say("Preparing arm.")
-            #Generar el movimiento "prepare" en el brazo correspondiente
+            say("Preparing arms.")
+            print("Moviendo brazos")
+            move_right_arm(-0.7,0.2,0,1.55,0,1.16,0)
+            move_left_arm(-0.7,0.2,0,1.55,0,1.16,0)		#Generar el movimiento "prepare" en ambos brazos
             current_state:"SM_Grab"
         elif current_state = "SM_Grab":
-            q = calculate_inverse_kinematics_left(x,y,z,0,0,0)
-            get_la_polynomial_trajectory(q,5,0.05)
-            say("Grabbing object.")
-            move_left_gripper(-1) 
-            #Generar la trayectoria para mover el brazo correspondiente a la posicion deseada, y apretar la mano
+            if object_name == "pringles":
+            	move_left_gripper(1)				#Abre la mano
+            	q = calculate_inverse_kinematics_left(x,y,z,0,0,0)   #Calcula la cinematica inversa
+            	get_la_polynomial_trajectory(q, 4.0, 0.05)         #Genera la cinematica
+            	move_left_gripper(-1) 				#Cierra la mano
+            elif object_name == "drink":
+            	move_right_gripper(1)
+            	q = calculate_inverse_kinematics_right(x,y,z,0,0,0)
+            	get_ra_polynomial_trajectory(q, 4.0, 0.05)
+            	move_right_gripper(-1) 
+            say("Grabbing object.")            
             current_state:"SM_Lift"
         elif current_state = "SM_Lift":
             say("Preparing arm.")
-            #Levantar el objeto
+            move_right_arm(-0.7,0.2,0,1.55,0,1.16,0)		#Regresa los brazos a la posicion default
+            move_left_arm(-0.7,0.2,0,1.55,0,1.16,0)
             current_state:"SM_GoToLoc"
         elif current_state = "SM_GoToLoc":
-            #Llevar el objeto al lugar indicado
-            go_to_goal_pose(0.0,0.0)
-            current_state:"END"
+            go_to_goal_pose(target_location[1],target_location[2])            #Lleva el objeto al lugar indicado
+            current_state:"SM_INIT"
         loop.sleep()
 
 if __name__ == '__main__':
