@@ -25,4 +25,6 @@
   <node name="topic_resender" pkg="gazebo_envs" type="topic_resender.py" output="screen"/>
   <node name="omni_base_control" pkg="gazebo_envs" type="omni_base_gazebo_control.py" output="screen"/>
   <node name="tf_camera_connect" pkg="tf" type="static_transform_publisher" args="0 0 0 -1.5708 0 -1.5708 camera_link realsense_link 30"/>
+  <node name="realsense_to_head" pkg="tf" type="static_transform_publisher" args="0 0 0 0 0 0 kinect_link realsense_link 30"/>
+  
 </launch>

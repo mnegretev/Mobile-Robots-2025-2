@@ -31,7 +31,7 @@ from vision_msgs.srv import *
 from manip_msgs.srv import *
 from hri_msgs.msg import *
 
-NAME = "FULL NAME"
+NAME = "Frausto Martinez Juan Carlos"
 
 #
 # Global variable 'speech_recognized' contains the last recognized sentence
@@ -265,20 +265,32 @@ def find_object(object_name):
 #
 # Transforms a point xyz expressed w.r.t. source frame to the target frame
 #
-def transform_point(listener, x,y,z, source_frame="realsense_link", target_frame="shoulders_left_link"):
+def transform_point(x, y, z, source_frame="realsense_link", target_frame="shoulders_left_link"):
+    print(f"[INFO] Starting transform from '{source_frame}' to '{target_frame}'")
+    print(f"[INFO] Original point: x={x}, y={y}, z={z}")
+
+    listener = tf.TransformListener()
+
     try:
-        # Usar el tiempo actual para evitar problemas con datos desactualizados
-        now = rospy.Time.now()
-        listener.waitForTransform(target_frame, source_frame, now, rospy.Duration(4.0))
-        obj_p = PointStamped()
-        obj_p.header.frame_id = source_frame
-        obj_p.header.stamp = now
-        obj_p.point.x, obj_p.point.y, obj_p.point.z = x,y,z
-        obj_p = listener.transformPoint(target_frame, obj_p)
-        return [obj_p.point.x, obj_p.point.y, obj_p.point.z]
-    except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
-        rospy.logerr(f"TF error: {str(e)}")
-        raise
+        print("[INFO] Waiting for transform to become available...")
+        listener.waitForTransform(target_frame, source_frame, rospy.Time(), rospy.Duration(4.0))
+        print("[INFO] Transform is now available.")
+    except tf.Exception as e:
+        print(f"[ERROR] Failed to get transform: {e}")
+        return None
+
+    obj_p = PointStamped()
+    obj_p.header.frame_id = source_frame
+    obj_p.header.stamp = rospy.Time(0)
+    obj_p.point.x, obj_p.point.y, obj_p.point.z = x, y, z
+
+    try:
+        transformed_point = listener.transformPoint(target_frame, obj_p)
+        print(f"[INFO] Transformed point: x={transformed_point.point.x}, y={transformed_point.point.y}, z={transformed_point.point.z}")
+        return [transformed_point.point.x, transformed_point.point.y, transformed_point.point.z]
+    except tf.Exception as e:
+        print(f"[ERROR] Error transforming point: {e}")
+        return None
 
 # ===================================================================
 # TERMINAL COMMAND INTERFACE
@@ -360,14 +372,13 @@ def main():
 
     max_tries = 0  # Número máximo de intentos para encontrar el objeto
 
-    listener = tf.TransformListener()
-
     loop = rospy.Rate(10)
     while not rospy.is_shutdown():
         # --- MÁQUINA DE ESTADOS PRINCIPAL ---
         if current_state == "SM_INIT":
             print("Initializing state machine")
             move_head(0, 0)  # Posición neutral de la cabeza
+            # move_left_arm(-0.6852, 1.0256, 0.6508, 1.8615, 0.4975, 0.3841, 0.5443)
             move_left_arm(0, 0, 0, 0, 0, 0, 0)  # Posición inicial del brazo
             move_right_arm(0, 0, 0, 0, 0, 0, 0)
             current_state = "SM_WAIT_FOR_COMMAND"
@@ -393,7 +404,7 @@ def main():
             if goal_reached:
                 goal_reached = False
                 say("I arrived near the desk")
-                move_base(0.0, 0, 2.0)
+                move_base(0,-0.5, 0.5)
                 current_state = "SM_FIND_OBJECT"
                 time.sleep(1.0)  # Esperar un momento antes de buscar el objeto
 
@@ -410,12 +421,23 @@ def main():
                     obj_cam_coords[1], 
                     obj_cam_coords[2]
                 )
-                say(f"{target_object} detected")
-                current_state = "SM_GRAB_OBJECT"
+
+                if obj_position is not None:
+                    say(f"{target_object} detected")
+                    current_state = "SM_GRAB_OBJECT"
+                else:
+                    print(f"[WARNING] Transform returned None. Could not localize {target_object}.")
+                    max_tries += 1
+                    say("Object not found. Trying again")
+                    time.sleep(1.0)
+                    if max_tries >= 3:
+                        say("Failed to find the object after several attempts. Resetting.")
+                        current_state = "SM_RESET"
+                        max_tries = 0
             except:
-                max_tries += 1
                 say("Object not found. Trying again")
                 time.sleep(1.0)
+                max_tries += 1
                 if max_tries >= 3:
                     say("Failed to find the object after several attempts. Resetting.")
                     current_state = "SM_RESET"
@@ -423,39 +445,43 @@ def main():
 
         elif current_state == "SM_GRAB_OBJECT":
             say(f"Grabbing the {target_object}")
-            
+            print(f"[INFO] Starting grasp sequence for: {target_object}")
+
             try:
-                # Calcular cinemática inversa para pre-agarre
-                pre_grasp_traj = calculate_inverse_kinematics_left(
-                    obj_position[0], 
-                    obj_position[1], 
-                    obj_position[2] + 0.1,  # 10 cm arriba del objeto
-                    0, math.pi/2, 0         # Orientación vertical
-                )
+                print("[INFO] Moving arm to pre-grasp position...")
                 move_left_arm_with_trajectory(pre_grasp_traj)
-                
-                # Mover a posición de agarre
+
+                print("[INFO] Calculating grasp trajectory...")
                 grasp_traj = calculate_inverse_kinematics_left(
                     obj_position[0], 
                     obj_position[1], 
                     obj_position[2],
                     0, math.pi/2, 0
                 )
+                print("[INFO] Moving arm to grasp position...")
                 move_left_arm_with_trajectory(grasp_traj)
-                
-                # Cerrar pinza
+
+                print("[INFO] Closing gripper...")
                 move_left_gripper(0.0)
                 time.sleep(1.0)
-                
-                # Levantar objeto
+
+                print("[INFO] Lifting object back to pre-grasp position...")
                 move_left_arm_with_trajectory(pre_grasp_traj)
+
                 say("Object successfully grabbed")
+                print("[INFO] Object successfully grabbed.")
                 current_state = "SM_NAVIGATE_TO_LOCATION"
-                
+
             except Exception as e:
+                print(f"[ERROR] Exception during grasping: {e}")
                 say("Grasping failed. Retrying")
-                print(str(e))
                 current_state = "SM_FIND_OBJECT"
+                max_tries += 1
+                if max_tries >= 3:
+                    say("Failed to find the object after several attempts. Resetting.")
+                    print("[WARNING] Max attempts reached. Resetting robot.")
+                    current_state = "SM_RESET"
+                    max_tries = 0
 
         elif current_state == "SM_NAVIGATE_TO_LOCATION":
             say(f"Taking object to the {location_name}")
@@ -479,13 +505,11 @@ def main():
         elif current_state == "SM_RESET":
             move_head(0, 0)
             go_to_goal_pose(0, 0)  # Regresar al origen
-            goal_reached = False
             if goal_reached:
                 goal_reached = False
-                say(f"Arrived at the {location_name}")
-                current_state = "SM_PLACE_OBJECT"
-                executing_task = False
+                say(f"Arrived at the origin")
                 say("Ready for next command")
+                executing_task = False
                 current_state = "SM_WAIT_FOR_COMMAND"
 
         loop.sleep()
