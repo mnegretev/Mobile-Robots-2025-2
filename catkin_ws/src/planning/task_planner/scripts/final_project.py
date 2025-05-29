@@ -349,7 +349,7 @@ def main():
         elif current_state == "SM_ReachTable":
             print("Voy camino a la mesa")
             say("Reaching the table.")
-            go_to_goal_pose(target_location[0], target_location[1])
+            go_to_goal_pose(3.5,6)
             current_state = "SM_WaitForArrival"
             
         elif current_state == "SM_WaitForArrival":
