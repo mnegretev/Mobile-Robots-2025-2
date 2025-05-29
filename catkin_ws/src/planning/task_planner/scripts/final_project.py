@@ -514,7 +514,7 @@ def main():
             move_left_arm(-0.7,0.2,0,1.55,0,1.16,0)
             current_state = "SM_GoToLoc"
         elif current_state == "SM_GoToLoc":
-            go_to_goal_pose(target_location[1],target_location[2])            #Lleva el objeto al lugar indicado
+            go_to_goal_pose(target_location[0],target_location[1])            #Lleva el objeto al lugar indicado
             current_state="SM_INIT"
         loop.sleep()
 
