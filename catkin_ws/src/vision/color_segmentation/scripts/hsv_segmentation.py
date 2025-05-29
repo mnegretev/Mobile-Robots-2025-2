@@ -20,7 +20,7 @@ from sensor_msgs.msg import PointCloud2
 from geometry_msgs.msg import PointStamped, Point
 from vision_msgs.srv import RecognizeObject, RecognizeObjectResponse
 
-NAME = "GARCIA MONJARAZ JESSICA STEPHANIE"
+NAME = "Garcia Monjaraz Jessica Stephanie"
 
 def segment_by_color(img_bgr, points, obj_name):
     global img_hsv, img_bin, img_filtered
@@ -116,10 +116,10 @@ def main():
     img_filtered = numpy.zeros((480, 640, 3), numpy.uint8)
     loop = rospy.Rate(10)
     while not rospy.is_shutdown():
-        cv2.imshow("BGR", img_bgr)
-        cv2.imshow("HSV", img_hsv)
-        cv2.imshow("Binary", img_bin)
-        cv2.imshow("Filtered", img_filtered)
+        #cv2.imshow("BGR", img_bgr)
+        #cv2.imshow("HSV", img_hsv)
+        #cv2.imshow("Binary", img_bin)
+        #cv2.imshow("Filtered", img_filtered)
         cv2.waitKey(1)
         loop.sleep()
     

@@ -23,8 +23,6 @@ import csv
 
 prompt = ""
 NAME = "Garcia Monjaraz Jessica Stephanie"
-
-
    
 def forward_kinematics(q, T, W):
     x, y, z, R, P, Y = 0, 0, 0, 0, 0, 0
@@ -115,12 +113,7 @@ def get_q_distance(q, init_guess):
     # init_guess is the initial configuration
     return numpy.linalg.norm(numpy.array(q) - numpy.array(init_guess))
 
-
-
-
-    
-
-def inverse_kinematics(x, y, z, roll, pitch, yaw, T, W, init_guess=numpy.zeros(7), max_iter=80):
+def inverse_kinematics(x, y, z, roll, pitch, yaw, T, W, init_guess=numpy.zeros(7), max_iter=20):
     pd = numpy.asarray([x, y, z, roll, pitch, yaw])
     TOL = 1e-6  # Tolerance for error
     q = init_guess
@@ -136,12 +129,6 @@ def inverse_kinematics(x, y, z, roll, pitch, yaw, T, W, init_guess=numpy.zeros(7
         # Ensure orientation angles of error are in [-pi, pi]
         error[3:] = numpy.mod(error[3:] + numpy.pi, 2 * numpy.pi) - numpy.pi
         
-        # Imprimir información relevante solo para las primeras 15 iteraciones
-        if iterations < 15:
-            print(f"[IK][Iter {iterations}] Error vector: {error}")
-            print(f"[IK][Iter {iterations}] Error norm: {numpy.linalg.norm(error):.6f}")
-            print(f"[IK][Iter {iterations}] q: {q}")
-
         # Check if the error is within tolerance
         if numpy.linalg.norm(error) < TOL:
             break
@@ -160,29 +147,7 @@ def inverse_kinematics(x, y, z, roll, pitch, yaw, T, W, init_guess=numpy.zeros(7
 
     # Set success if maximum iterations were not exceeded and calculated angles are in valid range
     success = iterations < max_iter and angles_in_joint_limits(q)
-
-    # Mostrar resumen final
-    print(f"[IK] Resultado: éxito={success}, iteraciones={iterations}, distancia={get_q_distance(q, init_guess):.6f}")
-    
-    # Ruta absoluta del archivo CSV
-    file_path = os.path.expanduser("~/results.csv")
-
-    try:
-        with open(file_path, "a") as file:
-            file.write(f"{success}, {iterations}, {get_q_distance(q, init_guess)}\n")
-        print(f"[IK] Resultados guardados en: {file_path}")
-    except Exception as e:
-        print(f"[IK] Error al guardar CSV: {e}")
     return success, q
-
-
-
-
-
-
-
-
-
    
 def get_polynomial_trajectory_multi_dof(Q_start, Q_end, duration=1.0, time_step=0.05):
     clt = rospy.ServiceProxy("/manipulation/polynomial_trajectory", GetPolynomialTrajectory)
@@ -310,3 +275,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
