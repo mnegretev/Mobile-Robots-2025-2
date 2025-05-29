@@ -313,8 +313,13 @@ def main():
     def lift_arm_execute():
         say("Lifting arm")
         move_arm(-0.1432, 0.0, 0.0, 1.8418, 0.0, 0.1695, 0.0)
+        rospy.sleep(1.0)
         move_arm(-0.59, 0.0, 0.0, 1.75, 0.0, 0.56, 0.0)
+        rospy.sleep(1.0)
         move_arm(-0.49, 0.0, 0.0, 2.15, 0.0, 1.36, 0.0)
+        rospy.sleep(1.0)
+        move_arm(-0.49, 0.0, 0.0, 2.15, 0.0, 1.36, 0.0)
+        rospy.sleep(1.0)
             
 
     def prepare_robot_execute():
@@ -446,7 +451,7 @@ def main():
 
     say("Ready")
     while not rospy.is_shutdown():
-        fsm.run()
+        fsm.run(rospy.is_shutdown)
         loop.sleep()
 
 if __name__ == '__main__':
