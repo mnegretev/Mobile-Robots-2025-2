@@ -30,7 +30,7 @@ from vision_msgs.srv import *
 from manip_msgs.srv import *
 from hri_msgs.msg import *
 
-NAME = "FULL NAME"
+NAME = "Efren Rivera, Xavier Suastegui, Carlos Lujan y Alan Camarena"
 
 #
 # Global variable 'speech_recognized' contains the last recognized sentence
@@ -183,6 +183,7 @@ def say(text):
 # This function calls the service for calculating inverse kinematics for left arm
 # and returns the calculated articular position.
 #
+
 def calculate_inverse_kinematics_left(x,y,z,roll, pitch, yaw):
     req_ik = InverseKinematicsPose2TrajRequest()
     req_ik.x = x
@@ -193,15 +194,22 @@ def calculate_inverse_kinematics_left(x,y,z,roll, pitch, yaw):
     req_ik.yaw   = yaw
     req_ik.duration = 0;
     req_ik.time_step = 0.05
-    req_ik.initial_guess = []
+    req_ik.initial_guess = [0.84,-0.1,-0.1,-0.68,0,0.41,0]
     clt = rospy.ServiceProxy("/manipulation/la_ik_trajectory", InverseKinematicsPose2Traj)
-    resp = clt(req_ik)
-    return resp.articular_trajectory
+    try:
+        resp = clt(req_ik)
+        if not resp.articular_trajectory.points:
+            rospy.logwarn("Left arm IK returned no points.")
+        return resp.articular_trajectory
+    except rospy.ServiceException as e:
+        rospy.logerr("Left arm IK service call failed: %s", str(e))
+        return None
 
 #
 # This function calls the service for calculating inverse kinematics for right arm
 # and returns the calculated articular position.
 #
+
 def calculate_inverse_kinematics_right(x,y,z,roll, pitch, yaw):
     req_ik = InverseKinematicsPose2TrajRequest()
     req_ik.x = x
@@ -212,7 +220,7 @@ def calculate_inverse_kinematics_right(x,y,z,roll, pitch, yaw):
     req_ik.yaw   = yaw
     req_ik.duration = 0;
     req_ik.time_step = 0.05
-    req_ik.initial_guess = []
+    req_ik.initial_guess = [0.7,0,0,0.2,0.7,1.2,0]
     clt = rospy.ServiceProxy("/manipulation/ra_ik_trajectory", InverseKinematicsPose2Traj)
     resp = clt(req_ik)
     return resp.articular_trajectory
@@ -235,7 +243,7 @@ def get_la_polynomial_trajectory(q, duration=2.0, time_step=0.05):
 #
 # Calls the service for calculating a polynomial trajectory for the right arm
 #
-def get_la_polynomial_trajectory(q, duration=5.0, time_step=0.05):
+def get_ra_polynomial_trajectory(q, duration=5.0, time_step=0.05):
     current_p = rospy.wait_for_message("/hardware/right_arm/current_pose", Float64MultiArray)
     current_p = current_p.data
     clt = rospy.ServiceProxy("/manipulation/polynomial_trajectory", GetPolynomialTrajectory)
@@ -263,15 +271,22 @@ def find_object(object_name):
 #
 # Transforms a point xyz expressed w.r.t. source frame to the target frame
 #
-def transform_point(x,y,z, source_frame="realsense_link", target_frame="shoulders_left_link"):
+def transform_point(x, y, z, source_frame="kinect_link", target_frame="shoulders_left_link"):
     listener = tf.TransformListener()
-    listener.waitForTransform(target_frame, source_frame, rospy.Time(), rospy.Duration(4.0))
-    obj_p = PointStamped()
-    obj_p.header.frame_id = source_frame
-    obj_p.header.stamp = rospy.Time(0)
-    obj_p.point.x, obj_p.point.y, obj_p.point.z = x,y,z
-    obj_p = listener.transformPoint(target_frame, obj_p)
-    return [obj_p.point.x, obj_p.point.y, obj_p.point.z]
+    try:
+        listener.waitForTransform(target_frame, source_frame, rospy.Time(0), rospy.Duration(4.0))
+        obj_p = PointStamped()
+        obj_p.header.frame_id = source_frame
+        obj_p.header.stamp = rospy.Time(0)  # Tiempo "más reciente disponible"
+        obj_p.point.x, obj_p.point.y, obj_p.point.z = x, y, z
+        obj_p_out = listener.transformPoint(target_frame, obj_p)
+        return [obj_p_out.point.x, obj_p_out.point.y, obj_p_out.point.z]
+    except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
+        rospy.logerr("TF transform failed: %s", str(e))
+        return [None, None, None]
+    except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
+        rospy.logerr("TF transform failed: %s", str(e))
+        return [None, None, None]
 
 def main():
     global new_task, recognized_speech, executing_task, goal_reached
@@ -300,15 +315,27 @@ def main():
     loop = rospy.Rate(10)
     
 
-    #
-    # FINAL PROJECT 
+    
+
+    ####################################################################################################################################################
+    ####################################################################################################################################################
+    #####################################################################################################################################################
+    ####################################################################################################################################################
+    
+    
+    #FINAL PROJECT 
+    
     #
     executing_task = False
     current_state = "SM_INIT"
     new_task = False
     goal_reached = False
     recognized_speech = ""
+    object_name = ""
+    target_location = []
+
     say("Ready")
+    x,y,z = 0,0,0
     while not rospy.is_shutdown():
         #
         # Write here your AFSM
@@ -316,20 +343,180 @@ def main():
         if current_state == "SM_INIT":
             print("Iniciando máquina de estados")
             say("Hello. I'm ready to execute a command.")
-            move_head(0, -0.5)
-            move_head(0, 0.5)
-            move_head(0, -0.5)
-            move_head(0, 0.5)
-            move_head(0, -0.5)
-            move_head(0, 0)
-            move_base(0.5, 0.0, 3.0)
-            move_left_arm(-1.0, 0.1 , 0.0, 1.5, 0.0, 1.0, 0.0)
-            move_left_gripper(1.0)
-            move_left_gripper(0.0)
-            move_left_arm(0,0,0,0,0,0,0)
-            current_state = "END"
+            #move_head(0, -0.5)
+            #move_head(0, 0.5)
+            #move_head(0, -0.5)
+            #move_head(0, 0.5)
+            #move_head(0, -0.5)
+            #move_head(0, 0)
+            #move_base(0.5, 0.0, 3.0)
+            #move_left_arm(-1.0, 0.1 , 0.0, 1.5, 0.0, 1.0, 0.0)
+            #move_left_gripper(1.0)
+            #move_left_gripper(0.0)
+            #move_left_arm(0,0,0,0,0,0,0)
+            #current_state = "END"
+            current_state = "SM_Waiting"        
+        elif current_state == "SM_Waiting":
+            if new_task:
+                executing_task = True
+                say("I heard the command: " + recognized_speech)
+                object_name, target_location = parse_command(recognized_speech.upper())
+                current_state = "SM_ReachTable"
+
+
+            #callback_recognized_speech(msg)
+            #Espera a recibir el comando de voz necesario
+            #current_state = "SM_ReachTable" hasta que se reconozca el comando
+
+        
+        elif current_state == "SM_ReachTable":
+            print("Voy camino a la mesa")
+            say("Reaching the table.")
+            go_to_goal_pose(2.8,7)
+            current_state = "SM_WaitForArrival"
+          
+
+            # un estado adicional
+            
+        elif current_state == "SM_WaitForArrival":  
+            if goal_reached:
+                say("I arrived at the destination.")
+                current_state = "SM_Approach"
+                
+                #estado de   espera      
+        elif current_state == "SM_Approach":
+            goal_reached = False
+            print("Acercandose a la mesa")
+            say("Approaching to the table.")
+            go_to_goal_pose(3.1,5.69)				#Llega directamente a la mesa
+            move_base(0,0,1)
+            move_head(0, -0.8) 				#Bajar la cabeza hasta ver los objetos
+            if goal_reached:
+                say("I arrived at the destination.")
+
+                current_state = "SM_Localize"
+    
+
+        
+    ###############################################################################################
+################################################################################
+################################
+########################################################################################################ya xd
+        elif current_state == "SM_Localize":
+            try:
+                say("Looking for the object.")
+                x, y, z = find_object(object_name)
+                say(f"{object_name.capitalize()} found.")
+        
+                transform_target = "shoulders_right_link" if object_name == "pringles" else "shoulders_left_link"
+                say("Transforming object coordinates.")
+                print(f"[DEBUG] Object name: {object_name}")
+                print(f"[DEBUG] Using transform to: {transform_target}")
+        
+                x, y, z = transform_point(x, y, z, source_frame="kinect_link", target_frame=transform_target)
+        
+                if None in (x, y, z):
+                    say("Object transform failed.")
+                    rospy.logerr("Object transform returned None coordinates.")
+                    executing_task = False
+                    new_task = False
+                    current_state = "SM_Waiting"
+                else:
+                    print(f"[DEBUG] Target IK position: x={x:.2f}, y={y:.2f}, z={z:.2f}")
+                    current_state = "SM_Prepare"
+        
+            except Exception as e:
+                rospy.logerr(f"Error in SM_Localize: {e}")
+                say("I couldn't find the object.")
+                executing_task = False
+                new_task = False
+                current_state = "SM_Waiting"
+            
+            #Encontrar el objeto a buscar en la mesa estamos aqui dlkasdlkandlknalkdnlkas
+                ###
+        ##############                 ###
+        ##############            ###
+        ##############       ###
+        ##############            ###
+        ##############            ###
+        ##############        ###
+        ##############
+        
+        elif current_state == "SM_Prepare":
+            move_right_arm(0,0,0,0,0,0,0)
+            move_left_arm(0,0,0,0,0,0,0)	
+            say("Preparing arms.")
+            print("Moviendo brazos")
+            move_right_arm(-0.7,0.2,0,1.55,0,1.16,0)
+            move_left_arm(-0.7,0.2,0,1.55,0,1.16,0)		#Generar el movimiento "prepare" en ambos brazos
+            current_state = "SM_Grab"
+#######################################################################################################################################################################################################
+#######################################################################################################################################################################################################
+#######################################################################################################################################################################################################
+
+        elif current_state == "SM_Grab":
+            try:
+                if any(val is None for val in [x, y, z]):
+                    rospy.logerr("Object transform returned None coordinates.")
+                    say("Object transform failed.")
+                    executing_task = False
+                    new_task = False
+                    current_state = "SM_Waiting"
+                    continue
+
+                print(f"[DEBUG] Target IK position: x={x:.3f}, y={y:.3f}, z={z:.3f}")
+
+                if object_name == "pringles":
+                    move_left_gripper(1)  # Abre la mano
+                    say("Moving left arm.")
+                    q = calculate_inverse_kinematics_left(x, y, z, -2.24, -1.123, 2)
+                    if q and hasattr(q, 'points') and len(q.points) > 0:
+                        move_left_arm_with_trajectory(q)
+                        move_left_gripper(-1)  # Cierra la mano
+                    else:
+                        say("Left arm IK failed.")
+                        rospy.logwarn("Left arm IK returned no points.")
+                        executing_task = False
+                        new_task = False
+                        current_state = "SM_Waiting"
+                        continue
+        
+                elif object_name == "drink":
+                    move_right_gripper(1)
+                    say("Moving right arm.")
+                    q = calculate_inverse_kinematics_right(x, y, z, 1.359, 1.496, -1.756)
+                    if q and hasattr(q, 'points') and len(q.points) > 0:
+                        move_right_arm_with_trajectory(q)
+                        move_right_gripper(-1)
+                    else:
+                        say("Right arm IK failed.")
+                        rospy.logwarn("Right arm IK returned no points.")
+                        executing_task = False
+                        new_task = False
+                        current_state = "SM_Waiting"
+                        continue
+        
+                say("Grabbing object.")
+                current_state = "SM_Lift"
+        
+            except rospy.ServiceException as e:
+                rospy.logerr(f"Service call failed: {e}")
+                say("Service call failed.")
+                executing_task = False
+                new_task = False
+                current_state = "SM_Waiting"
+                
+#######################################################################################################################################################################################################
+
+        elif current_state == "SM_Lift":
+            say("Preparing arm.")
+            move_right_arm(-0.7,0.2,0,1.55,0,1.16,0)		#Regresa los brazos a la posicion default
+            move_left_arm(-0.7,0.2,0,1.55,0,1.16,0)
+            current_state = "SM_GoToLoc"
+        elif current_state == "SM_GoToLoc":
+            go_to_goal_pose(target_location[0],target_location[1])            #Lleva el objeto al lugar indicado
+            current_state="SM_INIT"
         loop.sleep()
 
 if __name__ == '__main__':
     main()
-    
