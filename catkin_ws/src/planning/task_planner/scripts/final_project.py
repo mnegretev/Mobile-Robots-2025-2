@@ -1,298 +1,475 @@
 #!/usr/bin/env python3
 #
 # MOBILE ROBOTS - FI-UNAM, 2025-2
-# FINAL PROJECT – SIMPLE SERVICE ROBOT
+# FINAL PROJECT - SIMPLE SERVICE ROBOT
+# 
+# Instructions:
+# Write the code necessary to make the robot to perform the following possible commands:
+# * Robot take the <pringles|drink> to the <table|kitchen>
+# You can choose where the table and kitchen are located within the map.
+# The Robot must recognize the orders using speech recognition.
+# Entering the command by text or similar way is not allowed.
+# The Robot must announce the progress of the action using speech synthesis,
+# for example: I'm going to grab..., I'm going to navigate to ..., I arrived to..., etc.
+# Publishers and suscribers to interact with the subsystems (navigation,
+# vision, manipulation, speech synthesis and recognition) are already declared. 
 #
-# Comando de voz esperado (Gramática JSGF):
-#   ROBOT TAKE THE <PRINGLES|DRINK> TO THE <TABLE|KITCHEN>
-#
-# El robot reconoce la orden por voz, describe su progreso con síntesis,
-# toma el objeto y lo lleva al destino indicado.
-# ──────────────────────────────────────────────────────────────────────
 
-import rospy, tf, time, math
-import threading, sys
-from std_msgs.msg import Float64MultiArray, Float64, Bool
-from geometry_msgs.msg import Twist, PoseStamped, PointStamped
+import rospy
+import tf
+import math
+import time
+import threading
+from std_msgs.msg import String, Float64MultiArray, Float64, Bool
+from nav_msgs.msg import Path
+from nav_msgs.srv import GetPlan, GetPlanRequest
+from sensor_msgs.msg import PointCloud2
+from geometry_msgs.msg import Twist, PoseStamped, Pose, Point, PointStamped
 from trajectory_msgs.msg import JointTrajectory
 from sound_play.msg import SoundRequest
-from sensor_msgs.msg import PointCloud2
-from hri_msgs.msg import RecognizedSpeech
-from vision_msgs.srv import RecognizeObject, RecognizeObjectRequest
-from manip_msgs.srv  import (InverseKinematicsPose2Traj,
-                             InverseKinematicsPose2TrajRequest,
-                             GetPolynomialTrajectory,
-                             GetPolynomialTrajectoryRequest)
+from vision_msgs.srv import *
+from manip_msgs.srv import *
+from hri_msgs.msg import *
 
-# ╭──────────────────────────────────────────────╮
-# │                Escenario                     │
-# ╰──────────────────────────────────────────────╯
-NAME          = "Frausto Martinez Juan Carlos"
-WP_TABLE      = ( 8.00,  8.50)                  # destino mesa
-WP_KITCHEN    = ( 3.22,  9.72)                  # destino cocina
-WP_SHELF      = ( 6.50,  8.50)                  # frente al estante
-CARRY_POSTURE = [-0.8, -0.2, 1.3, 1.9, 0.0, 1.2, 0.0]  # brazo seguro
+NAME = "FULL NAME"
 
-# ╭──────────────────────────────────────────────╮
-# │               Callbacks TF & voz             │
-# ╰──────────────────────────────────────────────╯
-def cb_recognized_speech(msg):
-    global recognized_speech, new_cmd
-    if not executing_task:
-        recognized_speech = msg.hypothesis[0]
-        new_cmd = True
-        rospy.loginfo(f"Recognized: {recognized_speech}")
+#
+# Global variable 'speech_recognized' contains the last recognized sentence
+#
+def callback_recognized_speech(msg):
+    global recognized_speech, new_task, executing_task
+    if executing_task:
+        return
+    new_task = True
+    recognized_speech = msg.hypothesis[0]
+    print("New command recognized: " + recognized_speech)
 
-def cb_goal_reached(msg):
+#
+# Global variable 'goal_reached' is set True when the last sent navigation goal is reached
+#
+def callback_goal_reached(msg):
     global goal_reached
     goal_reached = msg.data
+    print("Received goal reached: " + str(goal_reached))
 
-# ╭──────────────────────────────────────────────╮
-# │                 Funciones I/O                │
-# ╰──────────────────────────────────────────────╯
-def say(text):
-    snd = SoundRequest()
-    snd.sound, snd.command, snd.volume       = -3, 1, 1.0
-    snd.arg2,  snd.arg                       = "voice_kal_diphone", text
-    pubSay.publish(snd)
-    rospy.loginfo(f"Saying: {text}")
-    rospy.sleep(0.1 * len(text))
-
-def move_head(pan, tilt):
-    msg = Float64MultiArray(data=[pan, tilt])
-    pubHdGoalPose.publish(msg); rospy.sleep(1.0)
-
-def move_left_arm(*q):
-    pubLaGoalPose.publish(Float64MultiArray(data=list(q))); rospy.sleep(2.0)
-
-def move_left_arm_traj(traj):
-    pubLaGoalTraj.publish(traj)
-    rospy.sleep(0.05 * len(traj.points) + 2)
-
-def move_left_gripper(angle):
-    pubLaGoalGrip.publish(Float64(angle)); rospy.sleep(1.0)
-
-def move_base(linear, angular, t):
-    cmd = Twist(); cmd.linear.x, cmd.angular.z = linear, angular
-    pubCmdVel.publish(cmd); rospy.sleep(t); pubCmdVel.publish(Twist())
-
-def go_to(x, y):
-    g = PoseStamped()
-    g.pose.orientation.w, g.pose.position.x, g.pose.position.y = 1.0, x, y
-    pubGoalPose.publish(g)
-
-# ─── callback opcional de teclado ──────────────────────────────────────
-def terminal_listener():
-    global recognized_speech, new_cmd
-    for line in sys.stdin:                    # bloquea hasta Enter
-        if line.strip() and not executing_task:
-            recognized_speech = line.strip()
-            new_cmd = True
-            rospy.loginfo(f"[TTY] {recognized_speech}")
-
-# ╭──────────────────────────────────────────────╮
-# │  Servicios de visión y manipulación          │
-# ╰──────────────────────────────────────────────╯
-def find_object(name:str):
-    req = RecognizeObjectRequest()
-    req.point_cloud = rospy.wait_for_message(
-        "/camera/depth_registered/points", PointCloud2)
-    req.name = name
-    return srvObjReco(req).recog_object.pose.position
-
-def tf_point(x,y,z, src="realsense_link", dst="shoulder_left_link"):
-    try:
-        tf_listener.waitForTransform(dst, src, rospy.Time(),
-                                     rospy.Duration(4.0))
-        p = PointStamped()
-        p.header.frame_id, p.header.stamp = src, rospy.Time(0)
-        p.point.x, p.point.y, p.point.z   = x,y,z
-        p = tf_listener.transformPoint(dst, p)
-        return p.point.x, p.point.y, p.point.z
-    except (tf.Exception, tf.LookupException, tf.ConnectivityException):
-        raise RuntimeError("TF transform failed")
-
-def ik_left(x,y,z,roll=0,pitch=math.pi/2,yaw=0):
-    req = InverseKinematicsPose2TrajRequest()
-    req.x, req.y, req.z = x,y,z
-    req.roll, req.pitch, req.yaw = roll,pitch,yaw
-    req.time_step = 0.05
-    return srvIKleft(req).articular_trajectory
-
-def poly_traj_left(q_goal, dur=2.0, dt=0.05):
-    q_curr = rospy.wait_for_message(
-        "/hardware/left_arm/current_pose", Float64MultiArray).data
-    req = GetPolynomialTrajectoryRequest(p1=q_curr, p2=q_goal,
-                                         duration=dur, time_step=dt)
-    return srvPoly(req).trajectory
-
-# ╭──────────────────────────────────────────────╮
-# │        Parseo de la frase reconocida         │
-# ╰──────────────────────────────────────────────╯
-def parse_command(cmd:str):
+def parse_command(cmd):
     cmd = cmd.upper()
     obj = "pringles" if "PRINGLES" in cmd else "drink"
-    wp  = WP_TABLE if "TABLE" in cmd else WP_KITCHEN
-    wp_name = "table" if wp == WP_TABLE else "kitchen"
-    return obj, wp, wp_name
+    loc_name = "table" if "TABLE" in cmd else "kitchen"
+    return obj, loc_name
 
-# ╭──────────────────────────────────────────────╮
-# │           Máquina de estados (AFSM)          │
-# ╰──────────────────────────────────────────────╯
-class States:
-    INIT, WAIT_CMD, PARSE, APPROACH_OBJ, FIND_OBJ, GRASP, RETRACT, \
-    NAV_DEST, WAIT_ARR, RELEASE, FINISH = range(11)
+#
+# This function sends the goal articular position to the left arm and sleeps 2 seconds
+# to allow the arm to reach the goal position. 
+#
+def move_left_arm(q1,q2,q3,q4,q5,q6,q7):
+    global pubLaGoalPose
+    msg = Float64MultiArray()
+    msg.data.append(q1)
+    msg.data.append(q2)
+    msg.data.append(q3)
+    msg.data.append(q4)
+    msg.data.append(q5)
+    msg.data.append(q6)
+    msg.data.append(q7)
+    pubLaGoalPose.publish(msg)
+    time.sleep(2.0)
 
-current_state = States.INIT
-next_after_arrival = None
+#
+# This function sends and articular trajectory to the left arm and sleeps proportional to length of trajectory
+# to allow the arm to reach the goal position. 
+#
+def move_left_arm_with_trajectory(Q):
+    global pubLaGoalTraj
+    pubLaGoalTraj.publish(Q)
+    time.sleep(0.05*len(Q.points) + 2)
 
-# ╭──────────────────────────────────────────────╮
-# │               Nodo principal                 │
-# ╰──────────────────────────────────────────────╯
-if __name__ == "__main__":
-    rospy.init_node("final_project")
-    tf_listener = tf.TransformListener()
+#
+# This function sends the goal angular position to the left gripper and sleeps 1 second
+# to allow the gripper to reach the goal angle. 
+#
+def move_left_gripper(q):
+    global pubLaGoalGrip
+    pubLaGoalGrip.publish(q)
+    time.sleep(1.0)
 
-    # Suscriptores
-    rospy.Subscriber("/hri/sp_rec/recognized",
-                     RecognizedSpeech, cb_recognized_speech)
-    rospy.Subscriber("/navigation/goal_reached", Bool, cb_goal_reached)
+#
+# This function sends the goal articular position to the right arm and sleeps 2 seconds
+# to allow the arm to reach the goal position. 
+#
+def move_right_arm(q1,q2,q3,q4,q5,q6,q7):
+    global pubRaGoalPose
+    msg = Float64MultiArray()
+    msg.data.append(q1)
+    msg.data.append(q2)
+    msg.data.append(q3)
+    msg.data.append(q4)
+    msg.data.append(q5)
+    msg.data.append(q6)
+    msg.data.append(q7)
+    pubRaGoalPose.publish(msg)
+    time.sleep(2.0)
 
-    # Publicadores
-    pubGoalPose   = rospy.Publisher("/move_base_simple/goal",
-                                    PoseStamped, queue_size=10)
-    pubCmdVel     = rospy.Publisher("/cmd_vel", Twist, queue_size=10)
-    pubSay        = rospy.Publisher("/hri/speech_generator",
-                                    SoundRequest, queue_size=1)
-    pubLaGoalPose = rospy.Publisher("/hardware/left_arm/goal_pose",
-                                    Float64MultiArray, queue_size=10)
-    pubHdGoalPose = rospy.Publisher("/hardware/head/goal_pose",
-                                    Float64MultiArray, queue_size=10)
-    pubLaGoalGrip = rospy.Publisher("/hardware/left_arm/goal_gripper",
-                                    Float64, queue_size=10)
-    pubLaGoalTraj = rospy.Publisher("/manipulation/la_q_trajectory",
-                                    JointTrajectory, queue_size=10)
+#
+# This function sends and articular trajectory to the right arm and sleeps proportional to length of trajectory
+# to allow the arm to reach the goal position. 
+#
+def move_right_arm_with_trajectory(Q):
+    global pubRaGoalTraj
+    pubRaGoalTraj.publish(Q)
+    time.sleep(0.05*len(Q.points) + 2)
 
-    # Servicios
-    rospy.loginfo("Waiting for services…")
-    rospy.wait_for_service("/manipulation/la_ik_trajectory")
-    rospy.wait_for_service("/manipulation/polynomial_trajectory")
-    rospy.wait_for_service("/vision/obj_reco/detect_and_recognize_object")
-    srvIKleft = rospy.ServiceProxy("/manipulation/la_ik_trajectory",
-                                   InverseKinematicsPose2Traj)
-    srvPoly   = rospy.ServiceProxy("/manipulation/polynomial_trajectory",
-                                   GetPolynomialTrajectory)
-    srvObjReco= rospy.ServiceProxy("/vision/obj_reco/detect_and_recognize_object",
-                                   RecognizeObject)
-    rospy.loginfo("Services ready.")
+#
+# This function sends the goal angular position to the right gripper and sleeps 1 second
+# to allow the gripper to reach the goal angle. 
+#
+def move_right_gripper(q):
+    global pubRaGoalGrip
+    pubRaGoalGrip.publish(q)
+    time.sleep(1.0)
 
-    # Variables globales de flujo
-    new_cmd, executing_task, goal_reached = False, False, False
-    recognized_speech = ""
+#
+# This function sends the goal pan-tilt angles to the head and sleeps 1 second
+# to allow the head to reach the goal position. 
+#
+def move_head(pan, tilt):
+    global pubHdGoalPose
+    msg = Float64MultiArray()
+    msg.data.append(pan)
+    msg.data.append(tilt)
+    pubHdGoalPose.publish(msg)
+    time.sleep(1.0)
 
-    ENABLE_TTY = rospy.get_param("~enable_terminal", False)
+#
+# This function sends a linear and angular speed to the mobile base to perform
+# low-level movements. The mobile base will move at the given linear-angular speeds
+# during a time given by 't'
+#
+def move_base(linear, angular, t):
+    global pubCmdVel
+    cmd = Twist()
+    cmd.linear.x = linear
+    cmd.angular.z = angular
+    pubCmdVel.publish(cmd)
+    time.sleep(t)
+    pubCmdVel.publish(Twist())
 
-    if ENABLE_TTY:
-        t = threading.Thread(target=terminal_listener, daemon=True)
-        t.start()
-        rospy.loginfo("Terminal input ENABLED – type your commands here.")
-    else:
-        rospy.loginfo("Terminal input DISABLED – use voice commands.")
+#
+# This function publishes a global goal position. This topic is subscribed by
+# pratice04 and performs path planning and tracking.
+#
+def go_to_goal_pose(goal_x, goal_y):
+    global pubGoalPose
+    goal_pose = PoseStamped()
+    goal_pose.pose.orientation.w = 1.0
+    goal_pose.pose.position.x = goal_x
+    goal_pose.pose.position.y = goal_y
+    pubGoalPose.publish(goal_pose)
 
-    # Presentación
-    rospy.loginfo("FINAL PROJECT – " + NAME)
-    say("Ready")
+#
+# This function sends a text to be synthetized.
+#
+def say(text):
+    global pubSay
+    msg = SoundRequest()
+    msg.sound   = -3
+    msg.command = 1
+    msg.volume  = 1.0
+    msg.arg2    = "voice_kal_diphone"
+    msg.arg = text
+    print("Saying: " + text)
+    pubSay.publish(msg)
+    time.sleep(len(text)*0.1)
 
-    rate = rospy.Rate(10)
+#
+# This function calls the service for calculating inverse kinematics for left arm
+# and returns the calculated articular position.
+#
+def calculate_inverse_kinematics_left(x,y,z,roll, pitch, yaw):
+    req_ik = InverseKinematicsPose2TrajRequest()
+    req_ik.x = x
+    req_ik.y = y
+    req_ik.z = z
+    req_ik.roll  = roll
+    req_ik.pitch = pitch
+    req_ik.yaw   = yaw
+    req_ik.duration = 0;
+    req_ik.time_step = 0.05
+    req_ik.initial_guess = []
+    clt = rospy.ServiceProxy("/manipulation/la_ik_trajectory", InverseKinematicsPose2Traj)
+    resp = clt(req_ik)
+    return resp.articular_trajectory
 
-    # ══════════════════════════════════════════════════════════════
-    #                       BUCLE PRINCIPAL
-    # ══════════════════════════════════════════════════════════════
+#
+# This function calls the service for calculating inverse kinematics for right arm
+# and returns the calculated articular position.
+#
+def calculate_inverse_kinematics_right(x,y,z,roll, pitch, yaw):
+    req_ik = InverseKinematicsPose2TrajRequest()
+    req_ik.x = x
+    req_ik.y = y
+    req_ik.z = z
+    req_ik.roll  = roll
+    req_ik.pitch = pitch
+    req_ik.yaw   = yaw
+    req_ik.duration = 0;
+    req_ik.time_step = 0.05
+    req_ik.initial_guess = []
+    clt = rospy.ServiceProxy("/manipulation/ra_ik_trajectory", InverseKinematicsPose2Traj)
+    resp = clt(req_ik)
+    return resp.articular_trajectory
+
+#
+# Calls the service for calculating a polynomial trajectory for the left arm
+#
+def get_la_polynomial_trajectory(q, duration=2.0, time_step=0.05):
+    current_p = rospy.wait_for_message("/hardware/left_arm/current_pose", Float64MultiArray)
+    current_p = current_p.data
+    clt = rospy.ServiceProxy("/manipulation/polynomial_trajectory", GetPolynomialTrajectory)
+    req = GetPolynomialTrajectoryRequest()
+    req.p1 = current_p
+    req.p2 = q
+    req.duration = duration
+    req.time_step = time_step
+    resp = clt(req)
+    return resp.trajectory
+
+#
+# Calls the service for calculating a polynomial trajectory for the right arm
+#
+def get_la_polynomial_trajectory(q, duration=5.0, time_step=0.05):
+    current_p = rospy.wait_for_message("/hardware/right_arm/current_pose", Float64MultiArray)
+    current_p = current_p.data
+    clt = rospy.ServiceProxy("/manipulation/polynomial_trajectory", GetPolynomialTrajectory)
+    req = GetPolynomialTrajectoryRequest()
+    req.p1 = current_p
+    req.p2 = q
+    req.duration = duration
+    req.time_step = time_step
+    resp = clt(req)
+    return resp.trajectory
+
+
+#
+# Calls the service for finding object and returns
+# the xyz coordinates of the requested object w.r.t. "realsense_link"
+#
+def find_object(object_name):
+    clt_find_object = rospy.ServiceProxy("/vision/obj_reco/detect_and_recognize_object", RecognizeObject)
+    req_find_object = RecognizeObjectRequest()
+    req_find_object.point_cloud = rospy.wait_for_message("/camera/depth_registered/points", PointCloud2)
+    req_find_object.name  = object_name
+    resp = clt_find_object(req_find_object)
+    return [resp.recog_object.pose.position.x, resp.recog_object.pose.position.y, resp.recog_object.pose.position.z]
+
+#
+# Transforms a point xyz expressed w.r.t. source frame to the target frame
+#
+def transform_point(x,y,z, source_frame="realsense_link", target_frame="shoulders_left_link"):
+    listener = tf.TransformListener()
+    listener.waitForTransform(target_frame, source_frame, rospy.Time(), rospy.Duration(4.0))
+    obj_p = PointStamped()
+    obj_p.header.frame_id = source_frame
+    obj_p.header.stamp = rospy.Time(0)
+    obj_p.point.x, obj_p.point.y, obj_p.point.z = x,y,z
+    obj_p = listener.transformPoint(target_frame, obj_p)
+    return [obj_p.point.x, obj_p.point.y, obj_p.point.z]
+
+# ===================================================================
+# TERMINAL COMMAND INTERFACE
+# ===================================================================
+def terminal_command_interface():
+    """Hilo para recibir comandos por terminal"""
+    global pubTerminalCommand
+    rospy.loginfo("Terminal command interface started. Type commands:")
     while not rospy.is_shutdown():
+        try:
+            cmd = input("> ").strip()
+            if not cmd:
+                continue
+                
+            # Publicar como si fuera un comando de voz reconocido
+            msg = RecognizedSpeech()
+            msg.hypothesis = [cmd]
+            pubTerminalCommand.publish(msg)
+            print(f"Command sent: {cmd}")
+        except Exception as e:
+            rospy.logerr(f"Terminal error: {str(e)}")
+            break
 
-        #  INIT ----------------------------------------------------
-        if current_state == States.INIT:
-            say("Hello. I'm ready to execute a command.")
-            move_head(0,-0.4); move_head(0,0.4); move_head(0,0)
-            move_left_arm(0,0,0,0,0,0,0)
-            current_state = States.WAIT_CMD
+def main():
+    global new_task, recognized_speech, executing_task, goal_reached
+    global pubLaGoalPose, pubRaGoalPose, pubHdGoalPose, pubLaGoalGrip, pubRaGoalGrip
+    global pubLaGoalTraj, pubRaGoalTraj, pubGoalPose, pubCmdVel, pubSay, pubTerminalCommand
+    print("FINAL PROJECT - " + NAME)
+    rospy.init_node("final_project")
+    
+    # Configuración de publicadores y suscriptores
+    rospy.Subscriber('/hri/sp_rec/recognized', RecognizedSpeech, callback_recognized_speech)
+    rospy.Subscriber('/navigation/goal_reached', Bool, callback_goal_reached)
+    pubGoalPose   = rospy.Publisher('/move_base_simple/goal', PoseStamped, queue_size=10)
+    pubCmdVel     = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
+    pubSay        = rospy.Publisher('/hri/speech_generator', SoundRequest, queue_size=1)
+    pubLaGoalPose = rospy.Publisher("/hardware/left_arm/goal_pose" , Float64MultiArray, queue_size=10);
+    pubRaGoalPose = rospy.Publisher("/hardware/right_arm/goal_pose", Float64MultiArray, queue_size=10);
+    pubHdGoalPose = rospy.Publisher("/hardware/head/goal_pose"     , Float64MultiArray, queue_size=10);
+    pubLaGoalGrip = rospy.Publisher("/hardware/left_arm/goal_gripper" , Float64, queue_size=10);
+    pubRaGoalGrip = rospy.Publisher("/hardware/right_arm/goal_gripper", Float64, queue_size=10);
+    pubLaGoalTraj = rospy.Publisher("/manipulation/la_q_trajectory", JointTrajectory, queue_size=10)
+    pubRaGoalTraj = rospy.Publisher("/manipulation/ra_q_trajectory", JointTrajectory, queue_size=10)
+    pubTerminalCommand = rospy.Publisher('/hri/sp_rec/recognized', RecognizedSpeech, queue_size=10)
+    
+    # Esperar por servicios
+    print("Waiting for services...")
+    rospy.wait_for_service('/manipulation/la_ik_pose')
+    rospy.wait_for_service('/manipulation/ra_ik_pose')
+    rospy.wait_for_service('/vision/obj_reco/detect_and_recognize_object')
+    print("Services are now available.")
+    
+    # Iniciar interfaz de terminal en un hilo separado
+    terminal_thread = threading.Thread(target=terminal_command_interface)
+    terminal_thread.daemon = True
+    terminal_thread.start()
+    
+    # ===================================================================
+    # MÁQUINA DE ESTADOS PRINCIPAL
+    # ===================================================================
+    executing_task = False
+    current_state = "SM_INIT"
+    new_task = False
+    goal_reached = False
+    recognized_speech = ""
+    
+    # Configuración de posiciones
+    desk_position = [3.30, 5.70]        # Punto cercano al escritorio
+    kitchen_position = [3.22, 9.72]  # Ubicación de la cocina
+    table_position = [8.0, 8.5]      # Ubicación de la mesa
+    
+    # Variables de estado
+    target_object = None
+    target_location = None
+    location_name = None
+    obj_position = None
+    
+    say("System ready. Waiting for voice or terminal commands.")
 
-        #  WAIT_CMD -----------------------------------------------
-        elif current_state == States.WAIT_CMD:
-            if new_cmd:
-                new_cmd = False
+    loop = rospy.Rate(10)
+    while not rospy.is_shutdown():
+        # --- MÁQUINA DE ESTADOS PRINCIPAL ---
+        if current_state == "SM_INIT":
+            print("Initializing state machine")
+            move_head(0, 0)  # Posición neutral de la cabeza
+            move_left_arm(0, 0, 0, 0, 0, 0, 0)  # Posición inicial del brazo
+            current_state = "SM_WAIT_FOR_COMMAND"
+
+        elif current_state == "SM_WAIT_FOR_COMMAND":
+            if new_task and not executing_task:
                 executing_task = True
-                current_state  = States.PARSE
+                new_task = False
+                
+                # Parsear comando de voz
+                target_object, location_name = parse_command(recognized_speech)
+                target_location = table_position if location_name == "table" else kitchen_position
+                
+                say(f"Command received. I will take the {target_object} to the {location_name}")
+                current_state = "SM_NAVIGATE_TO_DESK"
 
-        #  PARSE ---------------------------------------------------
-        elif current_state == States.PARSE:
-            target_obj, target_wp, target_wp_name = parse_command(recognized_speech)
-            say(f"I will take the {target_obj} to the {target_wp_name}.")
-            current_state = States.APPROACH_OBJ
+        elif current_state == "SM_NAVIGATE_TO_DESK":
+            say("Navigating to the desk")
+            go_to_goal_pose(desk_position[0], desk_position[1])
+            current_state = "SM_WAIT_NAVIGATION_DESK"
 
-        #  APPROACH_OBJ -------------------------------------------
-        elif current_state == States.APPROACH_OBJ:
-            say("Approaching the objects.")
-            go_to(*WP_SHELF)
-            goal_reached = False
-            next_after_arrival = States.FIND_OBJ
-            current_state = States.WAIT_ARR
-
-        #  FIND_OBJ ------------------------------------------------
-        elif current_state == States.FIND_OBJ:
-            say(f"Searching for {target_obj}.")
-            try:
-                pos = find_object(target_obj)
-                x,y,z = tf_point(pos.x, pos.y, pos.z)
-                traj  = ik_left(x,y,z)
-                current_state = States.GRASP
-            except Exception as e:
-                rospy.logerr(e)
-                say("I can't see the object.")
-                executing_task  = False
-                current_state   = States.WAIT_CMD
-
-        #  GRASP ---------------------------------------------------
-        elif current_state == States.GRASP:
-            say("Grasping.")
-            move_left_arm_traj(traj)
-            move_left_gripper(1.0)
-            say("Object grasped.")
-            current_state = States.RETRACT
-
-        #  RETRACT -------------------------------------------------
-        elif current_state == States.RETRACT:
-            traj_carry = poly_traj_left(CARRY_POSTURE)
-            move_left_arm_traj(traj_carry)
-            current_state = States.NAV_DEST
-
-        #  NAV_DEST ------------------------------------------------
-        elif current_state == States.NAV_DEST:
-            say(f"Navigating to the {target_wp_name}.")
-            go_to(*target_wp)
-            goal_reached       = False
-            next_after_arrival = States.RELEASE
-            current_state      = States.WAIT_ARR
-
-        #  WAIT_ARR -----------------------------------------------
-        elif current_state == States.WAIT_ARR:
+        elif current_state == "SM_WAIT_NAVIGATION_DESK":
             if goal_reached:
-                current_state = next_after_arrival
+                goal_reached = False
+                say("I arrived near the desk")
+                current_state = "SM_FIND_OBJECT"
 
-        #  RELEASE -------------------------------------------------
-        elif current_state == States.RELEASE:
-            say("Releasing the object.")
-            move_left_gripper(0.0)
-            move_left_arm(0,0,0,0,0,0,0)
-            say("Task completed.")
-            current_state = States.FINISH
+        elif current_state == "SM_FIND_OBJECT":
+            say(f"Looking for the {target_object}")
+            move_head(0, -0.8)  # Bajar la mirada hacia el escritorio
+            time.sleep(1.0)
+            
+            try:
+                # Detectar objeto y transformar coordenadas
+                obj_cam_coords = find_object(target_object.lower())
+                obj_position = transform_point(
+                    obj_cam_coords[0], 
+                    obj_cam_coords[1], 
+                    obj_cam_coords[2]
+                )
+                say(f"{target_object} detected")
+                current_state = "SM_APPROACH_OBJECT"
+            except:
+                say("Object not found. Trying again")
+                time.sleep(1.0)
 
-        #  FINISH --------------------------------------------------
-        elif current_state == States.FINISH:
-            executing_task, recognized_speech = False, ""
-            current_state = States.WAIT_CMD
+        elif current_state == "SM_APPROACH_OBJECT":
+            say("Approaching the desk for manipulation")
+            move_base(0.2, 0, 2.0)  # Avanzar 40 cm
+            current_state = "SM_GRAB_OBJECT"
 
-        rate.sleep()
+        elif current_state == "SM_GRAB_OBJECT":
+            say(f"Grabbing the {target_object}")
+            
+            try:
+                # Calcular cinemática inversa para pre-agarre
+                pre_grasp_traj = calculate_inverse_kinematics_left(
+                    obj_position[0], 
+                    obj_position[1], 
+                    obj_position[2] + 0.1,  # 10 cm arriba del objeto
+                    0, math.pi/2, 0         # Orientación vertical
+                )
+                move_left_arm_with_trajectory(pre_grasp_traj)
+                
+                # Mover a posición de agarre
+                grasp_traj = calculate_inverse_kinematics_left(
+                    obj_position[0], 
+                    obj_position[1], 
+                    obj_position[2],
+                    0, math.pi/2, 0
+                )
+                move_left_arm_with_trajectory(grasp_traj)
+                
+                # Cerrar pinza
+                move_left_gripper(0.0)
+                time.sleep(1.0)
+                
+                # Levantar objeto
+                move_left_arm_with_trajectory(pre_grasp_traj)
+                say("Object successfully grabbed")
+                current_state = "SM_NAVIGATE_TO_LOCATION"
+                
+            except Exception as e:
+                say("Grasping failed. Retrying")
+                print(str(e))
+                current_state = "SM_FIND_OBJECT"
+
+        elif current_state == "SM_NAVIGATE_TO_LOCATION":
+            say(f"Taking object to the {location_name}")
+            go_to_goal_pose(target_location[0], target_location[1])
+            current_state = "SM_WAIT_NAVIGATION_LOCATION"
+
+        elif current_state == "SM_WAIT_NAVIGATION_LOCATION":
+            if goal_reached:
+                goal_reached = False
+                say(f"Arrived at the {location_name}")
+                current_state = "SM_PLACE_OBJECT"
+
+        elif current_state == "SM_PLACE_OBJECT":
+            say("Placing object")
+            move_left_gripper(1.0)  # Abrir pinza
+            time.sleep(1.0)
+            move_left_arm(0, 0, 0, 0, 0, 0, 0)  # Posición inicial
+            say("Task completed successfully")
+            current_state = "SM_RESET"
+
+        elif current_state == "SM_RESET":
+            executing_task = False
+            say("Ready for next command")
+            current_state = "SM_WAIT_FOR_COMMAND"
+
+        loop.sleep()
 
 if __name__ == '__main__':
     main()
