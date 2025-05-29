@@ -193,7 +193,7 @@ def calculate_inverse_kinematics_left(x,y,z,roll, pitch, yaw):
     req_ik.yaw   = yaw
     req_ik.duration = 0;
     req_ik.time_step = 0.05
-    req_ik.initial_guess = []
+    #req_ik.initial_guess = []
     clt = rospy.ServiceProxy("/manipulation/la_ik_trajectory", InverseKinematicsPose2Traj)
     resp = clt(req_ik)
     return resp.articular_trajectory
@@ -212,7 +212,7 @@ def calculate_inverse_kinematics_right(x,y,z,roll, pitch, yaw):
     req_ik.yaw   = yaw
     req_ik.duration = 0;
     req_ik.time_step = 0.05
-    req_ik.initial_guess = []
+    #req_ik.initial_guess = []
     clt = rospy.ServiceProxy("/manipulation/ra_ik_trajectory", InverseKinematicsPose2Traj)
     resp = clt(req_ik)
     return resp.articular_trajectory
