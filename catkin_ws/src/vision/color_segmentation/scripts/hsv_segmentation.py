@@ -116,7 +116,7 @@ def main():
     img_filtered = numpy.zeros((480, 640, 3), numpy.uint8)
     loop = rospy.Rate(10)
     while not rospy.is_shutdown():
-        cv2.imshow("BGR", img_bgr)
+        #cv2.imshow("BGR", img_bgr)
         #cv2.imshow("HSV", img_hsv)
         #cv2.imshow("Binary", img_bin)
         #cv2.imshow("Filtered", img_filtered)
