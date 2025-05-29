@@ -362,7 +362,8 @@ def main():
 
                 
                 current_state = "SM_Approach"
-        elif current state == "SM_Approach":
+                
+        elif current_state == "SM_Approach":
             print("Acercandose a la mesa")
             say("Approaching to the table.")
             go_to_goal_pose(3.25,6)				#Llega directamente a la mesa
