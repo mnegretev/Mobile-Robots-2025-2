@@ -364,7 +364,7 @@ def main():
             move_base(0.0, 1.0, 2.0)  # Rotar en el lugar: velocidad angular de 1.0 rad/s durante 2 segundos
             move_base(0.0, 0.0, 0.5)  # Detenerse
 
-            move_head(0, -0.5)  # Bajar la cabeza para localizar objetos
+            move_head(0, -0.7)  # Bajar la cabeza para localizar objetos
             current_state = "SM_Localize"
 
         elif current_state == "SM_Localize":
