@@ -53,8 +53,10 @@ class RobotState:
         }
         self.rotation_target = {
             'initial': math.pi*3/2,
-            'drink': math.pi*3/2 - 0.35,
-            'pringles': math.pi*3/2 + 0.35
+            'drink': math.pi*3/2 - 0.3,
+            'pringles': math.pi*3/2 + 0.3,
+            'table': math.pi*3/2,
+            'kitchen': math.pi
         }
         self.goal_coordinates = [0.0, 0.0]
         self.t_pos = None
@@ -289,12 +291,13 @@ def main():
 
     def prepare_robot_execute():
         say("Preparing arm")
+        state.t_pos = find_object(state.target_object)
         move_arm(-0.59, 0.0, 0.0, 1.75, 0.0, 0.56, 0.0)
         move_arm(-0.1432, 0.0, 0.0, 1.8418, 0.0, 0.1695, 0.0)
         state.t_pos = transform_point(state.t_pos[0], state.t_pos[1], state.t_pos[2])
         print(f"Detected position: {state.t_pos}")
-        q = calculate_inverse_kinematics(state.t_pos[0], 0, state.t_pos[2], 0.0, -1.473, 0.0)
-        q = get_polynomial_trajectory(q, 10, 0.025)
+        say("Calculating inverse kinematics")
+        q = calculate_inverse_kinematics(state.t_pos[0] + 0.1, state.t_pos[1], state.t_pos[2], 0.0, -1.473, 0.0)
         move_arm_with_trajectory(q)
         say("Arm is ready")
 
