@@ -24,48 +24,55 @@ NAME = "Lujan perez carlos eduardo "
 
 def segment_by_color(img_bgr, points, obj_name):
     global img_hsv, img_bin, img_filtered
-    img_x, img_y, x,y,z = 0,0,0,0,0
-    #
-    # TODO:
-    # - Assign lower and upper color limits according to the requested object:
-    #   If obj_name == 'pringles': [25, 50, 50] - [35, 255, 255]
-    #   otherwise                : [10,200, 50] - [20, 255, 255]
-    # - Change color space from RGB to HSV.
-    #   Check online documentation for cv2.cvtColor function
-    # - Determine the pixels whose color is in the selected color range.
-    #   Check online documentation for cv2.inRange
-    # - Calculate the centroid of all pixels in the given color range (ball position).
-    #   Check online documentation for cv2.findNonZero and cv2.mean
-    # - Calculate the centroid of the segmented region in the cartesian space
-    #   using the point cloud 'points'. Use numpy array notation to process the point cloud data.
-    #   Example: 'points[240,320][1]' gets the 'y' value of the point corresponding to
-    #   the pixel in the center of the image.
-    #
-    img_hsv = cv2.cvtColor(img_bgr,cv2.COLOR_BGR2HSV)
+    img_x, img_y, x, y, z = 0, 0, 0, 0, 0
+
+    # Convert to HSV
+    img_hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
+
+    # Define mask by color
     if obj_name == "pringles":
-        img_bin = cv2.inRange(img_hsv,(25,150,50),(35,255,255))
-        print("pringle")
+        img_bin = cv2.inRange(img_hsv, (25, 150, 50), (35, 255, 255))
     elif obj_name == "drink":
-    	img_bin = cv2.inRange(img_hsv,(15,200,50),(25,255,255))
-    	print("soda")
+        img_bin = cv2.inRange(img_hsv, (15, 200, 50), (25, 255, 255))
     else:
-    	img_bin = cv2.inRange(img_hsv,(0,150,50),(10,255,255))
-    	print("aple")
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(7,7))
-    img_filtered = cv2.erode(img_bin,kernel)
-    img_filtered = cv2.dilate(img_filtered,kernel)
+        rospy.logwarn("Unknown object: " + obj_name)
+        return [0, 0, 0, 0, 0]
+
+    # Filter noise
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
+    img_filtered = cv2.erode(img_bin, kernel)
+    img_filtered = cv2.dilate(img_filtered, kernel)
+
+    # Find non-zero pixels
     nonz = cv2.findNonZero(img_filtered)
+    if nonz is None or len(nonz) == 0:
+        rospy.logwarn("No segmented pixels for: " + obj_name)
+        return [0, 0, 0, 0, 0]
+
     centroid = cv2.mean(nonz)
     img_x = centroid[0]
     img_y = centroid[1]
-    for [[r,c]] in nonz:
-    	x += points[r,c][0]
-    	y += points[r,c][1]
-    	z += points[r,c][2]
-    x = x/len(nonz)
-    y = y/len(nonz)
-    z = z/len(nonz)
-    return [img_x, img_y, x,y,z]
+
+    # Average 3D coordinates
+    valid_points = 0
+    for [[r, c]] in nonz:
+        pt = points[r, c]
+        if not numpy.isfinite(pt[0]) or not numpy.isfinite(pt[1]) or not numpy.isfinite(pt[2]):
+            continue
+        x += pt[0]
+        y += pt[1]
+        z += pt[2]
+        valid_points += 1
+
+    if valid_points == 0:
+        rospy.logwarn("All points invalid for object: " + obj_name)
+        return [img_x, img_y, 0, 0, 0]
+
+    x /= valid_points
+    y /= valid_points
+    z /= valid_points
+
+    return [img_x, img_y, x, y, z]
 
 def callback_find_object(req):
     global pub_point, img_bgr
