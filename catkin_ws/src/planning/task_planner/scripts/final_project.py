@@ -431,11 +431,11 @@ def main():
                 current_state = "SM_Waiting"
 
 
-            elif object_name == "drink":
-            	move_right_gripper(1)
-            	q = calculate_inverse_kinematics_right(x,y,z,0,0,0)
-            	move_right_arm_with_trajectory(q)
-            	move_right_gripper(-1) 
+        elif object_name == "drink":
+            move_right_gripper(1)
+            q = calculate_inverse_kinematics_right(x,y,z,0,0,0)
+            move_right_arm_with_trajectory(q)
+            move_right_gripper(-1) 
             say("Grabbing object.")            
             current_state:"SM_Lift"
 #######################################################################################################################################################################################################
