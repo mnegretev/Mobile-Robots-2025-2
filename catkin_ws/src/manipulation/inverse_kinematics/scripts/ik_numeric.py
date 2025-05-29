@@ -79,16 +79,17 @@ def jacobian(q, T, W):
     #     RETURN J
     #    
     delta_q = 1e-6
-    J = numpy.asarray([[0.0 for _ in q] for _ in range(6)])
+    J = numpy.zeros((6, len(q)))
+    #J = numpy.asarray([[0.0 for _ in q] for _ in range(6)])
     qn = numpy.asarray([q,]*len(q)) + delta_q*numpy.identity(len(q))
     qp = numpy.asarray([q,]*len(q)) - delta_q*numpy.identity(len(q))
     for i in range(len(q)):
-        J[:, i] = (forward_kinematics(qn[i], T, W) - forward_kinematics(qp[i], T, W)) / delta_q / 2.0
+        J[:, i] = (forward_kinematics(qn[i], T, W) - forward_kinematics(qp[i], T, W)) / (delta_q*2.0)
     
     return J
     
 
-def inverse_kinematics(x, y, z, roll, pitch, yaw, T, W, init_guess=numpy.zeros(7), max_iter=20):
+def inverse_kinematics(x, y, z, roll, pitch, yaw, T, W, init_guess=numpy.zeros(7), max_iter=40):
     pd = numpy.asarray([x,y,z,roll,pitch,yaw])
     #
     # TODO:
@@ -118,7 +119,7 @@ def inverse_kinematics(x, y, z, roll, pitch, yaw, T, W, init_guess=numpy.zeros(7
     iterations = 0
     error = p - pd
     error[3:6] = (error[3:6] + math.pi) % (2*math.pi) - math.pi
-    tolerance = 0.001
+    tolerance = 0.0001
     while numpy.linalg.norm(error) > tolerance and iterations < max_iter:
         J = jacobian(q, T, W)
         J_inv = numpy.linalg.pinv(J)

@@ -84,7 +84,7 @@ def segment_by_color(img_bgr, points, obj_name):
     # No funciona el rango
     	print("No se encontró el objeto.")
     
-    return [img_x, img_y, x,y,1]
+    return [img_x, img_y, x, y, z]
 
 def callback_find_object(req):
     global pub_point, img_bgr

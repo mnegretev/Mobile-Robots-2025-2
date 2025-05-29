@@ -30,7 +30,9 @@ from vision_msgs.srv import *
 from manip_msgs.srv import *
 from hri_msgs.msg import *
 
-NAME = "FULL NAME"
+rospy.set_param("/tf2_buffer_server/ignore_repeated_tfs", True)
+
+NAME = "Pacheco Jarillo Juan Salvador"
 
 #
 # Global variable 'speech_recognized' contains the last recognized sentence
@@ -81,6 +83,7 @@ def move_left_arm_with_trajectory(Q):
     global pubLaGoalTraj
     pubLaGoalTraj.publish(Q)
     time.sleep(0.05*len(Q.points) + 2)
+    print("HELLLOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO")
 
 #
 # This function sends the goal angular position to the left gripper and sleeps 1 second
@@ -214,13 +217,18 @@ def calculate_inverse_kinematics_right(x,y,z,roll, pitch, yaw):
     req_ik.time_step = 0.05
     req_ik.initial_guess = []
     clt = rospy.ServiceProxy("/manipulation/ra_ik_trajectory", InverseKinematicsPose2Traj)
+    
+    print(type(req_ik))
+    print(req_ik)
+    
     resp = clt(req_ik)
+    
     return resp.articular_trajectory
 
 #
 # Calls the service for calculating a polynomial trajectory for the left arm
 #
-def get_la_polynomial_trajectory(q, duration=2.0, time_step=0.05):
+def get_polynomial_trajectory_left(q, duration=2.0, time_step=0.05):
     current_p = rospy.wait_for_message("/hardware/left_arm/current_pose", Float64MultiArray)
     current_p = current_p.data
     clt = rospy.ServiceProxy("/manipulation/polynomial_trajectory", GetPolynomialTrajectory)
@@ -230,12 +238,13 @@ def get_la_polynomial_trajectory(q, duration=2.0, time_step=0.05):
     req.duration = duration
     req.time_step = time_step
     resp = clt(req)
+    
     return resp.trajectory
 
 #
 # Calls the service for calculating a polynomial trajectory for the right arm
 #
-def get_la_polynomial_trajectory(q, duration=5.0, time_step=0.05):
+def get_polynomial_trajectory_right(q, duration=5.0, time_step=0.05):
     current_p = rospy.wait_for_message("/hardware/right_arm/current_pose", Float64MultiArray)
     current_p = current_p.data
     clt = rospy.ServiceProxy("/manipulation/polynomial_trajectory", GetPolynomialTrajectory)
@@ -244,6 +253,10 @@ def get_la_polynomial_trajectory(q, duration=5.0, time_step=0.05):
     req.p2 = q
     req.duration = duration
     req.time_step = time_step
+    
+    print("current_p:", current_p)
+    print("goal    p:", q)
+    
     resp = clt(req)
     return resp.trajectory
 
@@ -263,6 +276,7 @@ def find_object(object_name):
 #
 # Transforms a point xyz expressed w.r.t. source frame to the target frame
 #
+
 def transform_point(x,y,z, source_frame="realsense_link", target_frame="shoulders_left_link"):
     listener = tf.TransformListener()
     listener.waitForTransform(target_frame, source_frame, rospy.Time(), rospy.Duration(4.0))
@@ -272,8 +286,10 @@ def transform_point(x,y,z, source_frame="realsense_link", target_frame="shoulder
     obj_p.point.x, obj_p.point.y, obj_p.point.z = x,y,z
     obj_p = listener.transformPoint(target_frame, obj_p)
     return [obj_p.point.x, obj_p.point.y, obj_p.point.z]
+        
 
 def main():
+    rospy.set_param("/tf2_buffer_server/ignore_repeated_tfs", True)
     global new_task, recognized_speech, executing_task, goal_reached
     global pubLaGoalPose, pubRaGoalPose, pubHdGoalPose, pubLaGoalGrip, pubRaGoalGrip
     global pubLaGoalTraj, pubRaGoalTraj, pubGoalPose, pubCmdVel, pubSay
@@ -308,27 +324,152 @@ def main():
     new_task = False
     goal_reached = False
     recognized_speech = ""
-    say("Ready")
+    #    say("Ready")
     while not rospy.is_shutdown():
         #
         # Write here your AFSM
         #
+        TABLE = [3.3, 5.7]
+        WP_TABLE = [8.5,  8.3]
+        obj = "pringles"
+        goal_reached = False
+        
         if current_state == "SM_INIT":
             print("Iniciando máquina de estados")
-            say("Hello. I'm ready to execute a command.")
-            move_head(0, -0.5)
-            move_head(0, 0.5)
-            move_head(0, -0.5)
-            move_head(0, 0.5)
-            move_head(0, -0.5)
-            move_head(0, 0)
-            move_base(0.5, 0.0, 3.0)
-            move_left_arm(-1.0, 0.1 , 0.0, 1.5, 0.0, 1.0, 0.0)
-            move_left_gripper(1.0)
-            move_left_gripper(0.0)
-            move_left_arm(0,0,0,0,0,0,0)
-            current_state = "END"
-        loop.sleep()
+            say("Hello")
+            #current_state = "SM_DETECT_OBJECT"
+            #current_state = "SM_GRAB_OBJECT"
+            #current_state = "SM_APPROACH_TABLE"
+            
+            current_state = "SM_GO_TO_GOAL_POSE"
+        
+        
+        elif current_state == "SM_GO_TO_GOAL_POSE":
+            go_to_goal_pose(TABLE[0], TABLE[1])
+            goal_reached = False 
+
+            current_state = "SM_GO_TO_WAIT"
+        
+        
+        elif current_state == "SM_GO_TO_WAIT":
+            
+            if goal_reached:
+                say("Arrived at table")               
+
+                #current_state = "SM_DETECT_OBJECT"
+                
+                current_state = "SM_APPROACH_TABLE"
+        
+        #current_state == SM_APPROACH_TABLE
+        
+        elif current_state == "SM_APPROACH_TABLE": 
+            say("Approaching the table.")
+            #move_base(0.0, 1.2, 2.5)
+            #move_base(0.1, 0.0, 1)
+            move_head(0, -0.8)   
+    
+    
+            #current_state = "SM_END"
+            current_state = "SM_DETECT_OBJECT"        
+    
+                
+        elif current_state == "SM_DETECT_OBJECT":
+            
+            say("Locating object")
+            
+            x,y,z = find_object(obj)
+            print("Object ", obj, "found at ", [x,y,z],"wtr camera")
+            
+            #time.sleep(2)
+            
+            xt, yt, zt = transform_point(x, y, z)       
+
+            print("Transformed position: " + str([xt, yt, zt]))  
+          
+            #say("Inverse Cinematics")
+            grab = [-1.2, -.2, 0, 2.0, 0, .5, 0]
+            
+            move_left_arm(grab[0], grab[1], grab[2], grab[3], grab[4], grab[5], grab[6])  
+            
+            
+            traj = calculate_inverse_kinematics_left(xt, yt, zt, 0, -math.pi/2, 0)
+            
+            #print("Transformed position: " + str([traj]))
+            
+            move_left_gripper(.6)
+            
+            move_left_arm_with_trajectory(traj)
+            
+            move_left_gripper(-3)
+            
+            grab = [2.0144, 0, 0, .0224, 0, .6131, 0]
+            
+            move_left_arm(grab[0], grab[1], grab[2], grab[3], grab[4], grab[5], grab[6])
+            
+            current_state = "SM_GO_DROP" 
+            #current_state = "SM_GRAB_OBJECT"
+            
+        elif current_state == "SM_GO_DROP":
+            go_to_goal_pose(WP_TABLE[0], WP_TABLE[1])
+            goal_reached = False 
+
+            current_state = "SM_GO_TO_WAIT_2"
+        
+        elif current_state == "SM_GO_TO_WAIT_2":
+            
+            if goal_reached:
+                say("Arrived at table kitchen")               
+
+                #current_state = "SM_DETECT_OBJECT"
+                
+                current_state = "SM_APPROACH_TABLE_K"
+        
+        
+        elif current_state == "SM_APPROACH_TABLE_K": 
+            say("Approaching the table kitchen")
+            
+            move_left_gripper(.6)
+            
+            
+            
+            #move_base(0.0, 1.2, 2.5)
+            #move_base(0.1, 0.0, 1)
+            move_head(0, 0.8)   
+    
+    
+            #current_state = "SM_END"
+            current_state = "SM_DETECT_OBJECT" 
+        
+        
+        
+        
+        
+        
+        
+        #current_state == SM_GRAB_OBJECT
+        
+        elif current_state == "SM_GRAB_OBJECT":
+    
+            grab = [-.8856, -.1016, 0, 2.0, 0, .5, 0]
+            
+            move_left_arm(grab[0], grab[1], grab[2], grab[3], grab[4], grab[5], grab[6])  
+            
+            
+            
+            
+            current_state = "SM_END"
+        
+
+        
+        
+        
+        
+        elif current_state == "SM_END":
+            loop.sleep()
+            
+           
+            
+        
 
 if __name__ == '__main__':
     main()
