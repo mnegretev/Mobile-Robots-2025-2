@@ -27,7 +27,7 @@ from fsm import FSM, State
 
 class RobotState:
     def __init__(self):
-        self.NAME = "FULL NAME"
+        self.NAME = "ADRIAN MARTINEZ MANZO"
         self.listener = None
         self.recognized_speech = ""
         self.new_task = False
@@ -48,19 +48,33 @@ class RobotState:
         self.pubSay = None
         self.pub_point = None
         self.targets_coordinates = {
-            'drink': [3.1, 6.0],
-            'pringles': [3.3, 6.0],
+            'drink': [3.0, 6.0],
+            'pringles': [3.2, 6.0],
             'table': [3.2, 9.0],
             'kitchen': [6.6, -1.0]
         }
         self.rotation_target = {
             'initial': math.pi*3/2,
-            'drink': math.pi*3/2 - 0.3,
-            'pringles': math.pi*3/2 + 0.3,
+            'drink': math.pi*3/2 - 0.1,
+            'pringles': math.pi*3/2 + 0.31,
             'table': math.pi*3/2,
             'kitchen': math.pi*3/2
         }
+        self.head_rotation={
+            'drink': [0.0, -1],
+            'pringles': [0.0, -1]
+        }
         self.goal_coordinates = [0.0, 0.0]
+        self.t_pos = None
+
+    def reset(self):
+        self.recognized_speech = ""
+        self.new_task = False
+        self.executing_task = False
+        self.goal_reached = False
+        self.target_adquired = False
+        self.destiny = ""
+        self.target_object = ""
         self.t_pos = None
 
 state: RobotState = None
@@ -137,8 +151,8 @@ def calculate_inverse_kinematics(x, y, z, roll, pitch, yaw):
     req_ik = InverseKinematicsPose2TrajRequest() # type: ignore
     req_ik.x, req_ik.y, req_ik.z = x, y, z
     req_ik.roll, req_ik.pitch, req_ik.yaw = roll, pitch, yaw
-    req_ik.duration = 0
-    req_ik.time_step = 0.05
+    req_ik.duration = 2
+    req_ik.time_step = 0.025
     req_ik.initial_guess = []
     srv = "/manipulation/la_ik_trajectory"
     clt = rospy.ServiceProxy(srv, InverseKinematicsPose2Traj) # type: ignore
@@ -240,10 +254,6 @@ def main():
     print("Services are now available.")
     loop = rospy.Rate(10)
 
-    
-
-    
-
     def idle_execute():
         rospy.sleep(0.1)
         while not state.new_task:
@@ -253,13 +263,19 @@ def main():
         print(f"Target object: {state.target_object}, Goal coordinates: {state.goal_coordinates}")
         state.executing_task = True
         state.target_adquired = False
+        move_head(0.0, 0.0)  # Reset head position
         move_arm(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
 
     def navigate_execute():
         state.goal_reached = False
         goal = state.goal_coordinates if state.target_adquired else state.targets_coordinates[state.target_object]
         print(f"Navigating to {goal}")
+        go_to_goal_pose(goal[0], goal[1] + 1)
+        state.goal_reached = False
+        while not state.goal_reached and not rospy.is_shutdown():
+            pass
         go_to_goal_pose(goal[0], goal[1])
+        state.goal_reached = False
 
     def end_execute():
         state.executing_task = False
@@ -274,7 +290,7 @@ def main():
         rotate_to_target(state.rotation_target["initial"])
 
         say("Turning head down")
-        move_head(0, -1.0)
+        move_head(state.head_rotation[state.target_object][0], state.head_rotation[state.target_object][1])
 
         say("Detecting object")
         state.t_pos = find_object(state.target_object)
@@ -284,7 +300,7 @@ def main():
 
         say("Getting closer to target")
         x, y = state.targets_coordinates[state.target_object]
-        move_to_position([x, y - 0.73])
+        move_to_position([x, y - 0.715])
 
         say("Readjusting base rotation")
         rotate_to_target(state.rotation_target[state.target_object])
@@ -293,15 +309,24 @@ def main():
 
     def prepare_robot_execute():
         say("Preparing arm")
-        state.t_pos = find_object(state.target_object)
-        move_arm(-0.59, 0.0, 0.0, 1.75, 0.0, 0.56, 0.0)
-        move_arm(-0.1432, 0.0, 0.0, 1.8418, 0.0, 0.1695, 0.0)
-        state.t_pos = transform_point(state.t_pos[0], state.t_pos[1], state.t_pos[2])
-        print(f"Detected position: {state.t_pos}")
-        say("Calculating inverse kinematics")
-        q = calculate_inverse_kinematics(state.t_pos[0] + 0.15, state.t_pos[1], state.t_pos[2], 0.0, -1.473, 0.0)
-        move_arm_with_trajectory(q)
-        say("Arm is ready")
+        try:
+            state.t_pos = find_object(state.target_object)
+            move_arm(-0.59, 0.0, 0.0, 1.75, 0.0, 0.56, 0.0)
+            move_arm(-0.1432, 0.0, 0.0, 1.8418, 0.0, 0.1695, 0.0)
+            state.t_pos = transform_point(state.t_pos[0], state.t_pos[1], state.t_pos[2])
+            print(f"Detected position: {state.t_pos}")
+            say("Calculating inverse kinematics")
+            q = calculate_inverse_kinematics(state.t_pos[0] + 0.12, 0, state.t_pos[2], 0.0, -1.473, 0.0)
+            move_arm_with_trajectory(q)
+            say("Arm is ready")
+        except Exception as e:
+            say("Error in arm preparation, trying again")
+            prepare_arm_for_detection()
+            x, y = state.targets_coordinates[state.target_object]
+            move_base(0.1, 0.0, 0.1)
+            rotate_to_target(state.rotation_target[state.target_object])
+            prepare_robot_execute()
+        
 
     def prepare_arm_execute():
         say("Rotating robot")
@@ -310,13 +335,17 @@ def main():
         move_arm(1.0, 0.0, 0.0, 1.35, 0.0, 0.0, 0.0)
 
     def end_execute():
-        say("Task completed successfully")
         state.goal_reached = False
+        state.executing_task = False
         state.target_adquired = False
+        state.new_task = False
+        state.recognized_speech = ""
         state.destiny = ""
         state.target_object = ""
         move_arm(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
         move_gripper(0.0)
+        move_head(0.0, 0.0)
+        state.reset()
 
     idle = State(
         "Idle",
@@ -379,7 +408,10 @@ def main():
     def grab_target_execute():
         print("Target object grabbed")
         move_gripper(-0.2)  # Close gripper
-        move_arm(1.0, 0.0, 0.0, 2.15, 0.0, 2.15, 0.0)
+        move_arm(-0.1432, 0.0, 0.0, 1.8418, 0.0, 0.1695, 0.0)
+        move_arm(-0.1432, 0.0, 0.0, 1.8418, 0.0, 1.36, 0.0)
+        move_arm(-0.1432, 0.0, 0.0, 2.15, 0.0, 1.36, 0.0)
+        move_arm(-0.49, 0.0, 0.0, 2.15, 0.0, 1.36, 0.0)
         state.target_adquired = True
 
     grab_target = State(
