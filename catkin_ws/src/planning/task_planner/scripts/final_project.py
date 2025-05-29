@@ -30,7 +30,7 @@ from vision_msgs.srv import *
 from manip_msgs.srv import *
 from hri_msgs.msg import *
 
-NAME = "Efren Rivera, Xavier Suastegui, Carlos Lujan y Alan Camacho"
+NAME = "Efren Rivera, Xavier Suastegui, Carlos Lujan y Alan Camarena"
 
 #
 # Global variable 'speech_recognized' contains the last recognized sentence
@@ -302,8 +302,14 @@ def main():
 
     
 
-    #
-    # FINAL PROJECT 
+    ####################################################################################################################################################
+    ####################################################################################################################################################
+    #####################################################################################################################################################
+    ####################################################################################################################################################
+    
+    
+    FINAL PROJECT 
+    
     #
     executing_task = False
     current_state = "SM_INIT"
@@ -367,7 +373,7 @@ def main():
             goal_reached = False
             print("Acercandose a la mesa")
             say("Approaching to the table.")
-            go_to_goal_pose(3.25,6)				#Llega directamente a la mesa
+            go_to_goal_pose(3.25,5.8)				#Llega directamente a la mesa
             move_base(0,0,1)
             move_head(0, -0.8) 				#Bajar la cabeza hasta ver los objetos
             if goal_reached:
