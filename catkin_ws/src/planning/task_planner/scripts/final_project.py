@@ -351,26 +351,26 @@ def main():
         elif current_state == "SM_ReachTable":
             print("Voy camino a la mesa")
             say("Reaching the table.")
-            go_to_goal_pose(3.5,6)
+            go_to_goal_pose(3.25,7)
             current_state = "SM_WaitForArrival"
-            # ya llega a la mesa
+            # un estado adicional
             
         elif current_state == "SM_WaitForArrival":
             if goal_reached:
                 say("I arrived at the destination.")
-                current_state = "SM_RotateInPlace"
-        #estado de arrivamiento
-        
-        elif current_state == "SM_RotateInPlace":
-            print("Girando en dirección a la mesa")
-            say("Turning to face the table.")
-    
-            move_base(0.0, 1.0, 2.0)  # Rotar en el lugar: velocidad angular de 1.0 rad/s durante 2 segundos
-            move_base(0.0, 0.0, 0.5)  # Detenerse
+        #estado de 
 
-            move_head(0, -0.7)  # Bajar la cabeza para localizar objetos
-            current_state = "SM_Localize"
-    #ya hace la rotacion
+                
+                current_state = "SM_Approach"
+        elif current state == "SM_Approach":
+            print("Acercandose a la mesa")
+            say("Approaching to the table.")
+            go_to_goal_pose(3.25,6)				#Llega directamente a la mesa
+            move_head(0, -0.8) 				#Bajar la cabeza hasta ver los objetos
+            current_state:"SM_Localize"        
+
+        
+    #ya xd
         elif current_state == "SM_Localize":
             if(object_name== "pringles"):
             	x,y,z = find_object(object_name)
