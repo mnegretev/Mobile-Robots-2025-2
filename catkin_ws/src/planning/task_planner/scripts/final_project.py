@@ -49,15 +49,15 @@ class RobotState:
         self.pub_point = None
         self.targets_coordinates = {
             'drink': [3.0, 6.0],
-            'pringles': [3.2, 6.0],
-            'table': [3.2, 9.0],
+            'pringles': [3.2, 5.87],
+            'table': [6.0, 7.0],
             'kitchen': [6.6, -1.0]
         }
         self.rotation_target = {
             'initial': math.pi*3/2,
             'drink': math.pi*3/2 - 0.1,
-            'pringles': math.pi*3/2 + 0.31,
-            'table': math.pi*3/2,
+            'pringles': math.pi*3/2 + 0.32,
+            'table': math.pi,
             'kitchen': math.pi*3/2
         }
         self.head_rotation={
@@ -300,12 +300,24 @@ def main():
 
         say("Getting closer to target")
         x, y = state.targets_coordinates[state.target_object]
-        move_to_position([x, y - 0.715])
+        move_to_position([x, y - 0.73])
 
         say("Readjusting base rotation")
         rotate_to_target(state.rotation_target[state.target_object])
 
         say(f"Using left arm to grab {state.target_object}")
+
+    def lift_arm_execute():
+        offset = 0.2 if state.target_object == "drink" else 0.2
+        try:
+            say("Lifting arm")
+            q = calculate_inverse_kinematics(state.t_pos[0] + offset, 0, state.t_pos[2] + 0.15, 0.0, -1.473, 0.0)
+            move_arm_with_trajectory(q)
+        except Exception as e:
+            say("Error in arm lift, trying again")
+            move_arm(-0.1432, 0.0, 0.0, 1.8418, 0.0, 0.1695, 0.0)
+            move_arm(-0.59, 0.0, 0.0, 1.75, 0.0, 0.56, 0.0)
+            
 
     def prepare_robot_execute():
         say("Preparing arm")
@@ -316,7 +328,8 @@ def main():
             state.t_pos = transform_point(state.t_pos[0], state.t_pos[1], state.t_pos[2])
             print(f"Detected position: {state.t_pos}")
             say("Calculating inverse kinematics")
-            q = calculate_inverse_kinematics(state.t_pos[0] + 0.12, 0, state.t_pos[2], 0.0, -1.473, 0.0)
+            offset = 0.2 if state.target_object == "drink" else 0.2
+            q = calculate_inverse_kinematics(state.t_pos[0] + offset, 0, state.t_pos[2], 0.0, -1.473, 0.0)
             move_arm_with_trajectory(q)
             say("Arm is ready")
         except Exception as e:
@@ -380,7 +393,7 @@ def main():
     open_gripper = State(
         "OpenGripper",
         say="Opening gripper",
-        execute=lambda: (say("Opening gripper"), move_gripper(0.6)),
+        execute=lambda: (move_arm(-0.1432, 0.0, 0.0, 1.8418, 0.0, 0.1695, 0.0), move_gripper(0.6)),
         next="EndState"
     )
 
@@ -408,10 +421,7 @@ def main():
     def grab_target_execute():
         print("Target object grabbed")
         move_gripper(-0.2)  # Close gripper
-        move_arm(-0.1432, 0.0, 0.0, 1.8418, 0.0, 0.1695, 0.0)
-        move_arm(-0.1432, 0.0, 0.0, 1.8418, 0.0, 1.36, 0.0)
-        move_arm(-0.1432, 0.0, 0.0, 2.15, 0.0, 1.36, 0.0)
-        move_arm(-0.49, 0.0, 0.0, 2.15, 0.0, 1.36, 0.0)
+        lift_arm_execute()
         state.target_adquired = True
 
     grab_target = State(

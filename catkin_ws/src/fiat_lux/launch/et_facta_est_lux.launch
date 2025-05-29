@@ -78,7 +78,7 @@
     <param name="cost_radius" value="0.75"/>
   </node>
   <node name="path_follower" pkg="simple_move" type="path_follower.py" output="screen">
-    <param name="v_max" value="0.75"/>
+    <param name="v_max" value="1.75"/>
     <param name="w_max" value="1.0"/>
     <param name="alpha" value="0.125"/>
     <param name="beta"  value="0.25"/>
