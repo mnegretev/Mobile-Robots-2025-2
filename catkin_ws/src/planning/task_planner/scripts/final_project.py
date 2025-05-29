@@ -1,4 +1,4 @@
-##!/usr/bin/env python3
+#!/usr/bin/env python3
 #
 # MOBILE ROBOTS - FI-UNAM, 2025-2
 # FINAL PROJECT - SIMPLE SERVICE ROBOT
