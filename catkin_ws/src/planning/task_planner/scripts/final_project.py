@@ -55,9 +55,9 @@ class RobotState:
         }
         self.rotation_target = {
             'initial': math.pi*3/2,
-            'drink': math.pi*3/2 - 0.1,
-            'pringles': math.pi*3/2 + 0.32,
-            'table': math.pi,
+            'drink': math.pi*3/2 - 0.2,
+            'pringles': math.pi*3/2 + 0.35,
+            'table': 2 * math.pi,
             'kitchen': math.pi*3/2
         }
         self.head_rotation={
@@ -207,7 +207,7 @@ def get_robot_pose():
 
 def rotate_to_target(target_angle):
     _, rotation = get_robot_pose()
-    while abs(rotation - target_angle) > 0.05:
+    while abs(rotation - target_angle) > 0.01:
         rotation_normalized = (rotation + math.pi) % (2 * math.pi) - math.pi
         target_normalized = (target_angle + math.pi) % (2 * math.pi) - math.pi
         angle_diff = target_normalized - rotation_normalized
@@ -215,7 +215,7 @@ def rotate_to_target(target_angle):
             angle_diff -= 2 * math.pi
         elif angle_diff < -math.pi:
             angle_diff += 2 * math.pi
-        angular_speed = 0.75 if angle_diff > 0 else -0.75
+        angular_speed = 0.5 if angle_diff > 0 else -0.5
         move_base(0.0, angular_speed, 0.05)
         _, rotation = get_robot_pose()
 
@@ -270,7 +270,10 @@ def main():
         state.goal_reached = False
         goal = state.goal_coordinates if state.target_adquired else state.targets_coordinates[state.target_object]
         print(f"Navigating to {goal}")
-        go_to_goal_pose(goal[0], goal[1] + 1)
+        if state.destiny == "table" and state.target_adquired:
+            go_to_goal_pose(goal[0] - 1, goal[1])
+        else:
+            go_to_goal_pose(goal[0], goal[1] + 1)
         state.goal_reached = False
         while not state.goal_reached and not rospy.is_shutdown():
             pass
@@ -308,15 +311,10 @@ def main():
         say(f"Using left arm to grab {state.target_object}")
 
     def lift_arm_execute():
-        offset = 0.2 if state.target_object == "drink" else 0.2
-        try:
-            say("Lifting arm")
-            q = calculate_inverse_kinematics(state.t_pos[0] + offset, 0, state.t_pos[2] + 0.15, 0.0, -1.473, 0.0)
-            move_arm_with_trajectory(q)
-        except Exception as e:
-            say("Error in arm lift, trying again")
-            move_arm(-0.1432, 0.0, 0.0, 1.8418, 0.0, 0.1695, 0.0)
-            move_arm(-0.59, 0.0, 0.0, 1.75, 0.0, 0.56, 0.0)
+        say("Lifting arm")
+        move_arm(-0.1432, 0.0, 0.0, 1.8418, 0.0, 0.1695, 0.0)
+        move_arm(-0.59, 0.0, 0.0, 1.75, 0.0, 0.56, 0.0)
+        move_arm(-0.49, 0.0, 0.0, 2.15, 0.0, 1.36, 0.0)
             
 
     def prepare_robot_execute():
@@ -331,6 +329,7 @@ def main():
             offset = 0.2 if state.target_object == "drink" else 0.2
             q = calculate_inverse_kinematics(state.t_pos[0] + offset, 0, state.t_pos[2], 0.0, -1.473, 0.0)
             move_arm_with_trajectory(q)
+            rospy.sleep(0.5)
             say("Arm is ready")
         except Exception as e:
             say("Error in arm preparation, trying again")
@@ -393,7 +392,7 @@ def main():
     open_gripper = State(
         "OpenGripper",
         say="Opening gripper",
-        execute=lambda: (move_arm(-0.1432, 0.0, 0.0, 1.8418, 0.0, 0.1695, 0.0), move_gripper(0.6)),
+        execute=lambda: (move_gripper(0.6)),
         next="EndState"
     )
 
@@ -423,7 +422,7 @@ def main():
         move_gripper(-0.2)  # Close gripper
         lift_arm_execute()
         state.target_adquired = True
-
+        
     grab_target = State(
         "GrabTarget",
         say="Grabbing target object",
