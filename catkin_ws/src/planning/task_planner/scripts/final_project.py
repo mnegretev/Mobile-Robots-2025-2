@@ -353,12 +353,11 @@ def main():
             say("Reaching the table.")
             go_to_goal_pose(3.25,7)
             current_state = "SM_WaitForArrival"
-            goal_reached = False
+          
 
             # un estado adicional
             
-        elif current_state == "SM_WaitForArrival":
-            goal_reached = False
+        elif current_state == "SM_WaitForArrival":  
             if goal_reached:
                 say("I arrived at the destination.")
                 current_state = "SM_Approach"
