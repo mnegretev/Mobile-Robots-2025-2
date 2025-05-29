@@ -365,30 +365,30 @@ def main():
             print("Acercandose a la mesa")
             say("Approaching to the table.")
             go_to_goal_pose(3.25,6)				#Llega directamente a la mesa
+            move_base(0,0,1)
             move_head(0, -0.8) 				#Bajar la cabeza hasta ver los objetos
             current_state = "SM_Localize"        
 
         
     #ya xd
         elif current_state == "SM_Localize":
-            if object_name == "pringles":
-            	x,y,z = find_object(object_name)
-            	say(f"{object_name.capitalize()} found.")				#Si el objeto es pringles
-            	print("Se encontraron las pringles")
-            	x,y,z = transform_point(x,y,z,"kinect_link","shoulders_left_link")
-            elif object_name == "drink":
-            	x,y,z = find_object(object_name)			#Si el objeto es el chesco
-            	say(f"{object_name.capitalize()} found.")
-            	print("Se encontro la soda")
-            	x,y,z = transform_point(x,y,z,"kinect_link","shoulders_right_link")
-            current_state = "SM_Prepare"
+            try:
+                x, y, z = find_object(object_name)
+                say(f"{object_name.capitalize()} found.")
 
-           # except Exception as e:
-           #     print("Error while trying to find object:", e)
-            #    say("I couldn't find the object.")
-             #   executing_task = False
-              #  new_task = False
-               # current_state = "SM_Waiting" 
+                if object_name == "pringles":
+                    x, y, z = transform_point(x, y, z, "realsense_link", "shoulders_right_link")
+                else:  # drink
+                    x, y, z = transform_point(x, y, z, "realsense_link", "shoulders_left_link")
+
+                current_state = "SM_Prepare"
+
+            except Exception as e:
+                print("Error while trying to find object:", e)
+                say("I couldn't find the object.")
+                executing_task = False
+                new_task = False
+                current_state = "SM_Waiting"
 
             
             #Encontrar el objeto a buscar en la mesa estamos aqui
