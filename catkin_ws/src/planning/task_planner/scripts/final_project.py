@@ -439,7 +439,7 @@ def main():
                     say("Transforming object coordinates.")
                     print(f"[DEBUG] Object name: {object_name}")
                     print(f"[DEBUG] Using transform to: {'shoulders_left_link' if object_name == 'drink' else 'shoulders_right_link'}")
-                    q = calculate_inverse_kinematics_left(x, y, z, 2.24, -1.123, 1)
+                    q = calculate_inverse_kinematics_left(x, y, z, -2.24, -1.123, 2)
                     if q and hasattr(q, 'points') and len(q.points) > 0:
                         move_left_arm_with_trajectory(q)
                         move_left_gripper(-1)  # Cierra la mano
@@ -456,7 +456,7 @@ def main():
                     say("Transforming object coordinates.")
                     print(f"[DEBUG] Object name: {object_name}")
                     print(f"[DEBUG] Using transform to: {'shoulders_left_link' if object_name == 'drink' else 'shoulders_right_link'}")
-                    q = calculate_inverse_kinematics_right(x, y, z, 2.24, -1.123, 1)
+                    q = calculate_inverse_kinematics_right(x, y, z, 1.359, 1.496, -1.756)
                     if q and hasattr(q, 'points') and len(q.points) > 0:
                         move_right_arm_with_trajectory(q)
                         move_right_gripper(-1)
