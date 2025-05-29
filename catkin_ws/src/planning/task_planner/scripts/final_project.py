@@ -196,8 +196,14 @@ def calculate_inverse_kinematics_left(x,y,z,roll, pitch, yaw):
     req_ik.time_step = 0.05
     req_ik.initial_guess = [0.84,-0.1,-0.1,-0.68,0,0.41,0]
     clt = rospy.ServiceProxy("/manipulation/la_ik_trajectory", InverseKinematicsPose2Traj)
-    resp = clt(req_ik)
-    return resp.articular_trajectory
+    try:
+        resp = clt(req_ik)
+        if not resp.articular_trajectory.points:
+            rospy.logwarn("Left arm IK returned no points.")
+        return resp.articular_trajectory
+    except rospy.ServiceException as e:
+        rospy.logerr("Left arm IK service call failed: %s", str(e))
+        return None
 
 #
 # This function calls the service for calculating inverse kinematics for right arm
@@ -453,6 +459,13 @@ def main():
                 if object_name == "pringles":
                     move_left_gripper(1)  # Abre la mano
                     say("Moving left arm.")
+                    if any(val is None for val in [x, y, z]):
+                        rospy.logerr("Object transform returned None coordinates.")
+                        say("Object transform failed.")
+                        current_state = "SM_Waiting"
+                    continue
+                    print(f"[DEBUG] Target IK position: x={x:.3f}, y={y:.3f}, z={z:.3f}")
+
                     q = calculate_inverse_kinematics_left(x, y, z, -2.24, -1.123, 2)
         
                     if q and hasattr(q, 'points') and len(q.points) > 0:
