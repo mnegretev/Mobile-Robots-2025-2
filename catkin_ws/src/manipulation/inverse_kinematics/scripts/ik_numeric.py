@@ -22,7 +22,7 @@ from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 import csv
 
 prompt = ""
-NAME = "Luis Gerardo Arellano Cortés"
+NAME = "Arellano Cortés Luis Gerardo"
    
 def forward_kinematics(q, T, W):
     x, y, z, R, P, Y = 0, 0, 0, 0, 0, 0
@@ -147,20 +147,6 @@ def inverse_kinematics(x, y, z, roll, pitch, yaw, T, W, init_guess=numpy.zeros(7
 
     # Set success if maximum iterations were not exceeded and calculated angles are in valid range
     success = iterations < max_iter and angles_in_joint_limits(q)
-
-
-    # Mostrar los resultados en consola
-    print(f"[IK] Resultado: éxito={success}, iteraciones={iterations}, distancia={get_q_distance(q, init_guess):.6f}")
-    
-    # Ruta absoluta del archivo CSV
-    file_path = os.path.expanduser("~/results.csv")
-
-    try:
-        with open(file_path, "a") as file:
-            file.write(f"{success}, {iterations}, {get_q_distance(q, init_guess)}\n")
-        print(f"[IK] Resultados guardados en: {file_path}")
-    except Exception as e:
-        print(f"[IK] Error al guardar CSV: {e}")
     return success, q
    
 def get_polynomial_trajectory_multi_dof(Q_start, Q_end, duration=1.0, time_step=0.05):

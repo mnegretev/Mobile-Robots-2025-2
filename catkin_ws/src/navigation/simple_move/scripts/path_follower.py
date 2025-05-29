@@ -20,7 +20,7 @@ from nav_msgs.srv import GetPlan, GetPlanRequest
 from navig_msgs.srv import ProcessPath, ProcessPathRequest
 from geometry_msgs.msg import Twist, PoseStamped, Pose, Point
 
-NAME = "Luis Gerardo Arellano Cortés"
+NAME = "Arellano Cortés Luis Gerardo"
 
 pub_goal_reached = None
 pub_cmd_vel = None
@@ -30,19 +30,19 @@ listener    = None
 def calculate_control(robot_x, robot_y, robot_a, goal_x, goal_y, alpha, beta, v_max, w_max):
     v,w = 0,0
     #
-    # TODO:    
+    # TODO:
     # Implement the control law given by:
+    #
     error_a = math.atan2(goal_y - robot_y, goal_x - robot_x) - robot_a
     error_a = (error_a + math.pi) % (math.pi * 2) - math.pi
     v = v_max*math.exp(-error_a*error_a/alpha)
     w = w_max*(2/(1 + math.exp(-error_a/beta)) - 1)
+    #
     # where error_a is the angle error
     # and v_max, w_max, alpha and beta, are tunning constants.
     # Remember to keep error angle in the interval (-pi,pi]
     # Return the tuple [v,w]
     #
-
-
     return [v,w]
 
 def follow_path(path, alpha, beta, v_max, w_max):
@@ -98,24 +98,18 @@ def callback_global_goal(msg):
         print("Cannot calculate path")
         return
     try:
-        smooth_path = rospy.ServiceProxy('/path_planning/smooth_path',ProcessPath)(ProcessPathRequest(path=path)).processed_path
+        smooth_path = rospy.ServiceProxy('/path_planning/smooth_path', ProcessPath)(ProcessPathRequest(path=path)).processed_path
         path = smooth_path
     except:
         pass
-    v_max = rospy.get_param("~v_max",0.8)
-    w_max = rospy.get_param("~w_max",1.0)
-    alpha = rospy.get_param("~alpha",0.7)
-    beta  = rospy.get_param("~beta", 0.7)
+    v_max = rospy.get_param("~v_max", 0.8)
+    w_max = rospy.get_param("~w_max", 1.0)
+    alpha = rospy.get_param("~alpha", 0.125)
+    beta = rospy.get_param("~beta", 0.5)
     print("Following path with [v_max, w_max, alpha, beta]=" + str([v_max, w_max, alpha, beta]))
     follow_path([numpy.asarray([p.pose.position.x, p.pose.position.y]) for p in path.poses], alpha, beta, v_max, w_max)
     pub_cmd_vel.publish(Twist())
     pub_goal_reached.publish(True)
-    s = ""
-    for d in nav_data:
-        s += str(d[0]) +","+ str(d[1]) +","+ str(d[2]) +","+ str(d[3]) +","+ str(d[4]) +","+ str(d[5]) +","+ str(d[6]) + "\n"
-    f = open(data_file, "w")
-    f.write(s)
-    f.close()
     print("Global goal point reached")
     
 def get_robot_pose():
