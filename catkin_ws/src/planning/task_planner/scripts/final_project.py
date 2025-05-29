@@ -394,41 +394,48 @@ def main():
     
 
         
-    #ya xd
+    ###############################################################################################
+################################################################################
+################################
+########################################################################################################ya xd
         elif current_state == "SM_Localize":
             try:
                 say("Looking for the object.")
                 x, y, z = find_object(object_name)
                 say(f"{object_name.capitalize()} found.")
         
-                # Transformar coordenadas al marco del brazo adecuado
                 transform_target = "shoulders_right_link" if object_name == "pringles" else "shoulders_left_link"
                 say("Transforming object coordinates.")
                 print(f"[DEBUG] Object name: {object_name}")
                 print(f"[DEBUG] Using transform to: {transform_target}")
         
                 x, y, z = transform_point(x, y, z, source_frame="kinect_link", target_frame=transform_target)
-            if None in (x, y, z):
-                say("Object transform failed.")
-                rospy.logerr("Object transform returned None coordinates.")
+        
+                if None in (x, y, z):
+                    say("Object transform failed.")
+                    rospy.logerr("Object transform returned None coordinates.")
+                    executing_task = False
+                    new_task = False
+                    current_state = "SM_Waiting"
+                else:
+                    print(f"[DEBUG] Target IK position: x={x:.2f}, y={y:.2f}, z={z:.2f}")
+                    current_state = "SM_Prepare"
+        
+            except Exception as e:
+                rospy.logerr(f"Error in SM_Localize: {e}")
+                say("I couldn't find the object.")
                 executing_task = False
                 new_task = False
                 current_state = "SM_Waiting"
-                continue
-
-            print(f"[DEBUG] Target IK position: x={x:.2f}, y={y:.2f}, z={z:.2f}")
-            current_state = "SM_Prepare"
-
-        except Exception as e:
-            rospy.logerr(f"Error in SM_Localize: {e}")
-            say("I couldn't find the object.")
-            executing_task = False
-            new_task = False
-            current_state = "SM_Waiting"
-
             
             #Encontrar el objeto a buscar en la mesa estamos aqui dlkasdlkandlknalkdnlkas
-            ###
+                ###
+        ##############                 ###
+        ##############            ###
+        ##############       ###
+        ##############            ###
+        ##############            ###
+        ##############        ###
         ##############
         
         elif current_state == "SM_Prepare":
