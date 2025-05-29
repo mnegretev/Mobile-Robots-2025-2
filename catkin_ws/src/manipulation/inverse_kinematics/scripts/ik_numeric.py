@@ -37,23 +37,27 @@ def jacobian(q, T, W):
 
 def inverse_kinematics(x, y, z, roll, pitch, yaw, T, W, init_guess=numpy.zeros(7), max_iter=100):
     pd = numpy.asarray([x, y, z, roll, pitch, yaw])
-    q = init_guess
+    q = init_guess.copy()
     p = forward_kinematics(q, T, W)
     iterations = 0
     error = p - pd
-    error[3:6] = (error[3:6] + math.pi) % (2 * math.pi) - math.pi
+    error[3:6] = (error[3:6] + math.pi) % (2*math.pi) - math.pi
     tolerance = 1e-4
+    λ = 0.01  # Factor de amortiguación
+
     while numpy.linalg.norm(error) > tolerance and iterations < max_iter:
         J = jacobian(q, T, W)
-        J_inv = numpy.linalg.pinv(J)
-        q = (q - numpy.dot(J_inv, error) + math.pi) % (2 * math.pi) - math.pi
+        JT = J.T
+        JJt = J @ JT
+        damped_inv = JT @ numpy.linalg.inv(JJt + (λ**2) * numpy.identity(6))
+        dq = -damped_inv @ error
+        q = (q + dq + math.pi) % (2*math.pi) - math.pi  # Mantener ángulos en [-π, π]
         p = forward_kinematics(q, T, W)
         error = p - pd
-        error[3:6] = (error[3:6] + math.pi) % (2 * math.pi) - math.pi
+        error[3:6] = (error[3:6] + math.pi) % (2*math.pi) - math.pi
         iterations += 1
+
     success = numpy.linalg.norm(error) < tolerance
-    if not success:
-        rospy.logwarn(f"[IK] Failed with error: {numpy.linalg.norm(error):.5f}, after {iterations} iterations")
     return success, q
 
 def get_polynomial_trajectory_multi_dof(Q_start, Q_end, duration=1.0, time_step=0.05):
