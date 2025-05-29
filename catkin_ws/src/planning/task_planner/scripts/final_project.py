@@ -420,43 +420,43 @@ def main():
 #######################################################################################################################################################################################################
 #######################################################################################################################################################################################################
 
- elif current_state == "SM_Grab":
-    try:
-        if object_name == "pringles":
-            move_left_gripper(1)  # Abre la mano
-            q = calculate_inverse_kinematics_left(x, y, z, 0, 0, 0)
-            if q and hasattr(q, 'points') and len(q.points) > 0:
-                move_left_arm_with_trajectory(q)
-                move_left_gripper(-1)  # Cierra la mano
-            else:
-                say("Left arm IK failed.")
+        elif current_state == "SM_Grab":
+            try:
+                if object_name == "pringles":
+                    move_left_gripper(1)  # Abre la mano
+                    q = calculate_inverse_kinematics_left(x, y, z, 0, 0, 0)
+                    if q and hasattr(q, 'points') and len(q.points) > 0:
+                        move_left_arm_with_trajectory(q)
+                        move_left_gripper(-1)  # Cierra la mano
+                    else:
+                        say("Left arm IK failed.")
+                        executing_task = False
+                        new_task = False
+                        current_state = "SM_Waiting"
+                        continue
+
+                elif object_name == "drink":
+                    move_right_gripper(1)
+                    q = calculate_inverse_kinematics_right(x, y, z, 0, 0, 0)
+                    if q and hasattr(q, 'points') and len(q.points) > 0:
+                        move_right_arm_with_trajectory(q)
+                        move_right_gripper(-1)
+                    else:
+                        say("Right arm IK failed.")
+                        executing_task = False
+                        new_task = False
+                        current_state = "SM_Waiting"
+                        continue
+
+                say("Grabbing object.")
+                current_state = "SM_Lift"
+
+            except rospy.ServiceException as e:
+                rospy.logerr("Service call failed: %s", e)
+                say("Service call failed.")
                 executing_task = False
                 new_task = False
                 current_state = "SM_Waiting"
-                continue
-
-        elif object_name == "drink":
-            move_right_gripper(1)
-            q = calculate_inverse_kinematics_right(x, y, z, 0, 0, 0)
-            if q and hasattr(q, 'points') and len(q.points) > 0:
-                move_right_arm_with_trajectory(q)
-                move_right_gripper(-1)
-            else:
-                say("Right arm IK failed.")
-                executing_task = False
-                new_task = False
-                current_state = "SM_Waiting"
-                continue
-
-        say("Grabbing object.")
-        current_state = "SM_Lift"
-
-    except rospy.ServiceException as e:
-        rospy.logerr("Service call failed: %s", e)
-        say("Service call failed.")
-        executing_task = False
-        new_task = False
-        current_state = "SM_Waiting"
         
 #######################################################################################################################################################################################################
 
