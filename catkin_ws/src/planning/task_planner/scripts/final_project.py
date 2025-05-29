@@ -351,12 +351,14 @@ def main():
             say("Reaching the table.")
             go_to_goal_pose(3.5,6)
             current_state = "SM_WaitForArrival"
+            # ya llega a la mesa
             
         elif current_state == "SM_WaitForArrival":
             if goal_reached:
                 say("I arrived at the destination.")
                 current_state = "SM_RotateInPlace"
-
+        #estado de arrivamiento
+        
         elif current_state == "SM_RotateInPlace":
             print("Girando en dirección a la mesa")
             say("Turning to face the table.")
@@ -366,17 +368,28 @@ def main():
 
             move_head(0, -0.7)  # Bajar la cabeza para localizar objetos
             current_state = "SM_Localize"
-
+    #ya hace la rotacion
         elif current_state == "SM_Localize":
-            if(object==pringles):
-            	x,y,z = find_object(pringles)
-            	say("Pringles found.")
-            	x,y,z = transform_point(x,y,z,"realsense_link","shoulders_right_link")
-            elif(object == drink):
-            	x,y,z = find_object(drink)
-            	say("Drink found.")
-            	x,y,z = transform_point(x,y,z,"realsense_link","shoulders_left_link")
-            #Encontrar el objeto a buscar en la mesa
+            try:
+                x, y, z = find_object(object_name)
+                say(f"{object_name.capitalize()} found.")
+    
+                if object_name == "pringles":
+                    x, y, z = transform_point(x, y, z, "realsense_link", "shoulders_right_link")
+                else:  # drink
+                    x, y, z = transform_point(x, y, z, "realsense_link", "shoulders_left_link")
+
+                current_state = "SM_Prepare"
+
+        except Exception as e:
+            print("Error while trying to find object:", e)
+            say("I couldn't find the object.")
+            executing_task = False
+            new_task = False
+            current_state = "SM_Waiting"
+
+            
+            #Encontrar el objeto a buscar en la mesa estamos aqui
             current_state:"SM_Prepare"
         elif current_state == "SM_Prepare":
             say("Preparing arm.")
