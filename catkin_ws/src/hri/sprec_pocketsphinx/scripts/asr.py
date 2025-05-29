@@ -5,8 +5,8 @@ import rospy
 import rospkg
 from std_msgs.msg import UInt8MultiArray
 from hri_msgs.msg import RecognizedSpeech
-from pocketsphinx.pocketsphinx import *
-from sphinxbase.sphinxbase import *
+from pocketsphinx import Decoder, Jsgf
+
 
 def callback_sphinx_audio(msg):
     global decoder, in_speech_bf, pub_recognized
@@ -34,8 +34,8 @@ def main():
     in_speech_bf = False
     hmm_folder = rospy.get_param("~hmm", "/usr/local/lib/python3.8/dist-packages/pocketsphinx/model/en-us")
     l_model    = rospy.get_param("~lm", "")
-    dict_file  = rospy.get_param("~dict_file", "/usr/local/lib/python3.8/dist-packages/pocketsphinx/model/cmudict-en-us.dict")
-    gram_file  = rospy.get_param("~gram_file", "")
+    dict_file  = rospy.get_param("~dict_file", "/home/nahtie/Mobile-Robots-2025-2/catkin_ws/src/hri/sprec_pocketsphinx/vocab/masterDic.dict")
+    gram_file  = rospy.get_param("~gram_file", "/home/nahtie/Mobile-Robots-2025-2/catkin_ws/src/hri/sprec_pocketsphinx/vocab/final_project.gram")
     gram_rule  = rospy.get_param("~rule_name", "rule_name")
     gram_name  = rospy.get_param("~grammar_name", "grammar_name")
 
@@ -53,7 +53,7 @@ def main():
     jsgf = Jsgf(gram_file)
     gram = gram_file[:len(gram_file)-5]
     print("SpRec.->Initializing jsgf grammar using rule: " + gram + '.' + gram_rule)
-    rule = jsgf.get_rule(gram_name + '.' + gram_rule)
+    rule = jsgf.get_rule("final_project_gram.simple_command")
     fsg  = jsgf.build_fsg(rule, decoder.get_logmath(), 7.5)
     # print("SpRec.->Writing fsg to " + gram + '.fsg')
     # fsg.writefile(gram + '.fsg')
