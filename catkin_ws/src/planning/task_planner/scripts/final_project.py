@@ -397,22 +397,35 @@ def main():
     #ya xd
         elif current_state == "SM_Localize":
             try:
+                say("Looking for the object.")
                 x, y, z = find_object(object_name)
                 say(f"{object_name.capitalize()} found.")
+        
+                # Transformar coordenadas al marco del brazo adecuado
+                transform_target = "shoulders_right_link" if object_name == "pringles" else "shoulders_left_link"
+                say("Transforming object coordinates.")
+                print(f"[DEBUG] Object name: {object_name}")
+                print(f"[DEBUG] Using transform to: {transform_target}")
+        
+                x, y, z = transform_point(x, y, z, source_frame="kinect_link", target_frame=transform_target)
 
-                if object_name == "pringles":
-                    x, y, z = transform_point(x, y, z, "kinect_link", "shoulders_right_link")
-                else:  # drink
-                    x, y, z = transform_point(x, y, z, "kinect_link", "shoulders_left_link")
-
-                current_state = "SM_Prepare"
-
-            except Exception as e:
-                print("Error while trying to find object:", e)
-                say("I couldn't find the object.")
+            if None in (x, y, z):
+                say("Object transform failed.")
+                rospy.logerr("Object transform returned None coordinates.")
                 executing_task = False
                 new_task = False
                 current_state = "SM_Waiting"
+                continue
+
+            print(f"[DEBUG] Target IK position: x={x:.2f}, y={y:.2f}, z={z:.2f}")
+            current_state = "SM_Prepare"
+
+        except Exception as e:
+            rospy.logerr(f"Error in SM_Localize: {e}")
+            say("I couldn't find the object.")
+            executing_task = False
+            new_task = False
+            current_state = "SM_Waiting"
 
             
             #Encontrar el objeto a buscar en la mesa estamos aqui dlkasdlkandlknalkdnlkas
@@ -435,43 +448,41 @@ def main():
             try:
                 if object_name == "pringles":
                     move_left_gripper(1)  # Abre la mano
-                    print(f"[DEBUG] Target IK position: x={x:.2f}, y={y:.2f}, z={z:.2f}")
-                    say("Transforming object coordinates.")
-                    print(f"[DEBUG] Object name: {object_name}")
-                    print(f"[DEBUG] Using transform to: {'shoulders_left_link' if object_name == 'drink' else 'shoulders_right_link'}")
+                    say("Moving left arm.")
                     q = calculate_inverse_kinematics_left(x, y, z, -2.24, -1.123, 2)
+        
                     if q and hasattr(q, 'points') and len(q.points) > 0:
                         move_left_arm_with_trajectory(q)
                         move_left_gripper(-1)  # Cierra la mano
                     else:
                         say("Left arm IK failed.")
+                        rospy.logwarn("Left arm IK returned no points.")
                         executing_task = False
                         new_task = False
                         current_state = "SM_Waiting"
                         continue
-
+        
                 elif object_name == "drink":
                     move_right_gripper(1)
-                    print(f"[DEBUG] Target IK position: x={x:.2f}, y={y:.2f}, z={z:.2f}")
-                    say("Transforming object coordinates.")
-                    print(f"[DEBUG] Object name: {object_name}")
-                    print(f"[DEBUG] Using transform to: {'shoulders_left_link' if object_name == 'drink' else 'shoulders_right_link'}")
+                    say("Moving right arm.")
                     q = calculate_inverse_kinematics_right(x, y, z, 1.359, 1.496, -1.756)
+        
                     if q and hasattr(q, 'points') and len(q.points) > 0:
                         move_right_arm_with_trajectory(q)
                         move_right_gripper(-1)
                     else:
                         say("Right arm IK failed.")
+                        rospy.logwarn("Right arm IK returned no points.")
                         executing_task = False
                         new_task = False
                         current_state = "SM_Waiting"
                         continue
-
+        
                 say("Grabbing object.")
                 current_state = "SM_Lift"
-
+        
             except rospy.ServiceException as e:
-                rospy.logerr("Service call failed: %s", e)
+                rospy.logerr(f"Service call failed: {e}")
                 say("Service call failed.")
                 executing_task = False
                 new_task = False
