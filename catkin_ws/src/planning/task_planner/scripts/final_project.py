@@ -421,7 +421,7 @@ def main():
     # MÁQUINA DE ESTADOS PRINCIPAL
     # ===================================================================
     executing_task = False
-    current_state = "SM_INIT"
+    current_state = "SM_FIND_OBJECT"
     new_task = False
     goal_reached = False
     recognized_speech = ""
@@ -432,7 +432,7 @@ def main():
     table_position = [8.0, 8.5]      # Ubicación de la mesa
     
     # Variables de estado
-    target_object = None
+    target_object = "drink"
     target_location = None
     location_name = None
     obj_position = None
@@ -500,6 +500,7 @@ def main():
                     obj_cam_coords[2]
                 )
 
+                
                 if obj_position is not None:
                     say(f"{target_object} detected")
                     current_state = "SM_GRAB_OBJECT"
