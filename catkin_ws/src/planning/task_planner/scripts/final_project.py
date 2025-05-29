@@ -30,7 +30,7 @@ from vision_msgs.srv import *
 from manip_msgs.srv import *
 from hri_msgs.msg import *
 
-NAME = "Efren Rivera, Xavier Suastegui, Carlos Lujan y Alan "
+NAME = "Efren Rivera, Xavier Suastegui, Carlos Lujan y Alan Camacho"
 
 #
 # Global variable 'speech_recognized' contains the last recognized sentence
@@ -77,10 +77,8 @@ def move_left_arm(q1,q2,q3,q4,q5,q6,q7):
 # This function sends and articular trajectory to the left arm and sleeps proportional to length of trajectory
 # to allow the arm to reach the goal position. 
 #
-
-if __name__ == '__main__':
-    main()
-    
+def move_left_arm_with_trajectory(Q):
+    global pubLaGoalTraj
     pubLaGoalTraj.publish(Q)
     time.sleep(0.05*len(Q.points) + 2)
 
