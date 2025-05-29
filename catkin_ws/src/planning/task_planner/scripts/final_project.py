@@ -393,13 +393,13 @@ def main():
             
             #Encontrar el objeto a buscar en la mesa estamos aqui
 
-        elif current_state = "SM_Prepare":
+        elif current_state == "SM_Prepare":
             say("Preparing arms.")
             print("Moviendo brazos")
             move_right_arm(-0.7,0.2,0,1.55,0,1.16,0)
             move_left_arm(-0.7,0.2,0,1.55,0,1.16,0)		#Generar el movimiento "prepare" en ambos brazos
             current_state:"SM_Grab"
-        elif current_state = "SM_Grab":
+        elif current_state == "SM_Grab":
             if object_name == "pringles":
             	move_left_gripper(1)				#Abre la mano
             	q = calculate_inverse_kinematics_left(x,y,z,0,0,0)   #Calcula la cinematica inversa
@@ -412,12 +412,12 @@ def main():
             	move_right_gripper(-1) 
             say("Grabbing object.")            
             current_state:"SM_Lift"
-        elif current_state = "SM_Lift":
+        elif current_state == "SM_Lift":
             say("Preparing arm.")
             move_right_arm(-0.7,0.2,0,1.55,0,1.16,0)		#Regresa los brazos a la posicion default
             move_left_arm(-0.7,0.2,0,1.55,0,1.16,0)
             current_state:"SM_GoToLoc"
-        elif current_state = "SM_GoToLoc":
+        elif current_state == "SM_GoToLoc":
             go_to_goal_pose(target_location[1],target_location[2])            #Lleva el objeto al lugar indicado
             current_state:"SM_INIT"
         loop.sleep()
