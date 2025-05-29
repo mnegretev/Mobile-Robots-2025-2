@@ -384,9 +384,9 @@ def main():
                 say(f"{object_name.capitalize()} found.")
 
                 if object_name == "pringles":
-                    x, y, z = transform_point(x, y, z, "realsense_link", "shoulders_right_link")
+                    x, y, z = transform_point(x, y, z, "kinect_link", "shoulders_right_link")
                 else:  # drink
-                    x, y, z = transform_point(x, y, z, "realsense_link", "shoulders_left_link")
+                    x, y, z = transform_point(x, y, z, "kinect_link", "shoulders_left_link")
 
                 current_state = "SM_Prepare"
 
@@ -398,8 +398,10 @@ def main():
                 current_state = "SM_Waiting"
 
             
-            #Encontrar el objeto a buscar en la mesa estamos aqui
-
+            #Encontrar el objeto a buscar en la mesa estamos aqui dlkasdlkandlknalkdnlkas
+            ###
+        ##############
+        
         elif current_state == "SM_Prepare":
             say("Preparing arms.")
             print("Moviendo brazos")
