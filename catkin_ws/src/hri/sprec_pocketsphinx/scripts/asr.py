@@ -26,43 +26,44 @@ def callback_sphinx_audio(msg):
 
 def main():
     global decoder, in_speech_bf, pub_recognized
-    print("INITIALIZING SPEECH RECOGNITION WITH POCKETSPHINX AND JSGF GRAMMAR BY MARCOSOFT...")
+    print("INITIALIZING SPEECH RECOGNITION WITH POCKETSPHINX...")
+
     rospy.init_node("sp_rec")
     pub_recognized = rospy.Publisher("/hri/sp_rec/recognized", RecognizedSpeech, queue_size=10)
-    rospack = rospkg.RosPack()
 
-    in_speech_bf = False
-    hmm_folder = rospy.get_param("~hmm", "/usr/local/lib/python3.8/dist-packages/pocketsphinx/model/en-us")
-    l_model    = rospy.get_param("~lm", "")
-    dict_file  = rospy.get_param("~dict_file", "/usr/local/lib/python3.8/dist-packages/pocketsphinx/model/cmudict-en-us.dict")
+    hmm_folder = rospy.get_param("~hmm", "/usr/share/pocketsphinx/model/en-us/en-us")
+    dict_file  = rospy.get_param("~dict_file", "")
     gram_file  = rospy.get_param("~gram_file", "")
-    gram_rule  = rospy.get_param("~rule_name", "rule_name")
-    gram_name  = rospy.get_param("~grammar_name", "grammar_name")
+    gram_rule  = rospy.get_param("~rule_name", "move2")
+    gram_name  = rospy.get_param("~grammar_name", "voice_cmd")
 
-    print("SpRec.->HMM folder: " + hmm_folder)
-    print("SpRec.->Dictionary file: " + dict_file)
-    print("SpRec.->Grammar file: " + gram_file)
-    print("SpRec.->Grammar name: " + gram_name)
-    print("SpRec.->Rule name: " + gram_rule)
-    print("SpRec.->Loading decoder with default config...")
+    if not os.path.exists(gram_file):
+        rospy.logerr("Grammar file not found: %s", gram_file)
+        return
+    if not os.path.exists(dict_file):
+        rospy.logerr("Dictionary file not found: %s", dict_file)
+        return
+
+    print(f"HMM: {hmm_folder}")
+    print(f"DICT: {dict_file}")
+    print(f"GRAM: {gram_file} | RULE: {gram_rule}")
+
     config = Decoder.default_config()
     config.set_string('-hmm', hmm_folder)
     config.set_string('-dict', dict_file)
-    print("SpRec.->Initializing decoder using grammar: " + gram_file)
+
     decoder = Decoder(config)
     jsgf = Jsgf(gram_file)
-    gram = gram_file[:len(gram_file)-5]
-    print("SpRec.->Initializing jsgf grammar using rule: " + gram + '.' + gram_rule)
-    rule = jsgf.get_rule(gram_name + '.' + gram_rule)
-    fsg  = jsgf.build_fsg(rule, decoder.get_logmath(), 7.5)
-    # print("SpRec.->Writing fsg to " + gram + '.fsg')
-    # fsg.writefile(gram + '.fsg')
-    decoder.set_fsg(gram, fsg)
-    decoder.set_search(gram)
+    rule = jsgf.get_rule(f"{gram_name}.{gram_rule}")
+    fsg = jsgf.build_fsg(rule, decoder.get_logmath(), 7.5)
+    gram_base = os.path.splitext(os.path.basename(gram_file))[0]
+    decoder.set_fsg(gram_base, fsg)
+    decoder.set_search(gram_base)
     decoder.start_utt()
-    print("SpRec.->Decoder started successfully")
-    rospy.Subscriber("/hri/sphinx_audio", UInt8MultiArray, callback_sphinx_audio)
-    rospy.spin()
 
+    in_speech_bf = False
+    rospy.Subscriber("/hri/sphinx_audio", UInt8MultiArray, callback_sphinx_audio)
+    print("Speech recognition node ready.")
+    rospy.spin()
 if __name__ == "__main__":
     main()
