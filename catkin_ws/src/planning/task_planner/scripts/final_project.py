@@ -183,6 +183,7 @@ def say(text):
 # This function calls the service for calculating inverse kinematics for left arm
 # and returns the calculated articular position.
 #
+
 def calculate_inverse_kinematics_left(x,y,z,roll, pitch, yaw):
     req_ik = InverseKinematicsPose2TrajRequest()
     req_ik.x = x
@@ -202,6 +203,7 @@ def calculate_inverse_kinematics_left(x,y,z,roll, pitch, yaw):
 # This function calls the service for calculating inverse kinematics for right arm
 # and returns the calculated articular position.
 #
+
 def calculate_inverse_kinematics_right(x,y,z,roll, pitch, yaw):
     req_ik = InverseKinematicsPose2TrajRequest()
     req_ik.x = x
@@ -373,7 +375,7 @@ def main():
             goal_reached = False
             print("Acercandose a la mesa")
             say("Approaching to the table.")
-            go_to_goal_pose(3.41,5.9)				#Llega directamente a la mesa
+            go_to_goal_pose(3.65,5.9)				#Llega directamente a la mesa
             move_base(0,0,1)
             move_head(0, -0.8) 				#Bajar la cabeza hasta ver los objetos
             if goal_reached:
@@ -424,6 +426,10 @@ def main():
             try:
                 if object_name == "pringles":
                     move_left_gripper(1)  # Abre la mano
+                    print(f"[DEBUG] Target IK position: x={x:.2f}, y={y:.2f}, z={z:.2f}")
+                    say("Transforming object coordinates.")
+                    print(f"[DEBUG] Object name: {object_name}")
+                    print(f"[DEBUG] Using transform to: {'shoulders_left_link' if object_name == 'drink' else 'shoulders_right_link'}")
                     q = calculate_inverse_kinematics_left(x, y, z, 0, 0, 0)
                     if q and hasattr(q, 'points') and len(q.points) > 0:
                         move_left_arm_with_trajectory(q)
@@ -437,6 +443,10 @@ def main():
 
                 elif object_name == "drink":
                     move_right_gripper(1)
+                    print(f"[DEBUG] Target IK position: x={x:.2f}, y={y:.2f}, z={z:.2f}")
+                    say("Transforming object coordinates.")
+                    print(f"[DEBUG] Object name: {object_name}")
+                    print(f"[DEBUG] Using transform to: {'shoulders_left_link' if object_name == 'drink' else 'shoulders_right_link'}")
                     q = calculate_inverse_kinematics_right(x, y, z, 0, 0, 0)
                     if q and hasattr(q, 'points') and len(q.points) > 0:
                         move_right_arm_with_trajectory(q)
