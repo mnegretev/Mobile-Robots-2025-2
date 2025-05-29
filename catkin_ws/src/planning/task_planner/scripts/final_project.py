@@ -327,17 +327,18 @@ def main():
                 say("I heard the command: " + recognized_speech)	
                 object_name, target_location = parse_command(recognized_speech.upper())	
                 current_state = "SM_ReachTable" 
+                goal_sent = False
                    
         elif current_state == "SM_ReachTable":
-            print("Voy hacia la mesa")
-            say("Reaching the table.")
-            go_to_goal_pose(3.5,7) 				
-            current_state = "SM_WaitForArrival"
-            
-        elif current_state == "SM_WaitForArrival":
-            if goal_reached:
+            if not goal_sent:
+                print("Voy hacia la mesa")
+                say("Reaching the table.")
+                go_to_goal_pose(3.5, 7)
+                goal_sent = True
+            elif goal_reached:
                 say("I arrived at the destination.")
                 current_state = "SM_Approach"
+                goal_sent = False
                 
         elif current_state == "SM_Approach":
             print("En camino a la mesa")
@@ -345,19 +346,19 @@ def main():
             go_to_goal_pose(3.5,6)				
             move_head(0, -0.8) 				
             current_state = "SM_Localize"
+            goal_sent = False
             
         elif current_state == "SM_Localize":
-            x,y,z = find_object(object_name)
-            if object_name=="pringles":
-            	say("Pringles found.")				
-            	print("Se encontraron las papas")
-            	x,y,z = transform_point(x,y,z,"kinect_link","shoulders_left_link")
-            	
-            elif object_name == "drink":			
-            	say("Drink found.")
-            	print("Se encontro la bebida")
-            	x,y,z = transform_point(x,y,z,"kinect_link","shoulders_right_link")
-            current_state:"SM_Preparando"
+            x, y, z = find_object(object_name)
+            if object_name == "pringles":
+                say("Pringles found.")
+                print("Se encontraron las papas")
+                x, y, z = transform_point(x, y, z, "kinect_link", "shoulders_left_link")
+            elif object_name == "drink":
+                say("Drink found.")
+                print("Se encontró la bebida")
+                x, y, z = transform_point(x, y, z, "kinect_link", "shoulders_right_link")
+        current_state = "SM_Preparando"
             
         elif current_state == "SM_Preparando":
             say("Preparing arms.")
@@ -367,29 +368,38 @@ def main():
             current_state = "SM_Grab"
             
         elif current_state == "SM_Grab":
+            say("Grabbing object.")
             if object_name == "pringles":
-            	move_left_gripper(1)			
-            	q = calculate_inverse_kinematics_left(x,y,z,0,0,0)   
-            	move_left_arm_with_trajectory(q)         
-            	move_left_gripper(-1) 	
-            				
+                move_left_gripper(1)
+                q = calculate_inverse_kinematics_left(x, y, z, 0, 0, 0)
+                move_left_arm_with_trajectory(q)
+                move_left_gripper(-1)
             elif object_name == "drink":
-            	move_right_gripper(1)
-            	q = calculate_inverse_kinematics_right(x,y,z,0,0,0)
-            	move_right_arm_with_trajectory(q)
-            	move_right_gripper(-1) 
-            say("Grabbing object.")            
-            current_state:"SM_Lift"
+                move_right_gripper(1)
+                q = calculate_inverse_kinematics_right(x, y, z, 0, 0, 0)
+                move_right_arm_with_trajectory(q)
+                move_right_gripper(-1)
+            current_state = "SM_Lift"	
+            				
             
         elif current_state == "SM_Lift":
             say("Preparing arm.")
             move_right_arm(-0.7,0.2,0,1.55,0,1.16,0) 
             move_left_arm(-0.7,0.2,0,1.55,0,1.16,0)
             current_state = "SM_GoToLoc"
+            goal_sent = False
             
         elif current_state == "SM_GoToLoc":
-            go_to_goal_pose(target_location[1],target_location[2])
-            current_state="SM_INIT"
+            if not goal_sent:
+                say("Going to delivery location.")
+                go_to_goal_pose(target_location[1], target_location[2])
+                goal_sent = True
+            elif goal_reached:
+                say("Task completed.")
+                current_state = "SM_INIT"
+                recognized_speech = ""
+                executing_task = False
+                goal_sent = False
         loop.sleep()
 
 if __name__ == '__main__':
