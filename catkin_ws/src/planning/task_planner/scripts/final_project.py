@@ -299,7 +299,7 @@ def main():
         state.t_pos = transform_point(state.t_pos[0], state.t_pos[1], state.t_pos[2])
         print(f"Detected position: {state.t_pos}")
         say("Calculating inverse kinematics")
-        q = calculate_inverse_kinematics(state.t_pos[0] + 0.1, state.t_pos[1], state.t_pos[2], 0.0, -1.473, 0.0)
+        q = calculate_inverse_kinematics(state.t_pos[0] + 0.15, state.t_pos[1], state.t_pos[2], 0.0, -1.473, 0.0)
         move_arm_with_trajectory(q)
         say("Arm is ready")
 
@@ -379,8 +379,7 @@ def main():
     def grab_target_execute():
         print("Target object grabbed")
         move_gripper(-0.2)  # Close gripper
-        move_arm(-0.59, 0.0, 0.0, 1.75, 0.0, 0.56, 0.0)
-        move_arm(-0.49, 0.0, 0.0, 2.15, 0.0, 1.36, 0.0)
+        move_arm(1.0, 0.0, 0.0, 2.15, 0.0, 2.15, 0.0)
         state.target_adquired = True
 
     grab_target = State(
