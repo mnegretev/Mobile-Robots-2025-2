@@ -362,6 +362,10 @@ def main():
     object_position = [0, 0, 0]
     home_position_left = [0,0,0,0,0,0,0]  
     home_position_right = [0,0,0,0,0,0,0]
+    arm_in_use = None
+    pregrasp_lift = None
+    pregrasp_extend = None
+    grasp_position = None
     say("Ready")
     while not rospy.is_shutdown():
         #
@@ -403,7 +407,8 @@ def main():
 
         elif current_state == "SM_APPROACH_DESK":
             say("Approaching the desk")
-            move_base(0.1, 0, 3.5)   
+            move_base(0.0, 0.21, 3)
+            move_base(0.05, 0, 1)   
             current_state = "SM_FIND_OBJECT"
 
         elif current_state == "SM_FIND_OBJECT":
@@ -418,13 +423,12 @@ def main():
                     raise Exception("Object not found")
                     
                 object_position = obj_cam
-                current_state = "SM_PREPARE_TO_GRAB_LEFT"
+                current_state = "SM_DECIDE_ARM"
             except:
                 say("I could not find the object. I will try again")
                 current_state = "SM_WAIT_FOR_COMMAND"
-
-        elif current_state == "SM_PREPARE_TO_GRAB_LEFT":
-            say("Trying with left arm")
+        
+        elif current_state == "SM_DECIDE_ARM":
             try:
                 # Transformar a coordenadas del hombro izquierdo
                 obj_left = transform_point(object_position[0], object_position[1], object_position[2],
@@ -434,110 +438,108 @@ def main():
                 if obj_left is None:
                     raise Exception("Transformation to left shoulder failed")
                 
-                # Posición pregrasp
-                x_pre = obj_left[0]
-                y_pre = obj_left[1]
-                z_pre = obj_left[2] 
-                move_left_arm(0.079, 0, 0, 0.243, 0, -0.605, 0)
-                # Calcular cinemática inversa para brazo izquierdo
-                traj_pre = calculate_inverse_kinematics(x_pre, y_pre, z_pre, 0, math.pi, 0, arm='left')
-                if traj_pre is None:
-                    raise Exception("IK for left arm failed")
-                
-                # Mover brazo izquierdo
-                move_left_arm_with_trajectory(traj_pre)
-                arm_in_use = 'left'
-                current_state = "SM_GRAB_OBJECT"
-            except Exception as e:
-                rospy.logwarn("Left arm failed: " + str(e))
-                say("Cannot use left arm. Trying right arm.")
-                current_state = "SM_PREPARE_TO_GRAB_RIGHT"
-
-        elif current_state == "SM_PREPARE_TO_GRAB_RIGHT":
-            say("Trying with right arm")
-            try:
                 # Transformar a coordenadas del hombro derecho
                 obj_right = transform_point(object_position[0], object_position[1], object_position[2],
                                           source_frame="kinect_link", 
                                           target_frame="shoulders_right_link")
-                print(obj_right)
+                print("obj_pos_right: ", obj_right)
                 if obj_right is None:
                     raise Exception("Transformation to right shoulder failed")
                 
-                # Posición pregrasp: 10cm arriba del objeto
-                x_pre = obj_right[0]
-                y_pre = obj_right[1]
-                z_pre = obj_right[2] + 0.10
-                move_right_arm(0.088, 0.099, -0.254, 0.557, 0.374, -1.083, -0.065)
-                # Calcular cinemática inversa para brazo derecho
-                traj_pre = calculate_inverse_kinematics(x_pre, y_pre, z_pre, 0,  -1, 0, arm='right')
-                if traj_pre is None:
-                    raise Exception("IK for right arm failed")
+                # Decidir qué brazo usar basado en la posición del objeto
+                if abs(obj_left[1]) < 0.3:  
+                    arm_in_use = 'left' if obj_left[1] > 0 else 'right'
+                else:
+                    arm_in_use = 'left' if obj_left[1] > 0 and obj_left[1] < obj_right[1] else 'right'
                 
-                # Mover brazo derecho
-                move_right_arm_with_trajectory(traj_pre)
-                arm_in_use = 'right'
-                current_state = "SM_GRAB_OBJECT"
+                say("I will use my " + arm_in_use + " arm")
+                current_state = "SM_PREGRASP_" + arm_in_use.upper()
+                
             except Exception as e:
-                rospy.logerr("Both arms failed: " + str(e))
+                rospy.logerr("Arm decision failed: " + str(e))
+                say("I could not decide which arm to use. Trying left arm by default.")
+                arm_in_use = 'left'
+                current_state = "SM_PREGRASP_LEFT"
+
+        elif current_state == "SM_PREGRASP_LEFT":
+            say("Preparing left arm")
+            try:
+                obj_shoulder = transform_point(object_position[0], object_position[1], object_position[2],
+                                          source_frame="kinect_link", 
+                                          target_frame="shoulders_left_link")
+                print("obj_pos_left: ", obj_shoulder)
+                if obj_shoulder is None:
+                    raise Exception("Transformation to left shoulder failed")
+                
+                # Primero: Levantar el brazo (evitar extensión)
+                move_left_arm(0, -0.5, -1.0, 0.5, 0, 0, 0)  
+                # Segundo: Posición pregrasp elevada
+                pregrasp_lift = [obj_shoulder[0]+0.05, obj_shoulder[1], obj_shoulder[2] + 0.15]  
+                traj_pre = calculate_inverse_kinematics(pregrasp_lift[0], pregrasp_lift[1], pregrasp_lift[2], 
+                                                        0, -1.57, 0, arm='left')
+                if traj_pre is None:
+                    raise Exception("IK for left arm pregrasp lift failed")
+                move_left_gripper(0.5)
+                move_left_arm_with_trajectory(traj_pre)
+                current_state = "SM_GRASP_EXTEND_LEFT"
+                
+            except Exception as e:
+                rospy.logerr("Left arm pregrasp failed: " + str(e))
+                say("Cannot use left arm. Trying right arm.")
+                current_state = "SM_PREGRASP_RIGHT"
+
+
+
+        elif current_state == "SM_PREGRASP_RIGHT":
+            say("Preparing right arm")
+            try:
+                obj_shoulder = transform_point(object_position[0], object_position[1], object_position[2],
+                                          source_frame="kinect_link", 
+                                          target_frame="shoulders_right_link")
+                print("obj_pos_right: ", obj_shoulder)
+                if obj_shoulder is None:
+                    raise Exception("Transformation to right shoulder failed")
+                
+                # Primero: Levantar el brazo
+                move_right_arm(0, -0.5, -1.0, 0.5, 0, 0, 0) 
+                
+                # Segundo: Posición pregrasp elevada
+                pregrasp_lift = [obj_shoulder[0]+0.05, obj_shoulder[1], obj_shoulder[2] + 0.15]  
+                traj_pre = calculate_inverse_kinematics(pregrasp_lift[0], pregrasp_lift[1], pregrasp_lift[2], 
+                                                        0, -1.57, 0, arm='right')
+                if traj_pre is None:
+                    raise Exception("IK for right arm pregrasp lift failed")
+                move_right_gripper(0.5)
+                move_right_arm_with_trajectory(traj_pre)
+                current_state = "SM_GRASP_OBJECT"
+                
+            except Exception as e:
+                rospy.logerr("Right arm pregrasp failed: " + str(e))
                 say("Cannot grasp the object with either arm.")
                 executing_task = False
-                # Regresar brazos a posición home
                 move_left_arm(*home_position_left)
                 move_right_arm(*home_position_right)
-                current_state = "SM_WAIT_FOR_COMMANDM_WA"
+                current_state = "SM_INIT"
 
+        
 
-        elif current_state == "SM_GRAB_OBJECT":
+        elif current_state == "SM_GRASP_OBJECT":
             say("Grabbing the object")
             try:
-                # Determinar marco objetivo según brazo en uso
-                target_frame = "shoulders_left_link" if arm_in_use == 'left' else "shoulders_right_link"
-                
-                # Transformar posición del objeto al marco correcto
-                obj_arm = transform_point(object_position[0], object_position[1], object_position[2],
-                                        source_frame="kinect_link", 
-                                        target_frame=target_frame)
-                if obj_arm is None:
-                    raise Exception("Transformation failed")
-                
-                # Calcular trayectoria de agarre
-                traj_grasp = calculate_inverse_kinematics(
-                    obj_arm[0], obj_arm[1], obj_arm[2],
-                    0, math.pi/2, 0,
-                    arm=arm_in_use
-                )
-                
-                if traj_grasp is None:
-                    raise Exception("Grasp IK failed")
-                
-                # Ejecutar agarre
                 if arm_in_use == 'left':
-                    move_left_arm_with_trajectory(traj_grasp)
-                    move_left_gripper(0.5)  
+                    move_left_gripper(-0.5)  
                 else:
-                    move_right_arm_with_trajectory(traj_grasp)
-                    move_right_gripper(0.5)  
+                    move_right_gripper(-0.5) 
                 
                 time.sleep(1)
-                
-                # Volver a posición pregrasp
-                if arm_in_use == 'left':
-                    move_left_arm_with_trajectory(traj_pre)
-                else:
-                    move_right_arm_with_trajectory(traj_pre)
-                
-                say("I got the object")
                 current_state = "SM_NAVIGATE_TO_DESTINATION"
+                
             except Exception as e:
                 rospy.logerr("Grasping failed: " + str(e))
                 say("Failed to grasp the object")
-                executing_task = False
-                # Regresar brazos a posición home
-                move_left_arm(*home_position_left)
-                move_right_arm(*home_position_right)
-                current_state = "SM_NAVIGATE_TO_DESTINATION"
+                current_state = "SM_NAVIGATE_TO_DESTINATION" 
 
+        
 
         elif current_state == "SM_NAVIGATE_TO_DESTINATION":
             say("Navigating to the destination")
@@ -552,11 +554,15 @@ def main():
 
         elif current_state == "SM_RELEASE_OBJECT":
             say("Releasing the object")
-            move_left_gripper(0)   
-            move_left_arm(0,0,0,0,0,0,0)  
+            if arm_in_use == 'left':
+                move_left_gripper(0)  
+                move_left_arm(0,0,0,0,0,0,0)  
+            else:
+                move_right_gripper(0)  
+                move_right_arm(0,0,0,0,0,0,0) 
             move_head(0, 0)  
             say("Task finished")
-            current_state = "SM_WAIT_FOR_COMMAND"
+            current_state = "SM_INIT"
 
         loop.sleep()
 
