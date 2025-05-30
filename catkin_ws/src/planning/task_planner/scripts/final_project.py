@@ -34,6 +34,8 @@ from hri_msgs.msg import *
 NAME = "JORGE EITHAN TREVIÑO SELLES"
 
 listener = None
+pub_point = None
+goal_reached = False
 
 #
 # Global variable 'speech_recognized' contains the last recognized sentence
@@ -56,7 +58,7 @@ def callback_goal_reached(msg):
 
 def parse_command(cmd):
     obj = "pringles" if "PRINGLES" in cmd else "drink"
-    loc = [8.0,8.5] if "TABLE" in cmd else [3.22, 9.72]
+    loc = "table" if "TABLE" in cmd else "kitchen"
     return obj, loc
 
 #
@@ -221,6 +223,22 @@ def calculate_inverse_kinematics_right(x,y,z,roll, pitch, yaw):
     return resp.articular_trajectory
 
 #
+# Calls the service for calculating inverse kinematics for a pose
+# and returns the articular trajectory for the left arm.
+#
+def calculate_inverse_kinematics(x, y, z, roll, pitch, yaw):
+    req_ik = InverseKinematicsPose2TrajRequest() # type: ignore
+    req_ik.x, req_ik.y, req_ik.z = x, y, z
+    req_ik.roll, req_ik.pitch, req_ik.yaw = roll, pitch, yaw
+    req_ik.duration = 2
+    req_ik.time_step = 0.025
+    req_ik.initial_guess = []
+    srv = "/manipulation/la_ik_trajectory"
+    clt = rospy.ServiceProxy(srv, InverseKinematicsPose2Traj) # type: ignore
+    resp = clt(req_ik)
+    return resp.articular_trajectory
+
+#
 # Calls the service for calculating a polynomial trajectory for the left arm
 #
 def get_la_polynomial_trajectory(q, duration=2.0, time_step=0.05):
@@ -256,17 +274,19 @@ def get_la_polynomial_trajectory(q, duration=5.0, time_step=0.05):
 # the xyz coordinates of the requested object w.r.t. "realsense_link"
 #
 def find_object(object_name):
+    global pub_point
     clt_find_object = rospy.ServiceProxy("/vision/obj_reco/detect_and_recognize_object", RecognizeObject)
     req_find_object = RecognizeObjectRequest()
     req_find_object.point_cloud = rospy.wait_for_message("/camera/depth_registered/points", PointCloud2)
     req_find_object.name  = object_name
     resp = clt_find_object(req_find_object)
+    pub_point.publish(PointStamped(header=resp.recog_object.header, point=Point(x=resp.recog_object.pose.position.x, y=resp.recog_object.pose.position.y, z=resp.recog_object.pose.position.z)))
     return [resp.recog_object.pose.position.x, resp.recog_object.pose.position.y, resp.recog_object.pose.position.z]
 
 #
 # Transforms a point xyz expressed w.r.t. source frame to the target frame
 #
-def transform_point(x,y,z, source_frame="realsense_link", target_frame="shoulders_left_link"):
+def transform_point(x,y,z, source_frame="kinect_link", target_frame="shoulders_left_link"):
     global listener
     # Create a PointStamped object with the source frame and point coordinates
     listener.waitForTransform(target_frame, source_frame, rospy.Time(), rospy.Duration(4.0))
@@ -333,6 +353,22 @@ def rotate_to_target(target_angle):
             # Update the robot pose
             _, rotation = get_robot_pose()
 
+#
+# Calculate the orthogonal distance between two points
+#
+def orthogonal_distance(pos1, pos2):
+    return math.sqrt((pos1[0] - pos2[0])**2 + (pos1[1] - pos2[1])**2)
+
+
+#
+# Function to move the robot base to a target position
+#
+def move_to_position(target_pos, tolerance=0.4, speed=0.25):
+    pos, _ = get_robot_pose()
+    while orthogonal_distance(pos, target_pos) > tolerance:
+        move_base(speed, 0.0, 0.05)
+        pos, _ = get_robot_pose()
+
 def main():
     global new_task, recognized_speech, executing_task, goal_reached
     global pubLaGoalPose, pubRaGoalPose, pubHdGoalPose, pubLaGoalGrip, pubRaGoalGrip
@@ -369,45 +405,23 @@ def main():
     executing_task = False
     current_state = "SM_INIT"
     new_task = False
-    goal_reached = False
     object_is_close = False
     recognized_speech = ""
-
-
-    print("Moving near table")
-    say("Moving near the table")
-    go_to_goal_pose(3.4, 6.0)
     
-    while not goal_reached and not rospy.is_shutdown():
-        loop.sleep()
-        
-    
-    # Rotate to face the table
-    print("Rotating to face the table")
-    say("Rotating to face the table")
-    rotate_to_target(math.pi*3/2)
-    time.sleep(4.0)  # Allow time for the rotation to complete
-    goal_reached = False  # Reset goal reached flag for the next state
-    
-    # Approach the object
-    print("Approaching object")
-    say("Approaching the object")
-    go_to_goal_pose(3.4, 5.68)
-    while not goal_reached and not rospy.is_shutdown():
-        loop.sleep()
-    
-    # Rotate to face the object
-    print("Rotating to face the object")
-    say("Rotating to face the object")
-    rotate_to_target(math.pi*3/2)
-    time.sleep(4.0)  # Allow time for the rotation to complete
-    goal_reached = False  # Reset goal reached flag for the next state
-    
-    # Move face down
-    print("Moving head down")
-    say("Moving my head down to see the object")
-    move_head(0, -1.0)
-    time.sleep(1.0)  # Allow time for the head to move
+    locations = {
+        "origin": [0, 0],
+        "drink": [3, 6],
+        "pringles": [3.2, 5.87],
+        "kitchen": [6.6, -1],
+        "table": [6, 7]
+    }
+    rotations = {
+        "base": math.pi * 3 / 2,  # Facing the table where the objects are located
+        "kitchen": math.pi * 3 / 2,  # Facing the kitchen
+        "table": math.pi * 2, # Facing the destination table
+        "drink": math.pi * 3 / 2 - 0.2,  # Facing the drink
+        "pringles": math.pi * 3 / 2 + 0.35  # Facing the pringles
+    }
     
 
     say("Ready")
@@ -429,8 +443,9 @@ def main():
             # move_left_gripper(1.0)
             # move_left_gripper(0.0)
             # move_left_arm(0,0,0,0,0,0,0)
+            object_is_close = False
             current_state = "SM_WAITING_CMD"
-            
+        
         # SM_WAITING_CMD
         elif current_state == "SM_WAITING_CMD":
             if new_task:
@@ -440,38 +455,34 @@ def main():
                 # current_state = "SM_MOVE_NEAR_TABLE"
                 new_task = False
                 executing_task = True
-                current_state = "SM_FIND_OBJECT"
-                """
+                current_state = "SM_MOVE_NEAR_TABLE"
+        
         #SM_MOVE_NEAR_TABLE
         elif current_state == "SM_MOVE_NEAR_TABLE":
             print("Moving near table")
             say("Moving near the table")
-            go_to_goal_pose(3.4, 6.0)
+            goal_x, goal_y = locations[requested_object]
+            go_to_goal_pose(goal_x, goal_y + 1.0)
+            goal_reached = False
+            while not goal_reached:
+                pass
+            go_to_goal_pose(goal_x, goal_y)
+            current_state = "SM_APPROACH_TABLE"
+            
+        # SM_APPROACH_TABLE
+        elif current_state == "SM_APPROACH_TABLE":
+            print("Approaching table")
+            say("Approaching the table")
+            go_to_goal_pose(goal_x, goal_y)
             current_state = "SM_ROTATE"
             
-            
+        # SM_ROTATE
         elif current_state == "SM_ROTATE":
+            time.sleep(4.0)
             if goal_reached:
                 print("Rotating to face the table")
                 say("Rotating to face the table")
-                rotate_to_target(math.pi*3/2)
-                current_state = "SM_APPROACH_OBJECT"
-        
-        # SM_APPROACH_OBJECT
-        elif current_state == "SM_APPROACH_OBJECT":
-            if goal_reached:
-                goal_reached = False
-                print("Approaching object")
-                say("Approaching the object")
-                go_to_goal_pose(3.4, 5.68)
-                current_state = "SM_REFORM_ROTATE"
-        # SM_REFORM_ROTATE
-        elif current_state == "SM_REFORM_ROTATE":
-            if goal_reached:
-                goal_reached = False
-                print("Rotating to face the object")
-                say("Rotating to face the object")
-                rotate_to_target(math.pi*3/2)
+                rotate_to_target(rotations["base"])
                 current_state = "SM_MOVE_HEAD_DOWN"
         
         # SM_MOVE_HEAD_DOWN
@@ -480,7 +491,6 @@ def main():
             say("Moving my head down to see the object")
             move_head(0, -1.0)
             current_state = "SM_FIND_OBJECT"
-                """
         
         # SM_FIND_OBJECT
         elif current_state == "SM_FIND_OBJECT":
@@ -489,29 +499,49 @@ def main():
             say("Finding the object")
             pos = find_object(requested_object)
             print("Position found: (" + str(pos) + ")")
-            arm = "LEFT" if requested_object == "pringles" else "RIGHT"
             current_state = "SM_PREPARE_ARM"
         
         # SM_PREPARE_ARM
         elif current_state == "SM_PREPARE_ARM":
             print("Preparing arm")
-            say("Preparing my " + arm + " arm to grab the object")
-            if arm == "LEFT":
-                move_left_arm(-0.49, 0, 0, 2.15, 0, 1.36, 0)
-                move_left_gripper(0.4)
-            elif arm == "RIGHT":
-                move_right_arm(-0.49, 0, 0, 2.15, 0, 1.36, 0)
-                move_right_gripper(0.4)
-            current_state = "SM_RAISE_ARM"
+            say("Preparing my arm to grab the object")
+            move_left_arm(-0.49, 0.0, 0.0, 2.15, 0.0, 1.36, 0.0)
+            move_left_gripper(0.4)
+            if object_is_close:
+                move_base(0.1, 0.0, 0.1)
+                current_state = "SM_REFORM_ROTATE"
+            else:
+                object_is_close = True
+                current_state = "SM_APPROACH_OBJECT"
+        
+        # SM_APPROACH_OBJECT
+        elif current_state == "SM_APPROACH_OBJECT":
+            time.sleep(1.5)
+            print("Approaching object")
+            say("Approaching the object")
+            # Move the robot towards the object
+            goal_x, goal_y = locations[requested_object]
+            move_to_position([goal_x, goal_y - 0.73])
+            current_state = "SM_REFORM_ROTATE"
+                
+        # SM_REFORM_ROTATE
+        elif current_state == "SM_REFORM_ROTATE":
+            if goal_reached:
+                goal_reached = False
+                print("Rotating to face the object")
+                say("Rotating to face the object")
+                rotate_to_target(rotations[requested_object])
+                current_state = "SM_PREPARE_ARM_FOR_IK"
 
-        # SM_RAISE_ARM
-        elif current_state=="SM_RAISE_ARM":
-            say("Raising arm")
-            time.sleep(2.0)
-            move_arm = move_left_arm if arm=="LEFT" else move_right_arm
-            move_arm(-0.59, 0, 0, 1.75, 0, 0.56, 0)
-            move_arm(-0.14322, 0, 0, 1.8418, 0, 0.1695, 0)
-            current_state="SM_CALCULATE_INVERSE_KINEMATICS"
+
+        # SM_PREPARE_ARM_FOR_IK
+        elif current_state == "SM_PREPARE_ARM_FOR_IK":
+            pos = find_object(requested_object)
+            print("Preparing arm for inverse kinematics")
+            say("Preparing my arm for inverse kinematics")
+            move_left_arm(-0.59, 0.0, 0.0, 1.75, 0.0, 0.56, 0.0)
+            move_left_arm(-0.1432, 0.0, 0.0, 1.8418, 0.0, 0.1695, 0.0)
+            current_state = "SM_CALCULATE_INVERSE_KINEMATICS"
         
         
         # SM_CALCULATE_INVERSE_KINEMATICS"
@@ -521,18 +551,10 @@ def main():
             try:
                 # Find object position in global coordinates
                 say("Transforming the position of the object")
-                pos = transform_point(pos[0], pos[1], pos[2], target_frame="shoulders_left_link" if arm == "LEFT" else "shoulders_right_link")
+                pos = transform_point(pos[0], pos[1], pos[2])
                 print("Transformed position:", pos)
                 say("Calculating inverse kinematics for my arm")
-
-                if arm == "LEFT":
-                    q = calculate_inverse_kinematics_left(pos[0] + 0.2, pos[1], pos[2], 0.0, -1.473, 0.0)
-                    say("Calculating polynomial trajectory")
-                    q = get_la_polynomial_trajectory(q, duration=2.0, time_step=0.05)
-                elif arm == "RIGHT":
-                    q = calculate_inverse_kinematics_right(pos[0] + 0.2, pos[1], pos[2], 0.0, -1.473, 0.0)
-                    say("Calculating polynomial trajectory")
-                    q = get_la_polynomial_trajectory(q, duration=2.0, time_step=0.05)
+                q = calculate_inverse_kinematics(pos[0] + 0.2, pos[1], pos[2], 0.0, -1.473, 0.0)
                 current_state = "SM_MOVE_ARM_TO_OBJECT_TRAJ"
             except Exception as e:
                 say("I couldn't calculate the trajectory to the object")
@@ -543,21 +565,15 @@ def main():
         # SM_MOVE_ARM_TO_OBJECT_TRAJ
         elif current_state == "SM_MOVE_ARM_TO_OBJECT_TRAJ":
             print("Moving arm to object")
-            say("Moving my " + arm + " arm to the object")
-            if arm == "LEFT":
-                move_left_arm_with_trajectory(q)
-            elif arm == "RIGHT":
-                move_right_arm_with_trajectory(q)
+            say("Moving arm to the object")
+            move_left_arm_with_trajectory(q)
             current_state = "SM_GRAB_OBJECT"
                 
         # SM_GRAB_OBJECT
         elif current_state == "SM_GRAB_OBJECT":
             print("Grabbing object")
             say("Grabbing the object")
-            if arm == "LEFT":
-                move_left_gripper(-0.2)
-            elif arm == "RIGHT":
-                move_right_gripper(-0.2)
+            move_left_gripper(-0.2)
             current_state = "SM_MOVE_HEAD_UP"
             
             
@@ -567,11 +583,62 @@ def main():
             print("Moving head up")
             say("Moving my head up")
             move_head(0, 0)
-            current_state = "SM_MOVE_TO_LOCATION"
-
-        # SM_FIND_OBJECTrequested_object, requested_location = parse_command(recognized_speech)
-                            
+            current_state = "SM_MOUNT_ARM"
+            
+        # SM_MOUNT_ARM
+        elif current_state == "SM_MOUNT_ARM":
+            print("Mounting arm")
+            say("Mounting my arm")
+            move_left_arm(-0.49, 0.0, 0.0, 2.15, 0.0, 1.36, 0.0)
+            current_state = "SM_MOVE_TO_NEW_LOCATION"
         
+        # SM_MOVE_TO_NEW_LOCATION
+        elif current_state == "SM_MOVE_TO_NEW_LOCATION":
+            print("Moving to new location: " + str(requested_location))
+            say("Moving to the new location")
+            # Move to the requested location
+            goal_x, goal_y = locations[requested_location]
+            print("Goal coordinates: ", goal_x, goal_y)
+            if requested_location == "kitchen":
+                goal_y -= 2
+            go_to_goal_pose(goal_x, goal_y)
+            current_state = "SM_ROTATE_TO_DESTINATION"
+            
+        # SM_ROTATE_TO_DESTINATION
+        elif current_state == "SM_ROTATE_TO_DESTINATION":
+            if goal_reached:
+                goal_reached = False
+                print("Rotating to face the destination")
+                say("Rotating to face the destination")
+                rotate_to_target(rotations[requested_location])
+                current_state = "SM_RELEASE_POSITION"
+                
+        # SM_RELEASE_POSITION
+        elif current_state == "SM_RELEASE_POSITION":
+            print("Moving arm to release position")
+            say("Moving my arm to the release position")
+            move_left_arm(-0.59, 0.0, 0.0, 1.75, 0.0, 0.56, 0.0)
+            move_left_arm(-0.1432, 0.0, 0.0, 1.8418, 0.0, 0.1695, 0.0)
+            current_state = "SM_RELEASE_OBJECT"
+            
+                            
+        # SM_RELEASE_OBJECT
+        elif current_state == "SM_RELEASE_OBJECT":
+            print("Releasing object")
+            say("Releasing the object")
+            move_left_gripper(0.4)
+            time.sleep(1.0)
+            move_left_gripper(0.0)
+            current_state = "SM_RESET_ARM"
+        
+        # SM_RESET_ARM
+        elif current_state == "SM_RESET_ARM":
+            print("Resetting arm")
+            say("Resetting my arm")
+            move_left_arm(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+            executing_task = False
+            current_state = "SM_INIT"
+            
         loop.sleep()
 
 if __name__ == '__main__':
