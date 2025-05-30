@@ -34,8 +34,8 @@ def main():
     in_speech_bf = False
     hmm_folder = rospy.get_param("~hmm", "/usr/local/lib/python3.8/dist-packages/pocketsphinx/model/en-us")
     l_model    = rospy.get_param("~lm", "")
-    dict_file  = rospy.get_param("~dict_file", "/home/carlos/Mobile-Robots-2025-2/catkin_ws/src/hri/sprec_pocketsphinx/vocab/masterDic.dic")
-    gram_file  = rospy.get_param("~gram_file", "/home/carlos/Mobile-Robots-2025-2/catkin_ws/src/hri/sprec_pocketsphinx/vocab/final_project.gram")
+    dict_file  = rospy.get_param("~dict_file", "/usr/local/lib/python3.8/dist-packages/pocketsphinx/model/cmudict-en-us.dict")
+    gram_file  = rospy.get_param("~gram_file", "")
     gram_rule  = rospy.get_param("~rule_name", "rule_name")
     gram_name  = rospy.get_param("~grammar_name", "grammar_name")
 
